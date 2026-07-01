@@ -115,6 +115,33 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
+    public V remove(Object key) {
+        int h = hash(key);
+        int i = indexFor(h, table.length);
+        Node<K, V> prev = null;
+        for (Node<K, V> e = table[i]; e != null; prev = e, e = e.next) {
+            if (e.hash == h && Objects.equals(e.key, key)) {
+                if (prev == null) table[i] = e.next;
+                else prev.next = e.next;
+                size--;
+                modCount++;
+                return e.value;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void clear() {
+        if (size == 0) return;
+        table = (Node<K, V>[]) new Node[table.length];
+        size = 0;
+        modCount++;
+    }
+
+    @Override
     public int size() {
         return size;
     }
