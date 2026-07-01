@@ -25,6 +25,12 @@ import java.util.Set;
 /**
  * A teaching HashMap: power-of-two table, separate chaining (tail-append),
  * load-factor resize. Trees are added in later slices.
+ *
+ * <p><b>Known limitation (this slice):</b> mutating a value via
+ * {@link Map.Entry#setValue(Object)} on an entry obtained from {@link #entrySet()},
+ * and the inherited {@link #replaceAll(java.util.function.BiFunction)} (which uses
+ * {@code setValue} internally), currently do NOT emit events. This will be addressed
+ * in a later slice when entry views are wrapped to route through the map's mutators.
  */
 public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
 
@@ -200,15 +206,6 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             }
         }
         return null;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public void clear() {
-        if (size == 0) return;
-        table = (Node<K, V>[]) new Node[table.length];
-        size = 0;
-        modCount++;
     }
 
     @Override

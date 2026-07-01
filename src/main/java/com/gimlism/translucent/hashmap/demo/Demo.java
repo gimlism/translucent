@@ -21,7 +21,7 @@ public class Demo {
 
         out.println("== inserting keys until the table resizes ==");
         for (int k = 1; k <= 7; k++) {
-            if (k != 8 && k != 16) map.put(k, "v" + k);
+            map.put(k, "v" + k);
         }
     }
 }

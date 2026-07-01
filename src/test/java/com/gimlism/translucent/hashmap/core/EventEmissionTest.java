@@ -96,4 +96,18 @@ class EventEmissionTest {
         map.remove("nope");
         assertTrue(rec.events().isEmpty());
     }
+
+    @Test
+    void clearEmitsRemovePerEntry() {
+        var map = new TeachingHashMap<Integer, Integer>();
+        map.put(1, 1);
+        map.put(2, 2);
+        map.put(3, 3);
+        var rec = new RecordingListener();
+        map.addListener(rec);
+        map.clear();
+        assertEquals(3, rec.events().size());
+        assertTrue(rec.events().stream().allMatch(e -> e instanceof Remove));
+        assertEquals(0, map.size());
+    }
 }
