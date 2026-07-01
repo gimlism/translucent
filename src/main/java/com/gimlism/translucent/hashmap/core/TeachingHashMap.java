@@ -2,9 +2,15 @@ package com.gimlism.translucent.hashmap.core;
 
 import com.gimlism.translucent.hashmap.events.BucketSnapshot;
 import com.gimlism.translucent.hashmap.events.ChainSnapshot;
+import com.gimlism.translucent.hashmap.events.Collision;
 import com.gimlism.translucent.hashmap.events.EmptyBucket;
 import com.gimlism.translucent.hashmap.events.EntrySnapshot;
+import com.gimlism.translucent.hashmap.events.MapEvent;
+import com.gimlism.translucent.hashmap.events.MapEventListener;
 import com.gimlism.translucent.hashmap.events.MapSnapshot;
+import com.gimlism.translucent.hashmap.events.Put;
+import com.gimlism.translucent.hashmap.events.Remove;
+import com.gimlism.translucent.hashmap.events.Resize;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -36,6 +42,8 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     int size;
     int threshold;
     int modCount;
+
+    private final List<MapEventListener> listeners = new ArrayList<>();
 
     public TeachingHashMap() {
         this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR,
@@ -81,8 +89,21 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         return table.length;
     }
 
+    public void addListener(MapEventListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeListener(MapEventListener listener) {
+        listeners.remove(listener);
+    }
+
+    private void emit(MapEvent event) {
+        for (MapEventListener listener : listeners) listener.onEvent(event);
+    }
+
     @SuppressWarnings("unchecked")
     private void resize() {
+        MapSnapshot before = snapshot();
         Node<K, V>[] oldTab = table;
         int oldCap = oldTab.length;
         int newCap = oldCap << 1;
@@ -91,12 +112,12 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             Node<K, V> e = oldTab[j];
             while (e != null) {
                 Node<K, V> next = e.next;
-                int i = indexFor(e.hash, newCap);
+                int idx = indexFor(e.hash, newCap);
                 e.next = null;
-                if (newTab[i] == null) {
-                    newTab[i] = e;
+                if (newTab[idx] == null) {
+                    newTab[idx] = e;
                 } else {
-                    Node<K, V> tail = newTab[i];
+                    Node<K, V> tail = newTab[idx];
                     while (tail.next != null) tail = tail.next;
                     tail.next = e;
                 }
@@ -105,6 +126,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         }
         table = newTab;
         threshold = (int) (newCap * loadFactor);
+        emit(new Resize(oldCap, newCap, before, snapshot()));
     }
 
     @Override
@@ -136,25 +158,31 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             if (e.hash == h && Objects.equals(e.key, key)) {
                 V old = e.value;
                 e.value = value;
+                emit(new Put(key, value, old, i, false, snapshot()));
                 return old;
             }
         }
+        int chainBefore = 0;
         Node<K, V> created = new Node<>(h, key, value, null);
         if (head == null) {
             table[i] = created;
         } else {
             Node<K, V> tail = head;
-            while (tail.next != null) tail = tail.next;
+            chainBefore = 1;
+            while (tail.next != null) { tail = tail.next; chainBefore++; }
             tail.next = created;
         }
         size++;
         modCount++;
+        emit(new Put(key, value, null, i, true, snapshot()));
+        if (chainBefore > 0) {
+            emit(new Collision(key, i, chainBefore, chainBefore + 1, snapshot()));
+        }
         if (size > threshold) resize();
         return null;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public V remove(Object key) {
         int h = hash(key);
         int i = indexFor(h, table.length);
@@ -165,7 +193,9 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
                 else prev.next = e.next;
                 size--;
                 modCount++;
-                return e.value;
+                V old = e.value;
+                emit(new Remove(key, old, i, snapshot()));
+                return old;
             }
         }
         return null;
