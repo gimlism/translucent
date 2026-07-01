@@ -14,6 +14,7 @@ import com.gimlism.translucent.hashmap.events.Resize;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -240,10 +241,15 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         };
     }
 
-    /** Forward iteration across table slots and chains. (remove/fail-fast added in Task 10.) */
     private final class EntryIterator implements Iterator<Map.Entry<K, V>> {
         private int slot = 0;
-        private Node<K, V> nextNode = advanceToFirst();
+        private Node<K, V> nextNode;
+        private Node<K, V> lastReturned;
+        private int expectedModCount = modCount;
+
+        EntryIterator() {
+            nextNode = advanceToFirst();
+        }
 
         private Node<K, V> advanceToFirst() {
             while (slot < table.length && table[slot] == null) slot++;
@@ -257,15 +263,25 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
 
         @Override
         public Map.Entry<K, V> next() {
+            if (modCount != expectedModCount) throw new ConcurrentModificationException();
             if (nextNode == null) throw new NoSuchElementException();
-            Node<K, V> current = nextNode;
-            if (current.next != null) {
-                nextNode = current.next;
+            lastReturned = nextNode;
+            if (nextNode.next != null) {
+                nextNode = nextNode.next;
             } else {
                 slot++;
                 nextNode = advanceToFirst();
             }
-            return current;
+            return lastReturned;
+        }
+
+        @Override
+        public void remove() {
+            if (lastReturned == null) throw new IllegalStateException();
+            if (modCount != expectedModCount) throw new ConcurrentModificationException();
+            TeachingHashMap.this.remove(lastReturned.key);
+            expectedModCount = modCount;
+            lastReturned = null;
         }
     }
 }
