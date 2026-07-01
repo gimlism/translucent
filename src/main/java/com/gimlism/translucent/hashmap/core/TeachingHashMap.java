@@ -1,8 +1,15 @@
 package com.gimlism.translucent.hashmap.core;
 
+import com.gimlism.translucent.hashmap.events.BucketSnapshot;
+import com.gimlism.translucent.hashmap.events.ChainSnapshot;
+import com.gimlism.translucent.hashmap.events.EmptyBucket;
+import com.gimlism.translucent.hashmap.events.EntrySnapshot;
+import com.gimlism.translucent.hashmap.events.MapSnapshot;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -176,6 +183,23 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     @Override
     public int size() {
         return size;
+    }
+
+    /** Immutable snapshot of the whole map. Chains only until Slice 2 adds trees. */
+    MapSnapshot snapshot() {
+        List<BucketSnapshot> buckets = new ArrayList<>(table.length);
+        for (Node<K, V> head : table) {
+            if (head == null) {
+                buckets.add(new EmptyBucket());
+            } else {
+                List<EntrySnapshot> entries = new ArrayList<>();
+                for (Node<K, V> e = head; e != null; e = e.next) {
+                    entries.add(new EntrySnapshot(e.key, e.value, e.hash));
+                }
+                buckets.add(new ChainSnapshot(entries));
+            }
+        }
+        return new MapSnapshot(table.length, size, threshold, buckets);
     }
 
     @Override
