@@ -69,6 +69,37 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         return (capacity - 1) & hash;
     }
 
+    /** Current table length (power of two). */
+    int capacity() {
+        return table.length;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void resize() {
+        Node<K, V>[] oldTab = table;
+        int oldCap = oldTab.length;
+        int newCap = oldCap << 1;
+        Node<K, V>[] newTab = (Node<K, V>[]) new Node[newCap];
+        for (int j = 0; j < oldCap; j++) {
+            Node<K, V> e = oldTab[j];
+            while (e != null) {
+                Node<K, V> next = e.next;
+                int i = indexFor(e.hash, newCap);
+                e.next = null;
+                if (newTab[i] == null) {
+                    newTab[i] = e;
+                } else {
+                    Node<K, V> tail = newTab[i];
+                    while (tail.next != null) tail = tail.next;
+                    tail.next = e;
+                }
+                e = next;
+            }
+        }
+        table = newTab;
+        threshold = (int) (newCap * loadFactor);
+    }
+
     @Override
     public V get(Object key) {
         Node<K, V> e = findNode(key);
@@ -111,6 +142,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         }
         size++;
         modCount++;
+        if (size > threshold) resize();
         return null;
     }
 
