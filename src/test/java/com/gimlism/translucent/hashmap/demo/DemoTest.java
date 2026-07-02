@@ -9,11 +9,13 @@ import org.junit.jupiter.api.Test;
 
 class DemoTest {
     @Test
-    void runEmitsCollisionAndResizeLines() {
+    void runShowsCollisionResizeAndTreeify() {
         var buffer = new ByteArrayOutputStream();
         Demo.run(new PrintStream(buffer, true, StandardCharsets.UTF_8));
         String out = buffer.toString(StandardCharsets.UTF_8);
-        assertTrue(out.contains("COLLISION"), "expected a collision line, got:\n" + out);
-        assertTrue(out.contains("RESIZE"), "expected a resize line, got:\n" + out);
+        assertTrue(out.contains("COLLISION"), "expected collision, got:\n" + out);
+        assertTrue(out.contains("RESIZE"), "expected resize, got:\n" + out);
+        assertTrue(out.contains("TREEIFY"), "expected treeify, got:\n" + out);
+        assertTrue(out.contains("ROTATE"), "expected rotation, got:\n" + out);
     }
 }
