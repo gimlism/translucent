@@ -14,12 +14,12 @@ public class Demo {
         var map = new TeachingHashMap<Integer, String>();
         map.addListener(new ConsoleEventLogger(out));
 
-        out.println("== inserting keys that collide in bucket 0 ==");
-        map.put(0, "zero");
-        map.put(8, "eight");
-        map.put(16, "sixteen");
+        out.println("== inserting keys that collide in bucket 0 until it treeifies ==");
+        for (int k : new int[]{0, 8, 16, 24}) { // 4th key hits treeifyThreshold
+            map.put(k, "v" + k);
+        }
 
-        out.println("== inserting keys until the table resizes ==");
+        out.println("== inserting more keys until the table resizes ==");
         for (int k = 1; k <= 7; k++) {
             map.put(k, "v" + k);
         }
