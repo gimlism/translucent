@@ -69,4 +69,77 @@ class TreeNode<K, V> extends Node<K, V> {
         sink.rotated(Direction.RIGHT, p.key);
         return root;
     }
+
+    /**
+     * BST-insert {@code x} (ordered by hash then seq), then restore red-black
+     * invariants. Returns the new root. {@code x} must be a fresh node not
+     * already present in the tree.
+     */
+    static <K, V> TreeNode<K, V> insert(TreeNode<K, V> root, TreeNode<K, V> x, TreeEventSink sink) {
+        x.left = null;
+        x.right = null;
+        if (root == null) {
+            x.parent = null;
+            x.red = false; // first node is the black root
+            return x;
+        }
+        TreeNode<K, V> p = root;
+        TreeNode<K, V> parent;
+        int dir;
+        do {
+            parent = p;
+            dir = cmp(x.hash, x.seq, p.hash, p.seq);
+            p = dir < 0 ? p.left : p.right;
+        } while (p != null);
+        x.parent = parent;
+        if (dir < 0) parent.left = x; else parent.right = x;
+        x.red = true;
+        return insertFixup(root, x, sink);
+    }
+
+    private static <K, V> TreeNode<K, V> insertFixup(TreeNode<K, V> root, TreeNode<K, V> x, TreeEventSink sink) {
+        while (x.parent != null && x.parent.red) {
+            TreeNode<K, V> p = x.parent;
+            TreeNode<K, V> g = p.parent; // p is red => p is not root => g != null
+            if (p == g.left) {
+                TreeNode<K, V> u = g.right;
+                if (u != null && u.red) {
+                    setColor(p, false, sink);
+                    setColor(u, false, sink);
+                    setColor(g, true, sink);
+                    x = g;
+                } else {
+                    if (x == p.right) {
+                        x = p;
+                        root = rotateLeft(root, x, sink);
+                        p = x.parent;
+                        g = p.parent;
+                    }
+                    setColor(p, false, sink);
+                    setColor(g, true, sink);
+                    root = rotateRight(root, g, sink);
+                }
+            } else {
+                TreeNode<K, V> u = g.left;
+                if (u != null && u.red) {
+                    setColor(p, false, sink);
+                    setColor(u, false, sink);
+                    setColor(g, true, sink);
+                    x = g;
+                } else {
+                    if (x == p.left) {
+                        x = p;
+                        root = rotateRight(root, x, sink);
+                        p = x.parent;
+                        g = p.parent;
+                    }
+                    setColor(p, false, sink);
+                    setColor(g, true, sink);
+                    root = rotateLeft(root, g, sink);
+                }
+            }
+        }
+        if (root.red) setColor(root, false, sink);
+        return root;
+    }
 }
