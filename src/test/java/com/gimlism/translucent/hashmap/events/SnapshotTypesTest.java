@@ -12,8 +12,8 @@ class SnapshotTypesTest {
     @Test
     void mapSnapshotHoldsBuckets() {
         var chain = new ChainSnapshot(List.of(new EntrySnapshot("a", 1, 97)));
-        var snap = new MapSnapshot(8, 1, 6, List.of(new EmptyBucket(), chain));
-        assertEquals(8, snap.capacity());
+        var snap = new MapSnapshot(2, 1, 6, List.of(new EmptyBucket(), chain));
+        assertEquals(2, snap.capacity());
         assertEquals(1, snap.size());
         assertInstanceOf(EmptyBucket.class, snap.buckets().get(0));
         assertInstanceOf(ChainSnapshot.class, snap.buckets().get(1));

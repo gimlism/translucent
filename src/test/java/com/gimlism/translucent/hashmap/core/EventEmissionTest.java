@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.gimlism.translucent.hashmap.consumer.RecordingListener;
 import com.gimlism.translucent.hashmap.events.Collision;
 import com.gimlism.translucent.hashmap.events.MapEvent;
+import com.gimlism.translucent.hashmap.events.MapEventListener;
 import com.gimlism.translucent.hashmap.events.Put;
 import com.gimlism.translucent.hashmap.events.Remove;
 import com.gimlism.translucent.hashmap.events.Resize;
@@ -109,5 +110,18 @@ class EventEmissionTest {
         assertEquals(3, rec.events().size());
         assertTrue(rec.events().stream().allMatch(e -> e instanceof Remove));
         assertEquals(0, map.size());
+    }
+
+    @Test
+    void listenerMayUnregisterItselfDuringDispatch() {
+        var map = new TeachingHashMap<Integer, Integer>();
+        var survivor = new RecordingListener();
+        MapEventListener[] selfRemoving = new MapEventListener[1];
+        selfRemoving[0] = e -> map.removeListener(selfRemoving[0]);
+        map.addListener(selfRemoving[0]);
+        map.addListener(survivor);
+        map.put(1, 1); // selfRemoving unregisters mid-dispatch; must not throw
+        map.put(2, 2);
+        assertEquals(2, survivor.events().size());
     }
 }

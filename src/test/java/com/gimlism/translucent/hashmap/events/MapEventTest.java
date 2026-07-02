@@ -8,7 +8,9 @@ import org.junit.jupiter.api.Test;
 
 class MapEventTest {
     private static MapSnapshot emptySnap() {
-        return new MapSnapshot(8, 0, 6, List.of());
+        // capacity 8 must match 8 bucket entries (MapSnapshot enforces this)
+        return new MapSnapshot(8, 0, 6,
+            java.util.Collections.nCopies(8, (BucketSnapshot) new EmptyBucket()));
     }
 
     @Test

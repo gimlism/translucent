@@ -15,7 +15,8 @@ import org.junit.jupiter.api.Test;
 
 class ConsoleEventLoggerTest {
     private static MapSnapshot snap() {
-        return new MapSnapshot(8, 1, 6, List.of());
+        // empty map: 0 buckets matches capacity 0 (MapSnapshot enforces this)
+        return new MapSnapshot(0, 0, 6, List.of());
     }
 
     @Test

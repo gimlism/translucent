@@ -23,4 +23,13 @@ class TeachingHashMapResizeTest {
         assertEquals(50, map.size());
         for (int k = 0; k < 50; k++) assertEquals(k * 10, map.get(k));
     }
+
+    @Test
+    void tableSizeForClampsAtMaximumCapacityWithoutOverflow() {
+        // Without the cap this loops forever (n overflows past 2^31). Pure int
+        // math — does NOT allocate a table, so it's safe to assert directly.
+        assertEquals(1 << 30, TeachingHashMap.tableSizeFor(Integer.MAX_VALUE));
+        assertEquals(1 << 30, TeachingHashMap.tableSizeFor((1 << 30) + 1));
+        assertEquals(1 << 30, TeachingHashMap.tableSizeFor(1 << 30));
+    }
 }

@@ -40,6 +40,9 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     static final int DEFAULT_UNTREEIFY_THRESHOLD = 2;
     static final int DEFAULT_MIN_TREEIFY_CAPACITY = 8;
 
+    /** Hard upper bound on table capacity (mirrors {@code java.util.HashMap}). */
+    static final int MAXIMUM_CAPACITY = 1 << 30;
+
     final float loadFactor;
     final int treeifyThreshold;
     final int untreeifyThreshold;
@@ -76,8 +79,9 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         this.threshold = (int) (cap * loadFactor);
     }
 
-    /** Smallest power of two >= c (min 1). */
+    /** Smallest power of two >= c, clamped to {@link #MAXIMUM_CAPACITY} (min 1). */
     static int tableSizeFor(int c) {
+        if (c >= MAXIMUM_CAPACITY) return MAXIMUM_CAPACITY;
         int n = 1;
         while (n < c) n <<= 1;
         return n;
@@ -105,14 +109,20 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     }
 
     private void emit(MapEvent event) {
-        for (MapEventListener listener : listeners) listener.onEvent(event);
+        // Iterate a copy so a listener may add/remove listeners during dispatch
+        // without triggering a ConcurrentModificationException.
+        for (MapEventListener listener : List.copyOf(listeners)) listener.onEvent(event);
     }
 
     @SuppressWarnings("unchecked")
     private void resize() {
-        MapSnapshot before = snapshot();
         Node<K, V>[] oldTab = table;
         int oldCap = oldTab.length;
+        if (oldCap >= MAXIMUM_CAPACITY) {
+            threshold = Integer.MAX_VALUE; // at the cap: never resize again
+            return;
+        }
+        MapSnapshot before = snapshot();
         int newCap = oldCap << 1;
         Node<K, V>[] newTab = (Node<K, V>[]) new Node[newCap];
         for (int j = 0; j < oldCap; j++) {
