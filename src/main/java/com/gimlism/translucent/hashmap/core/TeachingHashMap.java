@@ -3,14 +3,19 @@ package com.gimlism.translucent.hashmap.core;
 import com.gimlism.translucent.hashmap.events.BucketSnapshot;
 import com.gimlism.translucent.hashmap.events.ChainSnapshot;
 import com.gimlism.translucent.hashmap.events.Collision;
+import com.gimlism.translucent.hashmap.events.Color;
+import com.gimlism.translucent.hashmap.events.Direction;
 import com.gimlism.translucent.hashmap.events.EmptyBucket;
 import com.gimlism.translucent.hashmap.events.EntrySnapshot;
 import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.MapEventListener;
 import com.gimlism.translucent.hashmap.events.MapSnapshot;
 import com.gimlism.translucent.hashmap.events.Put;
+import com.gimlism.translucent.hashmap.events.Recolor;
 import com.gimlism.translucent.hashmap.events.Remove;
 import com.gimlism.translucent.hashmap.events.Resize;
+import com.gimlism.translucent.hashmap.events.Rotation;
+import com.gimlism.translucent.hashmap.events.Treeify;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -52,6 +57,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     int size;
     int threshold;
     int modCount;
+    long nextSeq;
 
     private final List<MapEventListener> listeners = new ArrayList<>();
 
@@ -98,6 +104,23 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     /** Current table length (power of two). */
     int capacity() {
         return table.length;
+    }
+
+    /** True if bucket {@code index} is a treeified bin. (Test/inspection hook.) */
+    boolean isTreeBin(int index) {
+        return table[index] instanceof TreeNode;
+    }
+
+    /** A sink that turns tree structural changes into events for bucket {@code i}. */
+    private TreeEventSink sinkFor(int i) {
+        return new TreeEventSink() {
+            @Override public void rotated(Direction dir, Object pivotKey) {
+                emit(new Rotation(i, dir, pivotKey, snapshot()));
+            }
+            @Override public void recolored(Object nodeKey, Color oldColor, Color newColor) {
+                emit(new Recolor(i, nodeKey, oldColor, newColor, snapshot()));
+            }
+        };
     }
 
     public void addListener(MapEventListener listener) {
@@ -160,7 +183,13 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     private Node<K, V> findNode(Object key) {
         int h = hash(key);
         int i = indexFor(h, table.length);
-        for (Node<K, V> e = table[i]; e != null; e = e.next) {
+        Node<K, V> head = table[i];
+        if (head instanceof TreeNode) {
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> t = (TreeNode<K, V>) head;
+            return TreeNode.find(t.root(), h, key);
+        }
+        for (Node<K, V> e = head; e != null; e = e.next) {
             if (e.hash == h && Objects.equals(e.key, key)) return e;
         }
         return null;
@@ -171,6 +200,31 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         int h = hash(key);
         int i = indexFor(h, table.length);
         Node<K, V> head = table[i];
+
+        // --- tree bin ---
+        if (head instanceof TreeNode) {
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> root = ((TreeNode<K, V>) head).root();
+            TreeNode<K, V> found = TreeNode.find(root, h, key);
+            if (found != null) {
+                V old = found.value;
+                found.value = value;
+                emit(new Put(key, value, old, i, false, snapshot()));
+                return old;
+            }
+            TreeNode<K, V> node = new TreeNode<>(h, key, value, null, nextSeq++);
+            Node<K, V> tail = head;
+            while (tail.next != null) tail = tail.next;
+            tail.next = node; // preserve insertion order in the next thread
+            TreeNode.insert(root, node, sinkFor(i)); // new root reachable via climb
+            size++;
+            modCount++;
+            emit(new Put(key, value, null, i, true, snapshot())); // no Collision for tree bins
+            if (size > threshold) resize();
+            return null;
+        }
+
+        // --- chain bin (Slice 1 behaviour) ---
         for (Node<K, V> e = head; e != null; e = e.next) {
             if (e.hash == h && Objects.equals(e.key, key)) {
                 V old = e.value;
@@ -195,8 +249,30 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         if (chainBefore > 0) {
             emit(new Collision(key, i, chainBefore, chainBefore + 1, snapshot()));
         }
+        if (chainBefore + 1 >= treeifyThreshold) {
+            treeifyBin(i);
+        }
         if (size > threshold) resize();
         return null;
+    }
+
+    /** Convert the chain at bucket {@code i} into a red-black tree. */
+    private void treeifyBin(int i) {
+        if (table.length < minTreeifyCapacity) {
+            resize(); // grow instead of treeifying a small table (mirrors the JDK)
+            return;
+        }
+        emit(new Treeify(i, snapshot())); // announce: bucket i is still the chain here
+        // convert chain Nodes to TreeNodes, preserving order via the next thread
+        TreeNode<K, V> first = null;
+        TreeNode<K, V> prev = null;
+        for (Node<K, V> e = table[i]; e != null; e = e.next) {
+            TreeNode<K, V> t = new TreeNode<>(e.hash, e.key, e.value, null, nextSeq++);
+            if (prev == null) first = t; else prev.next = t;
+            prev = t;
+        }
+        table[i] = first;
+        TreeNode.build(first, sinkFor(i)); // assembles the tree, emitting Rotation/Recolor
     }
 
     @Override
