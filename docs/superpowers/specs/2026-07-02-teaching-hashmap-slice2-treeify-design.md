@@ -40,7 +40,8 @@ The tree is an **overlay** on the existing chain, not a replacement:
 ### Components
 
 **`TreeNode<K,V> extends Node<K,V>`** (`core` package)
-- Adds: `TreeNode<K,V> parent, left, right, prev`; `boolean red`; `long seq`.
+- Adds: `TreeNode<K,V> parent, left, right`; `boolean red`; `long seq`. (A `prev`
+  back-link for O(1) list unlinking is deferred to Slice 3's deletion.)
 - Inherits `hash`, `key`, `value`, `next` from `Node`.
 - `seq` is a monotonic insertion sequence (from a map-level `long nextSeq`
   counter), assigned when a node is created or converted, used only as the
@@ -109,8 +110,11 @@ Trigger: a `put` grows a *chain* to `treeifyThreshold` (default 4) new-entry cou
 - Chain bins: split into lo/hi exactly as Slice 1 (walk `next`, tail-append).
 - Tree bins: walk `next`, partition nodes into lo (index `j`) and hi
   (index `j + oldCap`) by `(hash & oldCap) == 0`. For each **non-empty** half,
-  rebuild the RB tree over that half. This rebalancing emits `Rotation`/`Recolor`
-  (but **not** `Treeify` — it is a tree→tree split, not a chain→tree conversion).
+  rebuild the RB tree over that half. This rebuild is **silent**
+  (`TreeEventSink.NONE`): during resize the map's `table` is mid-swap, so
+  per-rotation snapshots would render the wrong table. The `Resize`
+  before/after snapshots convey the split. (No `Treeify` either — it is a
+  tree→tree split, not a chain→tree conversion.)
   Small halves remain trees (untreeify deferred to Slice 3).
 - `Resize(before, after)` is emitted as in Slice 1, bracketing the whole rehash.
 

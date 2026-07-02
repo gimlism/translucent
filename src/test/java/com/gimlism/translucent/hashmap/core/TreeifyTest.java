@@ -102,4 +102,27 @@ class TreeifyTest {
         assertEquals(Color.BLACK, tree.root().color(),
             "the final balancing event's snapshot must show a black root");
     }
+
+    @Test
+    void treeBinInsertBalancingEventsCarryConsistentSize() {
+        // high load factor => no resize; treeify bucket 0, then insert more into it
+        var map = new TeachingHashMap<Integer, String>(8, 100.0f, 4, 2, 8);
+        var rec = new RecordingListener();
+        map.addListener(rec);
+        for (int k : new int[]{0, 8, 16, 24}) map.put(k, "v" + k); // treeify
+        boolean sawBalancing = false;
+        for (int k : new int[]{32, 40, 48, 56, 64}) {
+            rec.clear();
+            map.put(k, "v" + k);          // tree-bin insert
+            int expected = map.size();    // true size after this put
+            for (MapEvent e : rec.events()) {
+                if (e instanceof Rotation || e instanceof Recolor) {
+                    sawBalancing = true;
+                    assertEquals(expected, e.after().size(),
+                        "balancing event during a tree-bin insert must reflect the post-insert size");
+                }
+            }
+        }
+        assertTrue(sawBalancing, "expected at least one balancing event during tree-bin inserts");
+    }
 }

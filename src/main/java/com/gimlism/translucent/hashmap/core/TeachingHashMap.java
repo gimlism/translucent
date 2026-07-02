@@ -268,9 +268,9 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             Node<K, V> tail = head;
             while (tail.next != null) tail = tail.next;
             tail.next = node; // preserve insertion order in the next thread
-            TreeNode.insert(root, node, sinkFor(i)); // new root reachable via climb
             size++;
             modCount++;
+            TreeNode.insert(root, node, sinkFor(i)); // balancing events now see the true size
             emit(new Put(key, value, null, i, true, snapshot())); // no Collision for tree bins
             if (size > threshold) resize();
             return null;
