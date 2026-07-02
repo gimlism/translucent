@@ -1,5 +1,7 @@
 package com.gimlism.translucent.hashmap.core;
 
+import java.util.Objects;
+
 import com.gimlism.translucent.hashmap.events.Color;
 import com.gimlism.translucent.hashmap.events.Direction;
 
@@ -141,5 +143,27 @@ class TreeNode<K, V> extends Node<K, V> {
         }
         if (root.red) setColor(root, false, sink);
         return root;
+    }
+
+    /**
+     * Find the node for {@code key} (with the given hash). Descends by hash; on a
+     * hash tie with an unequal key, searches both subtrees (a lookup key has no
+     * seq to disambiguate). O(log n) when hashes are distinct.
+     */
+    static <K, V> TreeNode<K, V> find(TreeNode<K, V> p, int hash, Object key) {
+        while (p != null) {
+            if (hash < p.hash) {
+                p = p.left;
+            } else if (hash > p.hash) {
+                p = p.right;
+            } else if (Objects.equals(p.key, key)) {
+                return p;
+            } else {
+                TreeNode<K, V> r = find(p.right, hash, key);
+                if (r != null) return r;
+                p = p.left;
+            }
+        }
+        return null;
     }
 }
