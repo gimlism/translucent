@@ -139,6 +139,11 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         for (MapEventListener listener : List.copyOf(listeners)) listener.onEvent(event);
     }
 
+    /** Test hook: force a rehash to the next capacity. */
+    void forceResize() {
+        resize();
+    }
+
     @SuppressWarnings("unchecked")
     private void resize() {
         Node<K, V>[] oldTab = table;
@@ -151,24 +156,69 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         int newCap = oldCap << 1;
         Node<K, V>[] newTab = (Node<K, V>[]) new Node[newCap];
         for (int j = 0; j < oldCap; j++) {
-            Node<K, V> e = oldTab[j];
-            while (e != null) {
-                Node<K, V> next = e.next;
-                int idx = indexFor(e.hash, newCap);
-                e.next = null;
-                if (newTab[idx] == null) {
-                    newTab[idx] = e;
-                } else {
-                    Node<K, V> tail = newTab[idx];
-                    while (tail.next != null) tail = tail.next;
-                    tail.next = e;
+            Node<K, V> head = oldTab[j];
+            if (head == null) continue;
+            if (head instanceof TreeNode) {
+                @SuppressWarnings("unchecked")
+                TreeNode<K, V> t = (TreeNode<K, V>) head;
+                splitTreeBin(newTab, j, t, oldCap);
+            } else {
+                Node<K, V> e = head;
+                while (e != null) {
+                    Node<K, V> next = e.next;
+                    int idx = indexFor(e.hash, newCap);
+                    e.next = null;
+                    if (newTab[idx] == null) {
+                        newTab[idx] = e;
+                    } else {
+                        Node<K, V> tail = newTab[idx];
+                        while (tail.next != null) tail = tail.next;
+                        tail.next = e;
+                    }
+                    e = next;
                 }
-                e = next;
             }
         }
         table = newTab;
         threshold = (int) (newCap * loadFactor);
         emit(new Resize(oldCap, newCap, before, snapshot()));
+    }
+
+    /**
+     * Split a tree bin during resize: partition its nodes (walked in insertion
+     * order via next) into the low bucket {@code j} and high bucket
+     * {@code j + oldCap}, then rebuild each non-empty half's red-black tree.
+     * Rebuild is silent (TreeEventSink.NONE) because the table is mid-swap here;
+     * the Resize before/after snapshots convey the change. Small halves remain
+     * trees (untreeify is Slice 3).
+     */
+    private void splitTreeBin(Node<K, V>[] newTab, int j, TreeNode<K, V> head, int oldCap) {
+        TreeNode<K, V> loHead = null, loTail = null, hiHead = null, hiTail = null;
+        for (Node<K, V> e = head; e != null; ) {
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> t = (TreeNode<K, V>) e;
+            Node<K, V> next = e.next;
+            t.parent = null;
+            t.left = null;
+            t.right = null;
+            t.next = null;
+            if ((t.hash & oldCap) == 0) {
+                if (loTail == null) loHead = t; else loTail.next = t;
+                loTail = t;
+            } else {
+                if (hiTail == null) hiHead = t; else hiTail.next = t;
+                hiTail = t;
+            }
+            e = next;
+        }
+        if (loHead != null) {
+            TreeNode.build(loHead, TreeEventSink.NONE);
+            newTab[j] = loHead;
+        }
+        if (hiHead != null) {
+            TreeNode.build(hiHead, TreeEventSink.NONE);
+            newTab[j + oldCap] = hiHead;
+        }
     }
 
     @Override
