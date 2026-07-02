@@ -39,8 +39,10 @@ class TreeNode<K, V> extends Node<K, V> {
     /** Flip a node's colour, reporting only real changes. */
     static <K, V> void setColor(TreeNode<K, V> n, boolean red, TreeEventSink sink) {
         if (n.red != red) {
-            sink.recolored(n.key, n.red ? Color.RED : Color.BLACK, red ? Color.RED : Color.BLACK);
-            n.red = red;
+            Color oldColor = n.red ? Color.RED : Color.BLACK;
+            Color newColor = red ? Color.RED : Color.BLACK;
+            n.red = red; // mutate BEFORE emitting so the event's snapshot is a true after-frame
+            sink.recolored(n.key, oldColor, newColor);
         }
     }
 

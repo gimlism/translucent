@@ -2,12 +2,17 @@ package com.gimlism.translucent.hashmap.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.hashmap.consumer.RecordingListener;
+import com.gimlism.translucent.hashmap.events.Color;
+import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.Recolor;
 import com.gimlism.translucent.hashmap.events.Rotation;
 import com.gimlism.translucent.hashmap.events.Treeify;
+import com.gimlism.translucent.hashmap.events.TreeSnapshot;
 import org.junit.jupiter.api.Test;
 
 class TreeifyTest {
@@ -68,12 +73,33 @@ class TreeifyTest {
     void belowMinTreeifyCapacityResizesInsteadOfTreeifying() {
         // capacity 4 < minTreeifyCapacity 8: a 4-long chain must resize, not treeify
         var map = new TeachingHashMap<Integer, String>(4, 0.75f, 4, 2, 8);
-        // keys 0,4,8,12 collide at cap 4 ((cap-1)&hash == 0); but resize fires first
+        // keys 0,4,8,12 collide at cap 4 ((cap-1)&hash == 0); the 4th put grows the
+        // chain to length 4, which hits treeifyThreshold(4) and calls treeifyBin,
+        // but since capacity(4) < minTreeifyCapacity(8) that resizes instead.
         map.put(0, "a");
         map.put(4, "b");
-        map.put(8, "c"); // size 3 > threshold(3) -> resize happens along the way
+        map.put(8, "c");
         map.put(12, "d");
         assertFalse(map.isTreeBin(0), "should have resized rather than treeified");
         assertTrue(map.capacity() > 4);
+    }
+
+    @Test
+    void terminalTreeifyEventSnapshotShowsBlackRoot() {
+        var map = new TeachingHashMap<Integer, String>();
+        var rec = new RecordingListener();
+        map.addListener(rec);
+        for (int k : new int[]{0, 8, 16, 24}) map.put(k, "v" + k);
+        MapEvent last = null;
+        for (MapEvent e : rec.events()) {
+            if (e instanceof Rotation || e instanceof Recolor) {
+                last = e;
+            }
+        }
+        assertNotNull(last, "expected balancing events during treeify");
+        var bucket0 = last.after().buckets().get(0);
+        var tree = assertInstanceOf(TreeSnapshot.class, bucket0);
+        assertEquals(Color.BLACK, tree.root().color(),
+            "the final balancing event's snapshot must show a black root");
     }
 }

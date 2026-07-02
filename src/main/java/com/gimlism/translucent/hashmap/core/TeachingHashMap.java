@@ -31,7 +31,8 @@ import java.util.Set;
 
 /**
  * A teaching HashMap: power-of-two table, separate chaining (tail-append),
- * load-factor resize. Trees are added in later slices.
+ * load-factor resize. Chains that reach the treeify threshold (and whose table
+ * is at least the min treeify capacity) are converted into red-black trees.
  *
  * <p><b>Known limitation (this slice):</b> mutating a value via
  * {@link Map.Entry#setValue(Object)} on an entry obtained from {@link #entrySet()},
@@ -159,7 +160,6 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             Node<K, V> head = oldTab[j];
             if (head == null) continue;
             if (head instanceof TreeNode) {
-                @SuppressWarnings("unchecked")
                 TreeNode<K, V> t = (TreeNode<K, V>) head;
                 splitTreeBin(newTab, j, t, oldCap);
             } else {
@@ -359,7 +359,8 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         return size;
     }
 
-    /** Immutable snapshot of the whole map. Chains only until Slice 2 adds trees. */
+    /** Immutable snapshot of the whole map. Chains render as {@link ChainSnapshot},
+     * tree bins as {@link TreeSnapshot}, and empty buckets as {@link EmptyBucket}. */
     MapSnapshot snapshot() {
         List<BucketSnapshot> buckets = new ArrayList<>(table.length);
         for (Node<K, V> head : table) {
