@@ -166,4 +166,20 @@ class TreeNode<K, V> extends Node<K, V> {
         }
         return null;
     }
+
+    /**
+     * Build a red-black tree over an already-threaded list of tree nodes (linked
+     * by {@code next} in insertion order), inserting each in turn. The
+     * {@code next} thread is left intact for iteration. Returns the root.
+     */
+    static <K, V> TreeNode<K, V> build(TreeNode<K, V> first, TreeEventSink sink) {
+        TreeNode<K, V> root = null;
+        for (TreeNode<K, V> x = first; x != null; ) {
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> next = (TreeNode<K, V>) x.next;
+            root = insert(root, x, sink);
+            x = next;
+        }
+        return root;
+    }
 }
