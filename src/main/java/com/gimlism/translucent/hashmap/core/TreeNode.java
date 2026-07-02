@@ -1,5 +1,8 @@
 package com.gimlism.translucent.hashmap.core;
 
+import com.gimlism.translucent.hashmap.events.Color;
+import com.gimlism.translucent.hashmap.events.Direction;
+
 /**
  * A red-black tree node for a treeified bin. Extends {@link Node} so it keeps the
  * insertion-order {@code next} thread (used for iteration and resize) while also
@@ -23,5 +26,47 @@ class TreeNode<K, V> extends Node<K, V> {
         TreeNode<K, V> r = this;
         while (r.parent != null) r = r.parent;
         return r;
+    }
+
+    /** Total order used for tree INSERTION: hash, then insertion seq. */
+    static int cmp(int h1, long s1, int h2, long s2) {
+        int c = Integer.compare(h1, h2);
+        return c != 0 ? c : Long.compare(s1, s2);
+    }
+
+    /** Flip a node's colour, reporting only real changes. */
+    static <K, V> void setColor(TreeNode<K, V> n, boolean red, TreeEventSink sink) {
+        if (n.red != red) {
+            sink.recolored(n.key, n.red ? Color.RED : Color.BLACK, red ? Color.RED : Color.BLACK);
+            n.red = red;
+        }
+    }
+
+    static <K, V> TreeNode<K, V> rotateLeft(TreeNode<K, V> root, TreeNode<K, V> p, TreeEventSink sink) {
+        TreeNode<K, V> r = p.right;
+        p.right = r.left;
+        if (r.left != null) r.left.parent = p;
+        r.parent = p.parent;
+        if (p.parent == null) root = r;
+        else if (p == p.parent.left) p.parent.left = r;
+        else p.parent.right = r;
+        r.left = p;
+        p.parent = r;
+        sink.rotated(Direction.LEFT, p.key);
+        return root;
+    }
+
+    static <K, V> TreeNode<K, V> rotateRight(TreeNode<K, V> root, TreeNode<K, V> p, TreeEventSink sink) {
+        TreeNode<K, V> l = p.left;
+        p.left = l.right;
+        if (l.right != null) l.right.parent = p;
+        l.parent = p.parent;
+        if (p.parent == null) root = l;
+        else if (p == p.parent.right) p.parent.right = l;
+        else p.parent.left = l;
+        l.right = p;
+        p.parent = l;
+        sink.rotated(Direction.RIGHT, p.key);
+        return root;
     }
 }
