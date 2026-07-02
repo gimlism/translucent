@@ -25,8 +25,11 @@ class TreeRemoveGuardTest {
 
     @Test
     void removingAbsentKeyFromTreeBinReturnsNull() {
-        var map = treeified();
-        assertNull(map.remove(1)); // key 1 not present, bucket 1 empty -> null, no throw
+        var map = treeified(); // bucket 0 is a tree of {0, 8, 16, 24}
+        // key 32 maps to bucket 0 (32 & 7 == 0) but is NOT in the tree:
+        // this exercises the tree-bin "absent -> return null" branch, not an empty bin
+        assertTrue(map.isTreeBin(0));
+        assertNull(map.remove(32)); // no throw
     }
 
     @Test
