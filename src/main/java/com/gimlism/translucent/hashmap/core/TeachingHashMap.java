@@ -16,6 +16,8 @@ import com.gimlism.translucent.hashmap.events.Remove;
 import com.gimlism.translucent.hashmap.events.Resize;
 import com.gimlism.translucent.hashmap.events.Rotation;
 import com.gimlism.translucent.hashmap.events.Treeify;
+import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
+import com.gimlism.translucent.hashmap.events.TreeSnapshot;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -305,6 +307,10 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         for (Node<K, V> head : table) {
             if (head == null) {
                 buckets.add(new EmptyBucket());
+            } else if (head instanceof TreeNode) {
+                @SuppressWarnings("unchecked")
+                TreeNode<K, V> t = (TreeNode<K, V>) head;
+                buckets.add(new TreeSnapshot(treeSnapshot(t.root())));
             } else {
                 List<EntrySnapshot> entries = new ArrayList<>();
                 for (Node<K, V> e = head; e != null; e = e.next) {
@@ -314,6 +320,15 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             }
         }
         return new MapSnapshot(table.length, size, threshold, buckets);
+    }
+
+    private TreeNodeSnapshot treeSnapshot(TreeNode<K, V> n) {
+        if (n == null) return null;
+        return new TreeNodeSnapshot(
+            n.key, n.value,
+            n.red ? Color.RED : Color.BLACK,
+            treeSnapshot(n.left),
+            treeSnapshot(n.right));
     }
 
     @Override
