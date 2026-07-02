@@ -331,8 +331,16 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     public V remove(Object key) {
         int h = hash(key);
         int i = indexFor(h, table.length);
+        Node<K, V> head = table[i];
+        if (head instanceof TreeNode) {
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> t = (TreeNode<K, V>) head;
+            if (TreeNode.find(t.root(), h, key) == null) return null; // absent: no-op
+            throw new UnsupportedOperationException(
+                "remove from a tree bin is added in Slice 3");
+        }
         Node<K, V> prev = null;
-        for (Node<K, V> e = table[i]; e != null; prev = e, e = e.next) {
+        for (Node<K, V> e = head; e != null; prev = e, e = e.next) {
             if (e.hash == h && Objects.equals(e.key, key)) {
                 if (prev == null) table[i] = e.next;
                 else prev.next = e.next;
