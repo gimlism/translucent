@@ -185,4 +185,130 @@ class TreeNode<K, V> extends Node<K, V> {
         }
         return root;
     }
+
+    /**
+     * Remove {@code z} from the red-black tree (pointer-based, preserving node
+     * identity), restoring invariants. Returns the new root, or null if empty.
+     * Touches only tree links (parent/left/right/red), never next/prev.
+     */
+    static <K, V> TreeNode<K, V> deleteFromTree(TreeNode<K, V> root, TreeNode<K, V> z, TreeEventSink sink) {
+        TreeNode<K, V> y = z;               // node removed or moved
+        boolean yWasBlack = !y.red;
+        TreeNode<K, V> x;                   // replaces y in the tree (may be null)
+        TreeNode<K, V> xParent;             // parent of x (tracked because x may be null)
+
+        if (z.left == null) {
+            x = z.right;
+            xParent = z.parent;
+            root = transplant(root, z, z.right);
+        } else if (z.right == null) {
+            x = z.left;
+            xParent = z.parent;
+            root = transplant(root, z, z.left);
+        } else {
+            y = minimum(z.right);           // in-order successor
+            yWasBlack = !y.red;
+            x = y.right;
+            if (y.parent == z) {
+                xParent = y;                // x may be null; its parent becomes y
+            } else {
+                xParent = y.parent;
+                root = transplant(root, y, y.right);
+                y.right = z.right;
+                y.right.parent = y;
+            }
+            root = transplant(root, z, y);
+            y.left = z.left;
+            y.left.parent = y;
+            setColor(y, z.red, sink);        // y takes z's colour
+        }
+
+        if (yWasBlack) {
+            root = deleteFixup(root, x, xParent, sink);
+        }
+        z.parent = null;
+        z.left = null;
+        z.right = null;
+        return root;
+    }
+
+    private static <K, V> TreeNode<K, V> transplant(TreeNode<K, V> root, TreeNode<K, V> u, TreeNode<K, V> v) {
+        if (u.parent == null) root = v;
+        else if (u == u.parent.left) u.parent.left = v;
+        else u.parent.right = v;
+        if (v != null) v.parent = u.parent;
+        return root;
+    }
+
+    private static <K, V> TreeNode<K, V> minimum(TreeNode<K, V> n) {
+        while (n.left != null) n = n.left;
+        return n;
+    }
+
+    // Restore the black-height after removing a black node. x is the (possibly
+    // null) node that now carries an extra black; xParent is its parent. When x
+    // is null the sibling is guaranteed non-null (removing a black means the
+    // sibling subtree has black-height >= 1), so `x == xParent.left` is unambiguous.
+    private static <K, V> TreeNode<K, V> deleteFixup(
+            TreeNode<K, V> root, TreeNode<K, V> x, TreeNode<K, V> xParent, TreeEventSink sink) {
+        while (x != root && (x == null || !x.red)) {
+            if (x == xParent.left) {
+                TreeNode<K, V> w = xParent.right;                 // sibling
+                if (w != null && w.red) {                         // case 1
+                    setColor(w, false, sink);
+                    setColor(xParent, true, sink);
+                    root = rotateLeft(root, xParent, sink);
+                    w = xParent.right;
+                }
+                if (w == null
+                        || ((w.left == null || !w.left.red) && (w.right == null || !w.right.red))) { // case 2
+                    if (w != null) setColor(w, true, sink);
+                    x = xParent;
+                    xParent = x.parent;
+                } else {
+                    if (w.right == null || !w.right.red) {        // case 3
+                        if (w.left != null) setColor(w.left, false, sink);
+                        setColor(w, true, sink);
+                        root = rotateRight(root, w, sink);
+                        w = xParent.right;
+                    }
+                    setColor(w, xParent.red, sink);               // case 4
+                    setColor(xParent, false, sink);
+                    if (w.right != null) setColor(w.right, false, sink);
+                    root = rotateLeft(root, xParent, sink);
+                    x = root;
+                    xParent = null;
+                }
+            } else {                                              // mirror image
+                TreeNode<K, V> w = xParent.left;
+                if (w != null && w.red) {
+                    setColor(w, false, sink);
+                    setColor(xParent, true, sink);
+                    root = rotateRight(root, xParent, sink);
+                    w = xParent.left;
+                }
+                if (w == null
+                        || ((w.right == null || !w.right.red) && (w.left == null || !w.left.red))) {
+                    if (w != null) setColor(w, true, sink);
+                    x = xParent;
+                    xParent = x.parent;
+                } else {
+                    if (w.left == null || !w.left.red) {
+                        if (w.right != null) setColor(w.right, false, sink);
+                        setColor(w, true, sink);
+                        root = rotateLeft(root, w, sink);
+                        w = xParent.left;
+                    }
+                    setColor(w, xParent.red, sink);
+                    setColor(xParent, false, sink);
+                    if (w.left != null) setColor(w.left, false, sink);
+                    root = rotateRight(root, xParent, sink);
+                    x = root;
+                    xParent = null;
+                }
+            }
+        }
+        if (x != null) setColor(x, false, sink);
+        return root;
+    }
 }
