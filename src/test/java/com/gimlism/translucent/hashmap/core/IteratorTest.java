@@ -33,4 +33,14 @@ class IteratorTest {
         map.put(99, 99); // structural change
         assertThrows(ConcurrentModificationException.class, it::next);
     }
+
+    @Test
+    void resizeDuringIterationThrows() {
+        var map = new TeachingHashMap<Integer, Integer>();
+        for (int k = 0; k < 5; k++) map.put(k, k);
+        Iterator<Map.Entry<Integer, Integer>> it = map.entrySet().iterator();
+        it.next();
+        map.forceResize(); // rehash relocates every entry; the live iterator must fail fast
+        assertThrows(ConcurrentModificationException.class, it::next);
+    }
 }

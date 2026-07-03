@@ -92,6 +92,12 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         if (initialCapacity < 1) throw new IllegalArgumentException("initialCapacity < 1");
         if (loadFactor <= 0 || Float.isNaN(loadFactor))
             throw new IllegalArgumentException("loadFactor <= 0");
+        // A "tree" needs at least two nodes; treeifyThreshold == 1 would treeify every
+        // put into an empty bucket, making a degenerate 1-node tree per entry.
+        if (treeifyThreshold < 2)
+            throw new IllegalArgumentException("treeifyThreshold must be >= 2");
+        if (untreeifyThreshold < 0)
+            throw new IllegalArgumentException("untreeifyThreshold must be >= 0");
         if (untreeifyThreshold >= treeifyThreshold)
             throw new IllegalArgumentException("untreeifyThreshold must be < treeifyThreshold");
         int cap = tableSizeFor(initialCapacity);
@@ -211,6 +217,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         }
         table = newTab;
         threshold = (int) (newCap * loadFactor);
+        modCount++; // a rehash relocates every entry: fail-fast any live iterator
         emit(new Resize(oldCap, newCap, before, snapshot()));
     }
 
