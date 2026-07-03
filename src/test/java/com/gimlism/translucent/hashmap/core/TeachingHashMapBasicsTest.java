@@ -3,6 +3,7 @@ package com.gimlism.translucent.hashmap.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,27 @@ class TeachingHashMapBasicsTest {
         assertEquals("nullkey", map.get(null));
         assertNull(map.get("x"));
         assertTrue(map.containsKey("x"));
+    }
+
+    @Test
+    void constructorRejectsDegenerateThresholds() {
+        // treeifyThreshold < 2 would make a 1-node "tree" out of every put
+        assertThrows(IllegalArgumentException.class,
+            () -> new TeachingHashMap<Integer, Integer>(8, 0.75f, 1, 0, 8));
+        // negative untreeifyThreshold is nonsensical
+        assertThrows(IllegalArgumentException.class,
+            () -> new TeachingHashMap<Integer, Integer>(8, 0.75f, 4, -1, 8));
+        // untreeifyThreshold must stay below treeifyThreshold (pre-existing rule)
+        assertThrows(IllegalArgumentException.class,
+            () -> new TeachingHashMap<Integer, Integer>(8, 0.75f, 4, 4, 8));
+    }
+
+    @Test
+    void constructorAcceptsMinimalValidThresholds() {
+        // the boundary case: treeifyThreshold == 2, untreeifyThreshold == 0
+        var map = new TeachingHashMap<Integer, Integer>(8, 0.75f, 2, 0, 8);
+        map.put(1, 1);
+        assertEquals(1, map.get(1));
     }
 
     @Test

@@ -28,4 +28,21 @@ class PaletteTest {
         // tests run without a TTY (System.console() == null), so auto() must be PLAIN
         assertEquals(Palette.Mode.PLAIN, Palette.auto().mode());
     }
+
+    @Test
+    void decideModeAnsiOnlyWhenConsoleIsARealTerminal() {
+        assertEquals(Palette.Mode.ANSI, Palette.decideMode(null, true, true));
+        // JDK 22+: System.console() is non-null even when stdout is redirected;
+        // isTerminal() is false there, so we must stay PLAIN.
+        assertEquals(Palette.Mode.PLAIN, Palette.decideMode(null, true, false));
+        assertEquals(Palette.Mode.PLAIN, Palette.decideMode(null, false, false));
+    }
+
+    @Test
+    void decideModeHonoursNoColor() {
+        // https://no-color.org : any non-empty value disables colour, even on a terminal
+        assertEquals(Palette.Mode.PLAIN, Palette.decideMode("1", true, true));
+        // an empty value counts as "not set", so colour stays enabled on a terminal
+        assertEquals(Palette.Mode.ANSI, Palette.decideMode("", true, true));
+    }
 }
