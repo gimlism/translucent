@@ -37,16 +37,19 @@ class TreeListLinkTest {
     @Test
     void resizeSplitPreservesConsistentDoublyLinkedList() {
         var map = new TeachingHashMap<Integer, String>(8, 100.0f, 4, 2, 8);
-        // keys 0,8,16,24 -> bucket 0; after resize to 16: 0,16 -> bucket 0, 8,24 -> bucket 8
-        for (int k : new int[]{0, 8, 16, 24}) map.put(k, "v" + k);
+        // 8 keys all land in bucket 0; after resize to 16 each half has 4 nodes
+        // (> untreeifyThreshold 2), so both halves stay trees and their doubly-linked
+        // lists must remain consistent after the split.
+        for (int k : new int[]{0, 8, 16, 24, 32, 40, 48, 56}) map.put(k, "v" + k);
         assertTrue(map.isTreeBin(0));
         map.forceResize();
-        // both halves have 2 nodes (<= untreeifyThreshold is not yet wired; still trees here in Task 1)
-        // verify whichever bins remain trees are doubly-linked-consistent
+        int treeBinsChecked = 0;
         for (int i = 0; i < map.table.length; i++) {
             if (map.isTreeBin(i)) {
                 assertDoublyLinked((TreeNode<Integer, String>) map.table[i]);
+                treeBinsChecked++;
             }
         }
+        assertEquals(2, treeBinsChecked, "both 4-node halves must remain trees and be checked");
     }
 }

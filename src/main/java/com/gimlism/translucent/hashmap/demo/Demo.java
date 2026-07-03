@@ -20,7 +20,7 @@ public class Demo {
         }
 
         out.println("== removing colliding keys from bucket 0 until it untreeifies back to a chain ==");
-        for (int k : new int[]{0, 16, 32}) { // shrink bucket 0 from 4 nodes to 1, triggering untreeify
+        for (int k : new int[]{0, 16, 32}) { // 4->3->2: untreeify fires on removing 16 (<= untreeifyThreshold); 32 then hits the chain
             map.remove(k);
         }
     }
