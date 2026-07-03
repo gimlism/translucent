@@ -53,14 +53,18 @@ public final class Palette {
      * (added in JDK 22, where {@link System#console()} is non-null even under
      * redirection) reflectively, since this module compiles against release 21; on
      * JDK 21 a non-null console already implies a terminal.
+     *
+     * <p>A missing method means JDK 21, so we keep the pre-22 semantics (terminal).
+     * Any other reflective or security failure means we cannot confirm a terminal,
+     * so we fail closed to avoid leaking ANSI escapes into redirected output.
      */
     private static boolean isTerminal(Console console) {
         try {
             return (Boolean) Console.class.getMethod("isTerminal").invoke(console);
         } catch (NoSuchMethodException e) {
             return true; // JDK 21: no isTerminal(); a non-null console is a terminal
-        } catch (ReflectiveOperationException e) {
-            return true; // unexpected — fall back to the pre-22 behaviour
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return false; // JDK 22+ reflective/security failure: fail closed (no ANSI)
         }
     }
 }
