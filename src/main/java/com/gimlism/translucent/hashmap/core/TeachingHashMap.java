@@ -190,8 +190,9 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
      * order via next) into the low bucket {@code j} and high bucket
      * {@code j + oldCap}, then rebuild each non-empty half's red-black tree.
      * Rebuild is silent (TreeEventSink.NONE) because the table is mid-swap here;
-     * the Resize before/after snapshots convey the change. Small halves remain
-     * trees (untreeify is Slice 3).
+     * the Resize before/after snapshots convey the change. A half with
+     * {@code <= untreeifyThreshold} nodes is untreeified into a plain chain;
+     * larger halves are rebuilt as trees.
      */
     private void splitTreeBin(Node<K, V>[] newTab, int j, TreeNode<K, V> head, int oldCap) {
         TreeNode<K, V> loHead = null, loTail = null, hiHead = null, hiTail = null;
@@ -389,8 +390,8 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
                 table[i] = untreeify(newHead); // small: convert survivors to a chain
                 emit(new Untreeify(i, snapshot()));
             } else {
-                TreeNode.deleteFromTree(p.root(), p, sinkFor(i)); // RB-delete; keep survivor head
-                table[i] = newHead;
+                table[i] = newHead; // set the survivor head first so fixup snapshots read a survivor's root
+                TreeNode.deleteFromTree(p.root(), p, sinkFor(i));
             }
             p.next = null;
             p.prev = null;

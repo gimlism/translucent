@@ -2,6 +2,7 @@ package com.gimlism.translucent.hashmap.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,6 +11,7 @@ import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.Recolor;
 import com.gimlism.translucent.hashmap.events.Remove;
 import com.gimlism.translucent.hashmap.events.Rotation;
+import com.gimlism.translucent.hashmap.events.TreeSnapshot;
 import com.gimlism.translucent.hashmap.events.Untreeify;
 import java.util.Iterator;
 import java.util.Map;
@@ -97,6 +99,27 @@ class TreeRemoveTest {
         it.remove(); // deletes a tree-bin entry (previously threw)
         assertEquals(7, map.size());
         assertNull(map.get(first.getKey()));
+    }
+
+    @Test
+    void rbDeleteOfRootHeadFramesAreRootedAtSurvivor() {
+        // insertion order makes the treeify root (16) also the list head; then delete it.
+        // 3 survivors > untreeifyThreshold(2) => RB-delete path with fixup events.
+        var map = new TeachingHashMap<Integer, String>(8, 100.0f, 4, 2, 8);
+        for (int k : new int[]{16, 8, 24, 0}) map.put(k, "v" + k);
+        var rec = new com.gimlism.translucent.hashmap.consumer.RecordingListener();
+        map.addListener(rec);
+        map.remove(16);
+        boolean sawBalancing = false;
+        for (MapEvent e : rec.events()) {
+            if (e instanceof Rotation || e instanceof Recolor || e instanceof Remove) {
+                TreeSnapshot tree = (TreeSnapshot) e.after().buckets().get(0);
+                assertNotEquals(16, tree.root().key(),
+                    "delete frame must be rooted at a survivor, not the detached deleted node");
+                if (e instanceof Rotation || e instanceof Recolor) sawBalancing = true;
+            }
+        }
+        assertTrue(sawBalancing, "expected balancing events during a root RB-delete");
     }
 
     @Test
