@@ -1,12 +1,22 @@
 package com.gimlism.translucent.hashmap.viz;
 
+import com.gimlism.translucent.hashmap.consumer.ConsoleEventLogger;
 import com.gimlism.translucent.hashmap.events.BucketSnapshot;
 import com.gimlism.translucent.hashmap.events.ChainSnapshot;
+import com.gimlism.translucent.hashmap.events.Collision;
 import com.gimlism.translucent.hashmap.events.EmptyBucket;
 import com.gimlism.translucent.hashmap.events.EntrySnapshot;
+import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.MapSnapshot;
+import com.gimlism.translucent.hashmap.events.Put;
+import com.gimlism.translucent.hashmap.events.Recolor;
+import com.gimlism.translucent.hashmap.events.Remove;
+import com.gimlism.translucent.hashmap.events.Resize;
+import com.gimlism.translucent.hashmap.events.Rotation;
 import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
 import com.gimlism.translucent.hashmap.events.TreeSnapshot;
+import com.gimlism.translucent.hashmap.events.Treeify;
+import com.gimlism.translucent.hashmap.events.Untreeify;
 import java.util.List;
 import java.util.StringJoiner;
 
@@ -64,6 +74,25 @@ public final class AsciiRenderer {
                 }
                 yield sb.toString();
             }
+        };
+    }
+
+    /** The event's one-line label (from ConsoleEventLogger) above the resulting map. */
+    public String renderEvent(MapEvent e) {
+        return ConsoleEventLogger.format(e) + "\n" + renderMap(e.after(), affectedBucket(e));
+    }
+
+    /** The bucket an event touched, or −1 for a whole-table Resize. */
+    public static int affectedBucket(MapEvent e) {
+        return switch (e) {
+            case Put p -> p.bucketIndex();
+            case Remove r -> r.bucketIndex();
+            case Collision c -> c.bucketIndex();
+            case Treeify t -> t.bucketIndex();
+            case Untreeify u -> u.bucketIndex();
+            case Rotation ro -> ro.bucketIndex();
+            case Recolor rc -> rc.bucketIndex();
+            case Resize rs -> -1;
         };
     }
 }
