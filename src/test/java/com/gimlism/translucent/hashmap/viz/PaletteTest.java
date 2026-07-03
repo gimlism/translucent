@@ -13,13 +13,13 @@ class PaletteTest {
         var p = new Palette(Palette.Mode.PLAIN);
         assertEquals("16(B)", p.node(16, Color.BLACK));
         assertEquals("8(R)", p.node(8, Color.RED));
-        assertFalse(p.node(8, Color.RED).contains(""), "plain mode has no ANSI escapes");
+        assertFalse(p.node(8, Color.RED).contains("\u001b"), "plain mode has no ANSI escapes");
     }
 
     @Test
     void ansiModeWrapsRedAndLeavesBlackPlain() {
         var p = new Palette(Palette.Mode.ANSI);
-        assertEquals("[31m8[0m", p.node(8, Color.RED));
+        assertEquals("\u001b[31m8\u001b[0m", p.node(8, Color.RED));
         assertEquals("16", p.node(16, Color.BLACK));
     }
 

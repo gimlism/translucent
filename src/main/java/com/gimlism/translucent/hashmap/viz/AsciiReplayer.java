@@ -3,6 +3,7 @@ package com.gimlism.translucent.hashmap.viz;
 import com.gimlism.translucent.hashmap.events.MapEvent;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Scanner;
 
@@ -22,7 +23,7 @@ public final class AsciiReplayer {
             out.println("(no events to replay)");
             return;
         }
-        Scanner scanner = new Scanner(in);
+        Scanner scanner = new Scanner(in, StandardCharsets.UTF_8);
         int i = 0;
         while (true) {
             printFrame(out, i);

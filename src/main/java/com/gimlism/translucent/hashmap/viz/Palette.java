@@ -6,8 +6,8 @@ import com.gimlism.translucent.hashmap.events.Color;
 public final class Palette {
     public enum Mode { PLAIN, ANSI }
 
-    private static final String RED = "[31m";
-    private static final String RESET = "[0m";
+    private static final String RED = "\u001b[31m";
+    private static final String RESET = "\u001b[0m";
 
     private final Mode mode;
 
