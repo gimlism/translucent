@@ -38,8 +38,13 @@ import java.util.Set;
  * <p><b>Known limitation (this slice):</b> mutating a value via
  * {@link Map.Entry#setValue(Object)} on an entry obtained from {@link #entrySet()},
  * and the inherited {@link #replaceAll(java.util.function.BiFunction)} (which uses
- * {@code setValue} internally), currently do NOT emit events. This will be addressed
- * in a later slice when entry views are wrapped to route through the map's mutators.
+ * {@code setValue} internally), currently do NOT emit events. Moreover, treeify and
+ * untreeify <em>copy</em> a bucket's nodes into fresh {@code TreeNode}/{@code Node}
+ * instances, so an entry captured before such a conversion aliases a now-detached
+ * node: a later {@code setValue} on it is silently <em>lost</em> (the live map is
+ * unchanged and no exception is thrown). Iterate-then-mutate in a single pass, or
+ * write through {@link #put}, to be safe. This will be addressed in a later slice
+ * when entry views are wrapped to route through the map's mutators.
  */
 public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
 
