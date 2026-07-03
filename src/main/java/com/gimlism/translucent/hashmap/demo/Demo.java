@@ -15,13 +15,13 @@ public class Demo {
         map.addListener(new ConsoleEventLogger(out));
 
         out.println("== inserting keys that collide in bucket 0 until it treeifies ==");
-        for (int k : new int[]{0, 8, 16, 24}) { // 4th key hits treeifyThreshold
+        for (int k : new int[]{0, 8, 16, 24, 32, 40, 48, 56}) { // 4th key hits treeifyThreshold; 8 keys → resize at 7th
             map.put(k, "v" + k);
         }
 
-        out.println("== inserting more keys until the table resizes ==");
-        for (int k = 1; k <= 7; k++) {
-            map.put(k, "v" + k);
+        out.println("== removing colliding keys from bucket 0 until it untreeifies back to a chain ==");
+        for (int k : new int[]{0, 16, 32}) { // 4->3->2: untreeify fires on removing 16 (<= untreeifyThreshold); 32 then hits the chain
+            map.remove(k);
         }
     }
 }

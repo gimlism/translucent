@@ -18,6 +18,7 @@ import com.gimlism.translucent.hashmap.events.Rotation;
 import com.gimlism.translucent.hashmap.events.Treeify;
 import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
 import com.gimlism.translucent.hashmap.events.TreeSnapshot;
+import com.gimlism.translucent.hashmap.events.Untreeify;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -189,8 +190,9 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
      * order via next) into the low bucket {@code j} and high bucket
      * {@code j + oldCap}, then rebuild each non-empty half's red-black tree.
      * Rebuild is silent (TreeEventSink.NONE) because the table is mid-swap here;
-     * the Resize before/after snapshots convey the change. Small halves remain
-     * trees (untreeify is Slice 3).
+     * the Resize before/after snapshots convey the change. A half with
+     * {@code <= untreeifyThreshold} nodes is untreeified into a plain chain;
+     * larger halves are rebuilt as trees.
      */
     private void splitTreeBin(Node<K, V>[] newTab, int j, TreeNode<K, V> head, int oldCap) {
         TreeNode<K, V> loHead = null, loTail = null, hiHead = null, hiTail = null;
@@ -202,22 +204,31 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             t.left = null;
             t.right = null;
             t.next = null;
+            t.prev = null;
             if ((t.hash & oldCap) == 0) {
-                if (loTail == null) loHead = t; else loTail.next = t;
+                if (loTail == null) { loHead = t; } else { loTail.next = t; t.prev = loTail; }
                 loTail = t;
             } else {
-                if (hiTail == null) hiHead = t; else hiTail.next = t;
+                if (hiTail == null) { hiHead = t; } else { hiTail.next = t; t.prev = hiTail; }
                 hiTail = t;
             }
             e = next;
         }
         if (loHead != null) {
-            TreeNode.build(loHead, TreeEventSink.NONE);
-            newTab[j] = loHead;
+            if (countAtMost(loHead, untreeifyThreshold)) {
+                newTab[j] = untreeify(loHead);
+            } else {
+                TreeNode.build(loHead, TreeEventSink.NONE);
+                newTab[j] = loHead;
+            }
         }
         if (hiHead != null) {
-            TreeNode.build(hiHead, TreeEventSink.NONE);
-            newTab[j + oldCap] = hiHead;
+            if (countAtMost(hiHead, untreeifyThreshold)) {
+                newTab[j + oldCap] = untreeify(hiHead);
+            } else {
+                TreeNode.build(hiHead, TreeEventSink.NONE);
+                newTab[j + oldCap] = hiHead;
+            }
         }
     }
 
@@ -265,9 +276,11 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
                 return old;
             }
             TreeNode<K, V> node = new TreeNode<>(h, key, value, null, nextSeq++);
-            Node<K, V> tail = head;
-            while (tail.next != null) tail = tail.next;
-            tail.next = node; // preserve insertion order in the next thread
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> tail = (TreeNode<K, V>) head;
+            while (tail.next != null) tail = (TreeNode<K, V>) tail.next;
+            tail.next = node;
+            node.prev = tail;
             size++;
             modCount++;
             TreeNode.insert(root, node, sinkFor(i)); // balancing events now see the true size
@@ -320,11 +333,35 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         TreeNode<K, V> prev = null;
         for (Node<K, V> e = table[i]; e != null; e = e.next) {
             TreeNode<K, V> t = new TreeNode<>(e.hash, e.key, e.value, null, nextSeq++);
+            t.prev = prev;
             if (prev == null) first = t; else prev.next = t;
             prev = t;
         }
         table[i] = first;
         TreeNode.build(first, sinkFor(i)); // assembles the tree, emitting Rotation/Recolor
+    }
+
+    /** True if the chain/list from {@code head} has at most {@code max} nodes. */
+    private boolean countAtMost(Node<K, V> head, int max) {
+        int c = 0;
+        for (Node<K, V> e = head; e != null; e = e.next) {
+            if (++c > max) return false;
+        }
+        return true;
+    }
+
+    /** Convert a tree bin's surviving nodes (walked via next) into a plain-Node chain. */
+    private Node<K, V> untreeify(TreeNode<K, V> first) {
+        Node<K, V> head = null, tail = null;
+        for (TreeNode<K, V> t = first; t != null; ) {
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> next = (TreeNode<K, V>) t.next;
+            Node<K, V> plain = new Node<>(t.hash, t.key, t.value, null);
+            if (tail == null) head = plain; else tail.next = plain;
+            tail = plain;
+            t = next;
+        }
+        return head;
     }
 
     @Override
@@ -334,10 +371,32 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         Node<K, V> head = table[i];
         if (head instanceof TreeNode) {
             @SuppressWarnings("unchecked")
-            TreeNode<K, V> t = (TreeNode<K, V>) head;
-            if (TreeNode.find(t.root(), h, key) == null) return null; // absent: no-op
-            throw new UnsupportedOperationException(
-                "remove from a tree bin is added in Slice 3");
+            TreeNode<K, V> treeHead = (TreeNode<K, V>) head;
+            TreeNode<K, V> p = TreeNode.find(treeHead.root(), h, key);
+            if (p == null) return null;
+            V old = p.value;
+            size--;
+            modCount++;
+            // unlink p from the doubly-linked list (O(1) via prev)
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> pNext = (TreeNode<K, V>) p.next;
+            TreeNode<K, V> pPrev = p.prev;
+            if (pPrev != null) pPrev.next = pNext;
+            if (pNext != null) pNext.prev = pPrev;
+            TreeNode<K, V> newHead = (pPrev == null) ? pNext : treeHead;
+            if (newHead == null) {
+                table[i] = null; // bin now empty
+            } else if (countAtMost(newHead, untreeifyThreshold)) {
+                table[i] = untreeify(newHead); // small: convert survivors to a chain
+                emit(new Untreeify(i, snapshot()));
+            } else {
+                table[i] = newHead; // set the survivor head first so fixup snapshots read a survivor's root
+                TreeNode.deleteFromTree(p.root(), p, sinkFor(i));
+            }
+            p.next = null;
+            p.prev = null;
+            emit(new Remove(key, old, i, snapshot()));
+            return old;
         }
         Node<K, V> prev = null;
         for (Node<K, V> e = head; e != null; prev = e, e = e.next) {
