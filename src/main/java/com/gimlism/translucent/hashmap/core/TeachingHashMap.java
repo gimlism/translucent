@@ -202,11 +202,12 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             t.left = null;
             t.right = null;
             t.next = null;
+            t.prev = null;
             if ((t.hash & oldCap) == 0) {
-                if (loTail == null) loHead = t; else loTail.next = t;
+                if (loTail == null) { loHead = t; } else { loTail.next = t; t.prev = loTail; }
                 loTail = t;
             } else {
-                if (hiTail == null) hiHead = t; else hiTail.next = t;
+                if (hiTail == null) { hiHead = t; } else { hiTail.next = t; t.prev = hiTail; }
                 hiTail = t;
             }
             e = next;
@@ -265,9 +266,11 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
                 return old;
             }
             TreeNode<K, V> node = new TreeNode<>(h, key, value, null, nextSeq++);
-            Node<K, V> tail = head;
-            while (tail.next != null) tail = tail.next;
-            tail.next = node; // preserve insertion order in the next thread
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> tail = (TreeNode<K, V>) head;
+            while (tail.next != null) tail = (TreeNode<K, V>) tail.next;
+            tail.next = node;
+            node.prev = tail;
             size++;
             modCount++;
             TreeNode.insert(root, node, sinkFor(i)); // balancing events now see the true size
@@ -320,6 +323,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         TreeNode<K, V> prev = null;
         for (Node<K, V> e = table[i]; e != null; e = e.next) {
             TreeNode<K, V> t = new TreeNode<>(e.hash, e.key, e.value, null, nextSeq++);
+            t.prev = prev;
             if (prev == null) first = t; else prev.next = t;
             prev = t;
         }

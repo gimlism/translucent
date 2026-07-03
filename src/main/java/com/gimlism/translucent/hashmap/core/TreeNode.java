@@ -15,6 +15,7 @@ class TreeNode<K, V> extends Node<K, V> {
     TreeNode<K, V> parent;
     TreeNode<K, V> left;
     TreeNode<K, V> right;
+    TreeNode<K, V> prev;
     boolean red;
     final long seq;
 
