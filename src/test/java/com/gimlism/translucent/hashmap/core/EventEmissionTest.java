@@ -3,6 +3,7 @@ package com.gimlism.translucent.hashmap.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.hashmap.consumer.RecordingListener;
@@ -12,6 +13,7 @@ import com.gimlism.translucent.hashmap.events.MapEventListener;
 import com.gimlism.translucent.hashmap.events.Put;
 import com.gimlism.translucent.hashmap.events.Remove;
 import com.gimlism.translucent.hashmap.events.Resize;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -123,5 +125,34 @@ class EventEmissionTest {
         map.put(1, 1); // selfRemoving unregisters mid-dispatch; must not throw
         map.put(2, 2);
         assertEquals(2, survivor.events().size());
+    }
+
+    @Test
+    void listenerMayReadMapDuringDispatch() {
+        var map = new TeachingHashMap<Integer, Integer>();
+        int[] observedSize = {-1};
+        map.addListener(e -> observedSize[0] = map.size()); // read-only: allowed
+        map.put(1, 1);
+        assertEquals(1, observedSize[0]);
+    }
+
+    @Test
+    void listenerMutatingMapDuringDispatchThrows() {
+        var map = new TeachingHashMap<Integer, Integer>();
+        map.addListener(e -> map.put(99, 99)); // re-entrant put: forbidden
+        assertThrows(ConcurrentModificationException.class, () -> map.put(1, 1));
+    }
+
+    @Test
+    void mapRemainsUsableAfterRejectedReentrantMutation() {
+        var map = new TeachingHashMap<Integer, Integer>();
+        MapEventListener bad = e -> map.remove(1); // re-entrant remove: forbidden
+        map.addListener(bad);
+        assertThrows(ConcurrentModificationException.class, () -> map.put(1, 1));
+        // the guard must have been cleared by the finally block, so the map still works
+        map.removeListener(bad);
+        assertEquals(1, map.get(1)); // the outer put itself completed before dispatch failed
+        map.put(2, 2);
+        assertEquals(2, map.size());
     }
 }

@@ -38,8 +38,13 @@ import java.util.Set;
  * <p><b>Known limitation (this slice):</b> mutating a value via
  * {@link Map.Entry#setValue(Object)} on an entry obtained from {@link #entrySet()},
  * and the inherited {@link #replaceAll(java.util.function.BiFunction)} (which uses
- * {@code setValue} internally), currently do NOT emit events. This will be addressed
- * in a later slice when entry views are wrapped to route through the map's mutators.
+ * {@code setValue} internally), currently do NOT emit events. Moreover, treeify and
+ * untreeify <em>copy</em> a bucket's nodes into fresh {@code TreeNode}/{@code Node}
+ * instances, so an entry captured before such a conversion aliases a now-detached
+ * node: a later {@code setValue} on it is silently <em>lost</em> (the live map is
+ * unchanged and no exception is thrown). Iterate-then-mutate in a single pass, or
+ * write through {@link #put}, to be safe. This will be addressed in a later slice
+ * when entry views are wrapped to route through the map's mutators.
  */
 public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
 
@@ -64,6 +69,15 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     long nextSeq;
 
     private final List<MapEventListener> listeners = new ArrayList<>();
+
+    /**
+     * True while a public structural mutation ({@link #put}/{@link #remove}) is in
+     * progress. Events are dispatched synchronously, sometimes mid-operation (e.g.
+     * while a bin is being treeified or a red-black delete is rebalancing), so a
+     * listener that mutates the map would observe — and corrupt — a half-built
+     * structure. This flag blocks such re-entrant mutation; reads are always safe.
+     */
+    private boolean mutating;
 
     public TeachingHashMap() {
         this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR,
@@ -139,6 +153,21 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         // Iterate a copy so a listener may add/remove listeners during dispatch
         // without triggering a ConcurrentModificationException.
         for (MapEventListener listener : List.copyOf(listeners)) listener.onEvent(event);
+    }
+
+    /**
+     * Marks the start of a public structural mutation, rejecting a re-entrant one.
+     * A listener invoked from {@link #emit} that calls back into {@link #put} or
+     * {@link #remove} would mutate a map that is only partway through an operation
+     * (mid-treeify, mid-rebalance), so we fail fast instead of corrupting it.
+     */
+    private void beginMutation() {
+        if (mutating) {
+            throw new ConcurrentModificationException(
+                "map mutated from within an event listener; listeners may read the map "
+                + "but must not put/remove during event dispatch");
+        }
+        mutating = true;
     }
 
     /** Test hook: force a rehash to the next capacity. */
@@ -260,6 +289,15 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
 
     @Override
     public V put(K key, V value) {
+        beginMutation();
+        try {
+            return doPut(key, value);
+        } finally {
+            mutating = false;
+        }
+    }
+
+    private V doPut(K key, V value) {
         int h = hash(key);
         int i = indexFor(h, table.length);
         Node<K, V> head = table[i];
@@ -366,6 +404,15 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
 
     @Override
     public V remove(Object key) {
+        beginMutation();
+        try {
+            return doRemove(key);
+        } finally {
+            mutating = false;
+        }
+    }
+
+    private V doRemove(Object key) {
         int h = hash(key);
         int i = indexFor(h, table.length);
         Node<K, V> head = table[i];
