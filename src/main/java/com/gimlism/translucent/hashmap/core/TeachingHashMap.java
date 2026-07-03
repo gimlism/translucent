@@ -18,6 +18,7 @@ import com.gimlism.translucent.hashmap.events.Rotation;
 import com.gimlism.translucent.hashmap.events.Treeify;
 import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
 import com.gimlism.translucent.hashmap.events.TreeSnapshot;
+import com.gimlism.translucent.hashmap.events.Untreeify;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -331,6 +332,29 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         TreeNode.build(first, sinkFor(i)); // assembles the tree, emitting Rotation/Recolor
     }
 
+    /** True if the chain/list from {@code head} has at most {@code max} nodes. */
+    private boolean countAtMost(Node<K, V> head, int max) {
+        int c = 0;
+        for (Node<K, V> e = head; e != null; e = e.next) {
+            if (++c > max) return false;
+        }
+        return true;
+    }
+
+    /** Convert a tree bin's surviving nodes (walked via next) into a plain-Node chain. */
+    private Node<K, V> untreeify(TreeNode<K, V> first) {
+        Node<K, V> head = null, tail = null;
+        for (TreeNode<K, V> t = first; t != null; ) {
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> next = (TreeNode<K, V>) t.next;
+            Node<K, V> plain = new Node<>(t.hash, t.key, t.value, null);
+            if (tail == null) head = plain; else tail.next = plain;
+            tail = plain;
+            t = next;
+        }
+        return head;
+    }
+
     @Override
     public V remove(Object key) {
         int h = hash(key);
@@ -338,10 +362,32 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         Node<K, V> head = table[i];
         if (head instanceof TreeNode) {
             @SuppressWarnings("unchecked")
-            TreeNode<K, V> t = (TreeNode<K, V>) head;
-            if (TreeNode.find(t.root(), h, key) == null) return null; // absent: no-op
-            throw new UnsupportedOperationException(
-                "remove from a tree bin is added in Slice 3");
+            TreeNode<K, V> treeHead = (TreeNode<K, V>) head;
+            TreeNode<K, V> p = TreeNode.find(treeHead.root(), h, key);
+            if (p == null) return null;
+            V old = p.value;
+            size--;
+            modCount++;
+            // unlink p from the doubly-linked list (O(1) via prev)
+            @SuppressWarnings("unchecked")
+            TreeNode<K, V> pNext = (TreeNode<K, V>) p.next;
+            TreeNode<K, V> pPrev = p.prev;
+            if (pPrev != null) pPrev.next = pNext;
+            if (pNext != null) pNext.prev = pPrev;
+            TreeNode<K, V> newHead = (pPrev == null) ? pNext : treeHead;
+            if (newHead == null) {
+                table[i] = null; // bin now empty
+            } else if (countAtMost(newHead, untreeifyThreshold)) {
+                table[i] = untreeify(newHead); // small: convert survivors to a chain
+                emit(new Untreeify(i, snapshot()));
+            } else {
+                TreeNode.deleteFromTree(p.root(), p, sinkFor(i)); // RB-delete; keep survivor head
+                table[i] = newHead;
+            }
+            p.next = null;
+            p.prev = null;
+            emit(new Remove(key, old, i, snapshot()));
+            return old;
         }
         Node<K, V> prev = null;
         for (Node<K, V> e = head; e != null; prev = e, e = e.next) {
