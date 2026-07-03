@@ -4,10 +4,13 @@ import com.gimlism.translucent.arraylist.events.Append;
 import com.gimlism.translucent.arraylist.events.EmptySlot;
 import com.gimlism.translucent.arraylist.events.FilledSlot;
 import com.gimlism.translucent.arraylist.events.Grow;
+import com.gimlism.translucent.arraylist.events.Insert;
 import com.gimlism.translucent.arraylist.events.ListEvent;
 import com.gimlism.translucent.arraylist.events.ListEventListener;
 import com.gimlism.translucent.arraylist.events.ListSnapshot;
+import com.gimlism.translucent.arraylist.events.RemoveAt;
 import com.gimlism.translucent.arraylist.events.Set;
+import com.gimlism.translucent.arraylist.events.Shift;
 import com.gimlism.translucent.arraylist.events.SlotSnapshot;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -88,6 +91,55 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
         } finally {
             mutating = false;
         }
+    }
+
+    @Override
+    public void add(int index, E element) {
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+        beginMutation();
+        try {
+            if (index == size) {
+                appendInternal(element);                 // no shift -> Append
+            } else {
+                insertInternal(index, element);          // Shift* -> Insert
+            }
+        } finally {
+            mutating = false;
+        }
+    }
+
+    @Override
+    public E remove(int index) {
+        Objects.checkIndex(index, size);
+        beginMutation();
+        try {
+            E old = elementAt(index);
+            modCount++;
+            for (int i = index + 1; i < size; i++) {     // low -> high, slide survivors left
+                elementData[i - 1] = elementData[i];
+                emit(new Shift(i, i - 1, elementData[i - 1], snapshot()));
+            }
+            elementData[--size] = null;                  // drop size, clear the vacated tail
+            emit(new RemoveAt(index, old, snapshot()));
+            return old;
+        } finally {
+            mutating = false;
+        }
+    }
+
+    /** Insert at index &lt; size: grow if needed, slide [index,size) right one slot, place. */
+    private void insertInternal(int index, E element) {
+        ensureCapacity(size + 1);                        // may emit Grow (size still old)
+        size++;                                          // open one slot at the tail
+        modCount++;
+        for (int i = size - 2; i >= index; i--) {        // high -> low, avoid overwrite
+            elementData[i + 1] = elementData[i];
+            emit(new Shift(i, i + 1, elementData[i + 1], snapshot()));
+        }
+        elementData[index] = element;
+        emit(new Insert(element, index, snapshot()));
     }
 
     /** Append at the tail (caller holds the mutation guard). May grow first. */
