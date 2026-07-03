@@ -27,6 +27,7 @@ public final class AsciiReplayer {
         while (true) {
             printFrame(out, i);
             out.print("[Enter=next, b=back, q=quit] ");
+            out.flush(); // no trailing newline -> PrintStream won't auto-flush; make the prompt visible
             if (!scanner.hasNextLine()) break;
             String cmd = scanner.nextLine().trim();
             if (cmd.equals("q")) break;
