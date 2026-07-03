@@ -214,12 +214,20 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             e = next;
         }
         if (loHead != null) {
-            TreeNode.build(loHead, TreeEventSink.NONE);
-            newTab[j] = loHead;
+            if (countAtMost(loHead, untreeifyThreshold)) {
+                newTab[j] = untreeify(loHead);
+            } else {
+                TreeNode.build(loHead, TreeEventSink.NONE);
+                newTab[j] = loHead;
+            }
         }
         if (hiHead != null) {
-            TreeNode.build(hiHead, TreeEventSink.NONE);
-            newTab[j + oldCap] = hiHead;
+            if (countAtMost(hiHead, untreeifyThreshold)) {
+                newTab[j + oldCap] = untreeify(hiHead);
+            } else {
+                TreeNode.build(hiHead, TreeEventSink.NONE);
+                newTab[j + oldCap] = hiHead;
+            }
         }
     }
 
