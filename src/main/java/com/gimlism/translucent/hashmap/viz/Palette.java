@@ -1,6 +1,7 @@
 package com.gimlism.translucent.hashmap.viz;
 
 import com.gimlism.translucent.hashmap.events.Color;
+import java.io.Console;
 
 /** Renders a tree node's key with its red-black colour, in ANSI colour or plain text. */
 public final class Palette {
@@ -29,6 +30,37 @@ public final class Palette {
 
     /** ANSI when attached to a real terminal, PLAIN otherwise (pipes, capture, tests). */
     public static Palette auto() {
-        return new Palette(System.console() != null ? Mode.ANSI : Mode.PLAIN);
+        Console console = System.console();
+        boolean terminal = console != null && isTerminal(console);
+        return new Palette(decideMode(System.getenv("NO_COLOR"), console != null, terminal));
+    }
+
+    /**
+     * The colour decision from raw environment inputs. Package-visible for testing.
+     *
+     * @param noColorEnv     value of the {@code NO_COLOR} env var (null if unset)
+     * @param consolePresent whether {@link System#console()} returned non-null
+     * @param terminal       whether that console is a real terminal (see {@link #isTerminal})
+     */
+    static Mode decideMode(String noColorEnv, boolean consolePresent, boolean terminal) {
+        if (noColorEnv != null && !noColorEnv.isEmpty()) return Mode.PLAIN; // no-color.org
+        if (!consolePresent) return Mode.PLAIN;                             // pipe / redirect / no tty
+        return terminal ? Mode.ANSI : Mode.PLAIN;
+    }
+
+    /**
+     * Whether the console is attached to a terminal. Uses {@code Console.isTerminal()}
+     * (added in JDK 22, where {@link System#console()} is non-null even under
+     * redirection) reflectively, since this module compiles against release 21; on
+     * JDK 21 a non-null console already implies a terminal.
+     */
+    private static boolean isTerminal(Console console) {
+        try {
+            return (Boolean) Console.class.getMethod("isTerminal").invoke(console);
+        } catch (NoSuchMethodException e) {
+            return true; // JDK 21: no isTerminal(); a non-null console is a terminal
+        } catch (ReflectiveOperationException e) {
+            return true; // unexpected — fall back to the pre-22 behaviour
+        }
     }
 }
