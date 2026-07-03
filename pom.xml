@@ -31,6 +31,15 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
             </plugin>
+            <!-- `mvn exec:java` runs the live ASCII visual demo; override with -Dexec.mainClass=... -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <mainClass>com.gimlism.translucent.hashmap.demo.VizDemo</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
