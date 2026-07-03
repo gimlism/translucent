@@ -28,15 +28,25 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
     /** JDK-faithful default capacity the first add jumps to from the lazy sentinel. */
     static final int DEFAULT_CAPACITY = 10;
 
+    /** Shared empty array for no-arg (default-capacity) lists — first add jumps to DEFAULT_CAPACITY. */
+    private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};
+    /** Shared empty array for explicit zero-capacity lists — grows by the 1.5x formula. */
+    private static final Object[] EMPTY_ELEMENTDATA = {};
+
     Object[] elementData;
     private int size;
 
     private final List<ListEventListener> listeners = new ArrayList<>();
     private boolean mutating;
 
+    /** Lazy: allocates nothing until the first add, which jumps to {@link #DEFAULT_CAPACITY}. */
+    public TeachingArrayList() {
+        this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;
+    }
+
     public TeachingArrayList(int initialCapacity) {
         if (initialCapacity < 0) throw new IllegalArgumentException("initialCapacity < 0");
-        this.elementData = new Object[initialCapacity];
+        this.elementData = (initialCapacity == 0) ? EMPTY_ELEMENTDATA : new Object[initialCapacity];
     }
 
     @Override
@@ -98,8 +108,14 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
     private void grow(int minCapacity) {
         ListSnapshot before = snapshot();
         int oldCapacity = elementData.length;
-        int newCapacity = oldCapacity + Math.max(minCapacity - oldCapacity, oldCapacity >> 1);
-        elementData = Arrays.copyOf(elementData, newCapacity);
+        int newCapacity;
+        if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+            newCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);   // 0 -> 10 jump (fresh allocation)
+            elementData = new Object[newCapacity];
+        } else {
+            newCapacity = oldCapacity + Math.max(minCapacity - oldCapacity, oldCapacity >> 1);
+            elementData = Arrays.copyOf(elementData, newCapacity);
+        }
         emit(new Grow(oldCapacity, newCapacity, before, snapshot()));
     }
 
