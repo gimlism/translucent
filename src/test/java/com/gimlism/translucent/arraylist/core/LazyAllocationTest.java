@@ -60,6 +60,19 @@ class LazyAllocationTest {
     }
 
     @Test
+    void growthClampsNearMaxArraySizeAndThrowsOnOverflow() {
+        int max = Integer.MAX_VALUE - 8; // TeachingArrayList.MAX_ARRAY_SIZE
+        assertEquals(15, TeachingArrayList.newCapacity(10, 11)); // ordinary 1.5x, well below the cap
+        // 1.5x from near the cap overflows int -> clamped to MAX_ARRAY_SIZE
+        assertEquals(max, TeachingArrayList.newCapacity(max - 1, max));
+        // a requested size between MAX_ARRAY_SIZE and Integer.MAX_VALUE -> Integer.MAX_VALUE
+        assertEquals(Integer.MAX_VALUE, TeachingArrayList.newCapacity(max, Integer.MAX_VALUE));
+        // a requested size that itself overflowed int (negative) -> OutOfMemoryError, not a crash
+        org.junit.jupiter.api.Assertions.assertThrows(
+            OutOfMemoryError.class, () -> TeachingArrayList.hugeCapacity(-1));
+    }
+
+    @Test
     void explicitZeroCapacitySecondGrowUsesTheMinGrowthFloor() {
         var list = new TeachingArrayList<Integer>(0);
         var rec = new ListRecordingListener();

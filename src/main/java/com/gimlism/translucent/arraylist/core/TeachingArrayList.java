@@ -31,6 +31,14 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
     /** JDK-faithful default capacity the first add jumps to from the lazy sentinel. */
     static final int DEFAULT_CAPACITY = 10;
 
+    /**
+     * Largest array length to attempt (mirrors {@code java.util.ArrayList}). Some VMs
+     * reserve header words in an array, so {@code Integer.MAX_VALUE} can fail; growth
+     * clamps here and reports {@link OutOfMemoryError} beyond it rather than overflowing
+     * to a negative capacity.
+     */
+    static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
     /** Shared empty array for no-arg (default-capacity) lists — first add jumps to DEFAULT_CAPACITY. */
     private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};
     /** Shared empty array for explicit zero-capacity lists — grows by the 1.5x formula. */
@@ -165,10 +173,30 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
             newCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);   // 0 -> 10 jump (fresh allocation)
             elementData = new Object[newCapacity];
         } else {
-            newCapacity = oldCapacity + Math.max(minCapacity - oldCapacity, oldCapacity >> 1);
+            newCapacity = newCapacity(oldCapacity, minCapacity);
             elementData = Arrays.copyOf(elementData, newCapacity);
         }
         emit(new Grow(oldCapacity, newCapacity, before, snapshot()));
+    }
+
+    /**
+     * The 1.5× grown capacity (JDK {@code newLength} floor), clamped near the maximum
+     * array length like {@code java.util.ArrayList}. Uses {@link #MAX_ARRAY_SIZE}
+     * rather than the HashMap's power-of-two {@code MAXIMUM_CAPACITY}, because a list
+     * capacity is not a power of two. Package-private (with {@link #hugeCapacity}) so
+     * the clamp is unit-testable without a billion-element allocation.
+     */
+    static int newCapacity(int oldCapacity, int minCapacity) {
+        int newCapacity = oldCapacity + Math.max(minCapacity - oldCapacity, oldCapacity >> 1);
+        if (newCapacity < 0 || newCapacity - MAX_ARRAY_SIZE > 0) { // int-overflow-safe
+            return hugeCapacity(minCapacity);
+        }
+        return newCapacity;
+    }
+
+    static int hugeCapacity(int minCapacity) {
+        if (minCapacity < 0) throw new OutOfMemoryError(); // the requested size itself overflowed int
+        return (minCapacity > MAX_ARRAY_SIZE) ? Integer.MAX_VALUE : MAX_ARRAY_SIZE;
     }
 
     // --- event dispatch ---------------------------------------------------------
@@ -200,7 +228,7 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
     ListSnapshot snapshot() {
         List<SlotSnapshot> slots = new ArrayList<>(elementData.length);
         for (int i = 0; i < elementData.length; i++) {
-            slots.add(i < size ? new FilledSlot(elementData[i]) : new EmptySlot());
+            slots.add(i < size ? new FilledSlot(elementData[i]) : EmptySlot.INSTANCE);
         }
         return new ListSnapshot(elementData.length, size, slots);
     }
