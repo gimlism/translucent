@@ -1,7 +1,7 @@
 package com.gimlism.translucent.substrate.events;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.gimlism.translucent.arraylist.core.TeachingArrayList;
 import com.gimlism.translucent.arraylist.events.ListEvent;
@@ -35,6 +35,6 @@ class RecordingListenerTest {
     @Test
     void eventsViewIsUnmodifiable() {
         var rec = new RecordingListener<MapEvent>();
-        assertFalse(rec.events() instanceof java.util.ArrayList);
+        assertThrows(UnsupportedOperationException.class, () -> rec.events().add(null));
     }
 }
