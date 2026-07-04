@@ -1,0 +1,86 @@
+package com.gimlism.translucent.arraylist.core;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.gimlism.translucent.arraylist.consumer.ListRecordingListener;
+import com.gimlism.translucent.arraylist.events.Append;
+import com.gimlism.translucent.arraylist.events.Grow;
+import org.junit.jupiter.api.Test;
+
+class LazyAllocationTest {
+    @Test
+    void freshNoArgListAllocatesNothing() {
+        var list = new TeachingArrayList<String>();
+        assertEquals(0, list.size());
+        assertEquals(0, list.snapshot().capacity());          // nothing allocated
+        assertTrue(list.snapshot().slots().isEmpty());
+    }
+
+    @Test
+    void firstAddJumpsStraightToTen() {
+        var list = new TeachingArrayList<String>();
+        var rec = new ListRecordingListener();
+        list.addListener(rec);
+        list.add("a");
+        Grow g = assertInstanceOf(Grow.class, rec.events().get(0));
+        assertEquals(0, g.oldCapacity());
+        assertEquals(10, g.newCapacity());
+        assertEquals(0, g.before().capacity());
+        assertEquals(0, g.before().size());
+        assertEquals(10, g.after().capacity());
+        assertEquals(0, g.after().size());                    // element not placed yet
+        Append a = assertInstanceOf(Append.class, rec.events().get(1));
+        assertEquals(10, a.after().capacity());
+        assertEquals(1, a.after().size());
+    }
+
+    @Test
+    void secondGrowFollowsOneAndAHalfFromTen() {
+        var list = new TeachingArrayList<Integer>();
+        var rec = new ListRecordingListener();
+        list.addListener(rec);
+        for (int i = 0; i < 11; i++) list.add(i);             // caps 0->10, then 10->15 (size 11 <= 15)
+        var caps = rec.events().stream()
+            .filter(e -> e instanceof Grow).map(e -> ((Grow) e).newCapacity()).toList();
+        assertEquals(java.util.List.of(10, 15), caps);
+        for (int i = 0; i < 11; i++) assertEquals(i, list.get(i));
+    }
+
+    @Test
+    void explicitZeroCapacityGrowsByFormulaNotToTen() {
+        var list = new TeachingArrayList<Integer>(0);
+        var rec = new ListRecordingListener();
+        list.addListener(rec);
+        list.add(1); // explicit-zero path: 0 -> 1 (not the default-sentinel jump to 10)
+        Grow g = assertInstanceOf(Grow.class, rec.events().get(0));
+        assertEquals(0, g.oldCapacity());
+        assertEquals(1, g.newCapacity());
+    }
+
+    @Test
+    void growthClampsNearMaxArraySizeAndThrowsOnOverflow() {
+        int max = Integer.MAX_VALUE - 8; // TeachingArrayList.MAX_ARRAY_SIZE
+        assertEquals(15, TeachingArrayList.newCapacity(10, 11)); // ordinary 1.5x, well below the cap
+        // 1.5x from near the cap overflows int -> clamped to MAX_ARRAY_SIZE
+        assertEquals(max, TeachingArrayList.newCapacity(max - 1, max));
+        // a requested size between MAX_ARRAY_SIZE and Integer.MAX_VALUE -> Integer.MAX_VALUE
+        assertEquals(Integer.MAX_VALUE, TeachingArrayList.newCapacity(max, Integer.MAX_VALUE));
+        // a requested size that itself overflowed int (negative) -> OutOfMemoryError, not a crash
+        org.junit.jupiter.api.Assertions.assertThrows(
+            OutOfMemoryError.class, () -> TeachingArrayList.hugeCapacity(-1));
+    }
+
+    @Test
+    void explicitZeroCapacitySecondGrowUsesTheMinGrowthFloor() {
+        var list = new TeachingArrayList<Integer>(0);
+        var rec = new ListRecordingListener();
+        list.addListener(rec);
+        list.add(1); // 0 -> 1
+        list.add(2); // 1 -> 2: floor kicks in (1 + max(1, 1>>1=0) = 2), else capacity would stick at 1
+        var caps = rec.events().stream()
+            .filter(e -> e instanceof Grow).map(e -> ((Grow) e).newCapacity()).toList();
+        assertEquals(java.util.List.of(1, 2), caps);
+    }
+}

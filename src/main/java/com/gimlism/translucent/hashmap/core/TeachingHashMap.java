@@ -478,7 +478,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         List<BucketSnapshot> buckets = new ArrayList<>(table.length);
         for (Node<K, V> head : table) {
             if (head == null) {
-                buckets.add(new EmptyBucket());
+                buckets.add(EmptyBucket.INSTANCE);
             } else if (head instanceof TreeNode) {
                 @SuppressWarnings("unchecked")
                 TreeNode<K, V> t = (TreeNode<K, V>) head;
