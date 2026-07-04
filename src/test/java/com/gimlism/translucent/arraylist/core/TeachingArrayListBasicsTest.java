@@ -120,6 +120,29 @@ class TeachingArrayListBasicsTest {
         assertThrows(ConcurrentModificationException.class, () -> list.add("a"));
     }
 
+    @Test
+    void reentrantMutationIsRejectedFromSetInsertAndRemove() {
+        // set (non-structural but still emits): a listener re-entering must be rejected
+        var forSet = new TeachingArrayList<String>(4);
+        forSet.add("a");
+        forSet.addListener(e -> forSet.add("x"));
+        assertThrows(ConcurrentModificationException.class, () -> forSet.set(0, "b"));
+
+        // add(int, E) insert path
+        var forInsert = new TeachingArrayList<String>(4);
+        forInsert.add("a");
+        forInsert.add("b");
+        forInsert.addListener(e -> forInsert.add("x"));
+        assertThrows(ConcurrentModificationException.class, () -> forInsert.add(1, "c"));
+
+        // remove(int) path
+        var forRemove = new TeachingArrayList<String>(4);
+        forRemove.add("a");
+        forRemove.add("b");
+        forRemove.addListener(e -> forRemove.add("x"));
+        assertThrows(ConcurrentModificationException.class, () -> forRemove.remove(0));
+    }
+
     private static int indexOfFirst(List<ListEvent> events, Class<?> type) {
         for (int i = 0; i < events.size(); i++) if (type.isInstance(events.get(i))) return i;
         return -1;

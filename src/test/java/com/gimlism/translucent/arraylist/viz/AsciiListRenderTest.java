@@ -42,6 +42,15 @@ class AsciiListRenderTest {
     }
 
     @Test
+    void highlightsWideAndNullCells() {
+        var s = snap(3, 2, "ab", null); // multi-char element, then a genuinely-null element
+        String expected = String.join("\n",
+            "list: cap=3 size=2",
+            "[ ab |>null<| · ]");
+        assertEquals(expected, r.renderList(s, 1));
+    }
+
+    @Test
     void rendersEmptyCapacityAsBrackets() {
         String expected = String.join("\n",
             "list: cap=0 size=0",

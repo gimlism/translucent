@@ -109,7 +109,7 @@ list: cap=6 size=5
 ```
 SHIFT 3 -> 4 (d)
 list: cap=6 size=6
-[ a | b | c | c |>d<| e ]     (mid-slide: d copied to slot 4, source not yet overwritten)
+[ a | b | c | d |>d<| e ]     (mid-slide: d copied to slot 4; slot 3 source not yet overwritten)
 ```
 ```
 GROW cap 4 -> 6

@@ -2,9 +2,12 @@ package com.gimlism.translucent.arraylist.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.gimlism.translucent.arraylist.consumer.ListRecordingListener;
+import com.gimlism.translucent.arraylist.events.EmptySlot;
+import com.gimlism.translucent.arraylist.events.FilledSlot;
 import com.gimlism.translucent.arraylist.events.Grow;
 import com.gimlism.translucent.arraylist.events.Insert;
 import com.gimlism.translucent.arraylist.events.ListEvent;
@@ -116,6 +119,70 @@ class InsertRemoveShiftTest {
         it.next();
         it.remove();                          // AbstractList.Itr.remove -> remove(0)
         assertEquals(List.of("b", "c"), list);
+    }
+
+    @Test
+    void insertMidSlideSnapshotShowsTransientDuplicate() {
+        var list = new TeachingArrayList<String>(6);
+        for (String x : new String[]{"a", "b", "c", "d"}) list.add(x);
+        var rec = new ListRecordingListener();
+        list.addListener(rec);
+
+        list.add(2, "X"); // shift d(3->4), c(2->3), then insert X@2
+
+        // first Shift copied d to slot 4; slot 3 (source) is NOT yet overwritten -> duplicate d
+        Shift s0 = (Shift) rec.events().get(0);
+        assertEquals(List.of(
+            new FilledSlot("a"), new FilledSlot("b"), new FilledSlot("c"),
+            new FilledSlot("d"), new FilledSlot("d"), new EmptySlot()), s0.after().slots());
+        // terminal Insert is settled
+        Insert ins = (Insert) rec.events().get(2);
+        assertEquals(List.of(
+            new FilledSlot("a"), new FilledSlot("b"), new FilledSlot("X"),
+            new FilledSlot("c"), new FilledSlot("d"), new EmptySlot()), ins.after().slots());
+    }
+
+    @Test
+    void removeMidSlideSnapshotShowsTransientDuplicateThenClearsTail() {
+        var list = of("a", "b", "c", "d");
+        var rec = new ListRecordingListener();
+        list.addListener(rec);
+
+        list.remove(1); // shift c(2->1), d(3->2), then RemoveAt@1
+
+        // first Shift copied c to slot 1; slot 2 (source) not yet overwritten -> duplicate c; size still 4
+        Shift s0 = (Shift) rec.events().get(0);
+        assertEquals(List.of(
+            new FilledSlot("a"), new FilledSlot("c"),
+            new FilledSlot("c"), new FilledSlot("d")), s0.after().slots());
+        // terminal RemoveAt: survivors settled, vacated tail cleared to EmptySlot
+        RemoveAt r = (RemoveAt) rec.events().get(2);
+        assertEquals(List.of(
+            new FilledSlot("a"), new FilledSlot("c"),
+            new FilledSlot("d"), new EmptySlot()), r.after().slots());
+    }
+
+    @Test
+    void insertTriggeringGrowEmitsFullOrderedSequence() {
+        var list = of("a", "b", "c", "d"); // capacity 4, full
+        var rec = new ListRecordingListener();
+        list.addListener(rec);
+        list.add(1, "X"); // grow 4->6, then shift d(3->4), c(2->3), b(1->2), then insert X@1
+        assertEquals(
+            List.of("Grow", "SHIFT 3->4(d)", "SHIFT 2->3(c)", "SHIFT 1->2(b)", "INSERT@1"),
+            rec.events().stream().map(InsertRemoveShiftTest::tag).toList());
+    }
+
+    @Test
+    void nullElementThroughInsertAndRemove() {
+        var list = new TeachingArrayList<String>(6);
+        for (String x : new String[]{"a", "b", "c"}) list.add(x);
+        list.add(1, null); // [a, null, b, c]
+        assertNull(list.get(1));
+        assertEquals(4, list.size());
+        assertEquals(new FilledSlot(null), list.snapshot().slots().get(1)); // null, not EmptySlot
+        assertNull(list.remove(1)); // removing the null returns null
+        assertEquals(List.of("a", "b", "c"), list);
     }
 
     @Test

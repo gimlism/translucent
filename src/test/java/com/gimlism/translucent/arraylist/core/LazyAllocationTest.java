@@ -58,4 +58,16 @@ class LazyAllocationTest {
         assertEquals(0, g.oldCapacity());
         assertEquals(1, g.newCapacity());
     }
+
+    @Test
+    void explicitZeroCapacitySecondGrowUsesTheMinGrowthFloor() {
+        var list = new TeachingArrayList<Integer>(0);
+        var rec = new ListRecordingListener();
+        list.addListener(rec);
+        list.add(1); // 0 -> 1
+        list.add(2); // 1 -> 2: floor kicks in (1 + max(1, 1>>1=0) = 2), else capacity would stick at 1
+        var caps = rec.events().stream()
+            .filter(e -> e instanceof Grow).map(e -> ((Grow) e).newCapacity()).toList();
+        assertEquals(java.util.List.of(1, 2), caps);
+    }
 }
