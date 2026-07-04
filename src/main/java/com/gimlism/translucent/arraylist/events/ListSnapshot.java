@@ -1,9 +1,10 @@
 package com.gimlism.translucent.arraylist.events;
 
+import com.gimlism.translucent.substrate.events.StructureSnapshot;
 import java.util.List;
 
 /** Immutable whole-list state at a point in time. */
-public record ListSnapshot(int capacity, int size, List<SlotSnapshot> slots) {
+public record ListSnapshot(int capacity, int size, List<SlotSnapshot> slots) implements StructureSnapshot {
     public ListSnapshot {
         slots = List.copyOf(slots);
         if (slots.size() != capacity) {
