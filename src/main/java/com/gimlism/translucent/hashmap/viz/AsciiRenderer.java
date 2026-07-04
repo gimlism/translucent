@@ -17,11 +17,12 @@ import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
 import com.gimlism.translucent.hashmap.events.TreeSnapshot;
 import com.gimlism.translucent.hashmap.events.Treeify;
 import com.gimlism.translucent.hashmap.events.Untreeify;
+import com.gimlism.translucent.substrate.viz.EventRenderer;
 import java.util.List;
 import java.util.StringJoiner;
 
 /** Pure renderer: turns immutable snapshots/events into ASCII text. No I/O. */
-public final class AsciiRenderer {
+public final class AsciiRenderer implements EventRenderer<MapEvent> {
     private final Palette palette;
 
     public AsciiRenderer(Palette palette) {

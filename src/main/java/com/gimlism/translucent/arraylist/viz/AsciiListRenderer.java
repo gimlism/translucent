@@ -12,11 +12,12 @@ import com.gimlism.translucent.arraylist.events.RemoveAt;
 import com.gimlism.translucent.arraylist.events.Set;
 import com.gimlism.translucent.arraylist.events.Shift;
 import com.gimlism.translucent.arraylist.events.SlotSnapshot;
+import com.gimlism.translucent.substrate.viz.EventRenderer;
 import java.util.List;
 import java.util.StringJoiner;
 
 /** Pure renderer: turns immutable list snapshots/events into ASCII text. No I/O, no colour. */
-public final class AsciiListRenderer {
+public final class AsciiListRenderer implements EventRenderer<ListEvent> {
 
     /** Header line plus a horizontal cells row; {@code highlightIndex} (−1 for none) is wrapped {@code >x<}. */
     public String renderList(ListSnapshot snap, int highlightIndex) {
