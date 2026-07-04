@@ -20,7 +20,7 @@ class TrieSnapshotTest {
     void snapshotAndEventAreStructureTypes() {
         TrieSnapshot snap = leafKey("hi", 7);
         assertInstanceOf(StructureSnapshot.class, snap);
-        StructureEvent e = new Put("hi", 7, null, true, snap);
+        StructureEvent e = new Put("hi", 7, null, true, "hi", snap);
         assertInstanceOf(StructureEvent.class, e);
         assertEquals(snap, e.after());
     }

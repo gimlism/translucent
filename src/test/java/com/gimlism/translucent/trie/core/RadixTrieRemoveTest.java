@@ -156,6 +156,17 @@ class RadixTrieRemoveTest {
     }
 
     @Test
+    void removeEventCarriesPathEqualToKey() {
+        var t = of("she", "shore");
+        var rec = new TrieRecordingListener();
+        t.addListener(rec);
+        t.remove("she");
+        Remove r = (Remove) rec.events().get(0); // Remove leads the burst
+        assertEquals("she", r.key());
+        assertEquals("she", r.path());
+    }
+
+    @Test
     void adversarialDeleteKeepsRadixInvariants() {
         String[] keys = {"she", "shell", "shore", "short", "shrew", "s", "sh", "romane", "romanus", "rom", "a", "ab", "abc", ""};
         int[] order = {6, 0, 13, 8, 2, 10, 4, 1, 11, 9, 3, 12, 5, 7};
