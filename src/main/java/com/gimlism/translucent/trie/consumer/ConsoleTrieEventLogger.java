@@ -5,7 +5,7 @@ import com.gimlism.translucent.trie.events.TrieEventFormatter;
 import com.gimlism.translucent.trie.events.TrieEventListener;
 import java.io.PrintStream;
 
-/** Prints a human-readable line per event. Validates the stream end to end. */
+/** Prints a human-readable line per event (formatting only; no invariant checking). */
 public class ConsoleTrieEventLogger implements TrieEventListener {
     private final PrintStream out;
 
