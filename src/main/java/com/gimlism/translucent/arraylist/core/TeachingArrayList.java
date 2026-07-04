@@ -11,11 +11,11 @@ import com.gimlism.translucent.arraylist.events.RemoveAt;
 import com.gimlism.translucent.arraylist.events.Set;
 import com.gimlism.translucent.arraylist.events.Shift;
 import com.gimlism.translucent.arraylist.events.SlotSnapshot;
+import com.gimlism.translucent.substrate.events.EventDispatcher;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Objects;
 import java.util.RandomAccess;
@@ -47,8 +47,8 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
     Object[] elementData;
     private int size;
 
-    private final List<StructureEventListener<ListEvent>> listeners = new ArrayList<>();
-    private boolean mutating;
+    /** Shared event-dispatch transport: listeners, synchronous dispatch, re-entrancy guard. */
+    private final EventDispatcher<ListEvent> dispatcher = new EventDispatcher<>("list");
 
     /** Lazy: allocates nothing until the first add, which jumps to {@link #DEFAULT_CAPACITY}. */
     public TeachingArrayList() {
@@ -86,7 +86,7 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
             emit(new Set(index, old, element, snapshot()));
             return old;
         } finally {
-            mutating = false;
+            dispatcher.endMutation();
         }
     }
 
@@ -97,7 +97,7 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
             appendInternal(element);
             return true;
         } finally {
-            mutating = false;
+            dispatcher.endMutation();
         }
     }
 
@@ -114,7 +114,7 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
                 insertInternal(index, element);          // Shift* -> Insert
             }
         } finally {
-            mutating = false;
+            dispatcher.endMutation();
         }
     }
 
@@ -133,7 +133,7 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
             emit(new RemoveAt(index, old, snapshot()));
             return old;
         } finally {
-            mutating = false;
+            dispatcher.endMutation();
         }
     }
 
@@ -202,26 +202,20 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
     // --- event dispatch ---------------------------------------------------------
 
     public void addListener(StructureEventListener<ListEvent> listener) {
-        listeners.add(listener);
+        dispatcher.addListener(listener);
     }
 
     public void removeListener(StructureEventListener<ListEvent> listener) {
-        listeners.remove(listener);
+        dispatcher.removeListener(listener);
     }
 
     private void emit(ListEvent event) {
-        // Copy so a listener may add/remove listeners during dispatch.
-        for (StructureEventListener<ListEvent> listener : List.copyOf(listeners)) listener.onEvent(event);
+        dispatcher.emit(event);
     }
 
     /** Marks the start of a mutation, rejecting a re-entrant one from a listener. */
     private void beginMutation() {
-        if (mutating) {
-            throw new ConcurrentModificationException(
-                "list mutated from within an event listener; listeners may read the list "
-                + "but must not add/set/remove during event dispatch");
-        }
-        mutating = true;
+        dispatcher.beginMutation();
     }
 
     /** Immutable whole-list snapshot: filled slots [0,size), empty slots [size,capacity). */

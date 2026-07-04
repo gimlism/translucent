@@ -18,6 +18,7 @@ import com.gimlism.translucent.hashmap.events.Treeify;
 import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
 import com.gimlism.translucent.hashmap.events.TreeSnapshot;
 import com.gimlism.translucent.hashmap.events.Untreeify;
+import com.gimlism.translucent.substrate.events.EventDispatcher;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
@@ -68,16 +69,14 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     int modCount;
     long nextSeq;
 
-    private final List<StructureEventListener<MapEvent>> listeners = new ArrayList<>();
-
     /**
-     * True while a public structural mutation ({@link #put}/{@link #remove}) is in
-     * progress. Events are dispatched synchronously, sometimes mid-operation (e.g.
-     * while a bin is being treeified or a red-black delete is rebalancing), so a
-     * listener that mutates the map would observe — and corrupt — a half-built
-     * structure. This flag blocks such re-entrant mutation; reads are always safe.
+     * The shared event-dispatch transport: listeners, synchronous dispatch, and the
+     * re-entrant-mutation guard. Events are emitted mid-operation (e.g. while a bin is
+     * being treeified or a red-black delete is rebalancing), so a listener that mutated
+     * the map would observe — and corrupt — a half-built structure; the guard blocks
+     * that. Reads are always safe. See {@link EventDispatcher}.
      */
-    private boolean mutating;
+    private final EventDispatcher<MapEvent> dispatcher = new EventDispatcher<>("map");
 
     public TeachingHashMap() {
         this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR,
@@ -148,17 +147,15 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     }
 
     public void addListener(StructureEventListener<MapEvent> listener) {
-        listeners.add(listener);
+        dispatcher.addListener(listener);
     }
 
     public void removeListener(StructureEventListener<MapEvent> listener) {
-        listeners.remove(listener);
+        dispatcher.removeListener(listener);
     }
 
     private void emit(MapEvent event) {
-        // Iterate a copy so a listener may add/remove listeners during dispatch
-        // without triggering a ConcurrentModificationException.
-        for (StructureEventListener<MapEvent> listener : List.copyOf(listeners)) listener.onEvent(event);
+        dispatcher.emit(event);
     }
 
     /**
@@ -168,12 +165,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
      * (mid-treeify, mid-rebalance), so we fail fast instead of corrupting it.
      */
     private void beginMutation() {
-        if (mutating) {
-            throw new ConcurrentModificationException(
-                "map mutated from within an event listener; listeners may read the map "
-                + "but must not put/remove during event dispatch");
-        }
-        mutating = true;
+        dispatcher.beginMutation();
     }
 
     /** Test hook: force a rehash to the next capacity. */
@@ -300,7 +292,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         try {
             return doPut(key, value);
         } finally {
-            mutating = false;
+            dispatcher.endMutation();
         }
     }
 
@@ -415,7 +407,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         try {
             return doRemove(key);
         } finally {
-            mutating = false;
+            dispatcher.endMutation();
         }
     }
 

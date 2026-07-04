@@ -1,5 +1,6 @@
 package com.gimlism.translucent.trie.core;
 
+import com.gimlism.translucent.substrate.events.EventDispatcher;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
 import com.gimlism.translucent.trie.events.CreateNode;
 import com.gimlism.translucent.trie.events.Descend;
@@ -41,8 +42,8 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
     private int size;
     int modCount;
 
-    private final List<StructureEventListener<TrieEvent>> listeners = new ArrayList<>();
-    private boolean mutating;
+    /** Shared event-dispatch transport: listeners, synchronous dispatch, re-entrancy guard. */
+    private final EventDispatcher<TrieEvent> dispatcher = new EventDispatcher<>("trie");
 
     @Override
     public int size() {
@@ -140,7 +141,7 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
                 continue;                                // -> Put on leaf
             }
         } finally {
-            mutating = false;
+            dispatcher.endMutation();
         }
     }
 
@@ -184,7 +185,7 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
             }
             return old;
         } finally {
-            mutating = false;
+            dispatcher.endMutation();
         }
     }
 
@@ -220,24 +221,19 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
     }
 
     public void addListener(StructureEventListener<TrieEvent> listener) {
-        listeners.add(listener);
+        dispatcher.addListener(listener);
     }
 
     public void removeListener(StructureEventListener<TrieEvent> listener) {
-        listeners.remove(listener);
+        dispatcher.removeListener(listener);
     }
 
     private void emit(TrieEvent event) {
-        for (StructureEventListener<TrieEvent> listener : List.copyOf(listeners)) listener.onEvent(event);
+        dispatcher.emit(event);
     }
 
     private void beginMutation() {
-        if (mutating) {
-            throw new ConcurrentModificationException(
-                "trie mutated from within an event listener; listeners may read the trie "
-                + "but must not put/remove during event dispatch");
-        }
-        mutating = true;
+        dispatcher.beginMutation();
     }
 
     @Override
