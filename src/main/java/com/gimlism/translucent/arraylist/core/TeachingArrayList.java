@@ -6,12 +6,12 @@ import com.gimlism.translucent.arraylist.events.FilledSlot;
 import com.gimlism.translucent.arraylist.events.Grow;
 import com.gimlism.translucent.arraylist.events.Insert;
 import com.gimlism.translucent.arraylist.events.ListEvent;
-import com.gimlism.translucent.arraylist.events.ListEventListener;
 import com.gimlism.translucent.arraylist.events.ListSnapshot;
 import com.gimlism.translucent.arraylist.events.RemoveAt;
 import com.gimlism.translucent.arraylist.events.Set;
 import com.gimlism.translucent.arraylist.events.Shift;
 import com.gimlism.translucent.arraylist.events.SlotSnapshot;
+import com.gimlism.translucent.substrate.events.StructureEventListener;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,7 +47,7 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
     Object[] elementData;
     private int size;
 
-    private final List<ListEventListener> listeners = new ArrayList<>();
+    private final List<StructureEventListener<ListEvent>> listeners = new ArrayList<>();
     private boolean mutating;
 
     /** Lazy: allocates nothing until the first add, which jumps to {@link #DEFAULT_CAPACITY}. */
@@ -201,17 +201,17 @@ public class TeachingArrayList<E> extends AbstractList<E> implements RandomAcces
 
     // --- event dispatch ---------------------------------------------------------
 
-    public void addListener(ListEventListener listener) {
+    public void addListener(StructureEventListener<ListEvent> listener) {
         listeners.add(listener);
     }
 
-    public void removeListener(ListEventListener listener) {
+    public void removeListener(StructureEventListener<ListEvent> listener) {
         listeners.remove(listener);
     }
 
     private void emit(ListEvent event) {
         // Copy so a listener may add/remove listeners during dispatch.
-        for (ListEventListener listener : List.copyOf(listeners)) listener.onEvent(event);
+        for (StructureEventListener<ListEvent> listener : List.copyOf(listeners)) listener.onEvent(event);
     }
 
     /** Marks the start of a mutation, rejecting a re-entrant one from a listener. */

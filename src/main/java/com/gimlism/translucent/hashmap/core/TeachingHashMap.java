@@ -8,7 +8,6 @@ import com.gimlism.translucent.hashmap.events.Direction;
 import com.gimlism.translucent.hashmap.events.EmptyBucket;
 import com.gimlism.translucent.hashmap.events.EntrySnapshot;
 import com.gimlism.translucent.hashmap.events.MapEvent;
-import com.gimlism.translucent.hashmap.events.MapEventListener;
 import com.gimlism.translucent.hashmap.events.MapSnapshot;
 import com.gimlism.translucent.hashmap.events.Put;
 import com.gimlism.translucent.hashmap.events.Recolor;
@@ -19,6 +18,7 @@ import com.gimlism.translucent.hashmap.events.Treeify;
 import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
 import com.gimlism.translucent.hashmap.events.TreeSnapshot;
 import com.gimlism.translucent.hashmap.events.Untreeify;
+import com.gimlism.translucent.substrate.events.StructureEventListener;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     int modCount;
     long nextSeq;
 
-    private final List<MapEventListener> listeners = new ArrayList<>();
+    private final List<StructureEventListener<MapEvent>> listeners = new ArrayList<>();
 
     /**
      * True while a public structural mutation ({@link #put}/{@link #remove}) is in
@@ -147,18 +147,18 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         };
     }
 
-    public void addListener(MapEventListener listener) {
+    public void addListener(StructureEventListener<MapEvent> listener) {
         listeners.add(listener);
     }
 
-    public void removeListener(MapEventListener listener) {
+    public void removeListener(StructureEventListener<MapEvent> listener) {
         listeners.remove(listener);
     }
 
     private void emit(MapEvent event) {
         // Iterate a copy so a listener may add/remove listeners during dispatch
         // without triggering a ConcurrentModificationException.
-        for (MapEventListener listener : List.copyOf(listeners)) listener.onEvent(event);
+        for (StructureEventListener<MapEvent> listener : List.copyOf(listeners)) listener.onEvent(event);
     }
 
     /**
