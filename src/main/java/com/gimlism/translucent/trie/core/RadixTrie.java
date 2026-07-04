@@ -10,8 +10,10 @@ import com.gimlism.translucent.trie.events.TrieEvent;
 import com.gimlism.translucent.trie.events.TrieNodeSnapshot;
 import com.gimlism.translucent.trie.events.TrieSnapshot;
 import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -173,6 +175,70 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
 
     @Override
     public Set<Map.Entry<String, V>> entrySet() {
-        throw new UnsupportedOperationException("entrySet arrives in Task 3");
+        return new AbstractSet<>() {
+            @Override public int size() { return size; }
+            @Override public Iterator<Map.Entry<String, V>> iterator() { return new EntryIterator(); }
+        };
+    }
+
+    /** All key entries in lexicographic order (sorted DFS; children are sorted by first char). */
+    private List<Map.Entry<String, V>> collect() {
+        List<Map.Entry<String, V>> out = new ArrayList<>();
+        collect(root, "", out);
+        return out;
+    }
+
+    private void collect(TrieNode<V> n, String prefix, List<Map.Entry<String, V>> out) {
+        if (n.isKey) out.add(new AbstractMap.SimpleImmutableEntry<>(prefix, n.value));
+        for (TrieNode<V> c : n.children.values()) collect(c, prefix + c.edgeLabel, out);
+    }
+
+    /** Keys with the given prefix, lexicographically. */
+    public List<String> keysWithPrefix(String prefix) {
+        TrieNode<V> node = root;
+        String s = prefix;
+        String at = "";
+        while (!s.isEmpty()) {
+            TrieNode<V> child = node.children.get(s.charAt(0));
+            if (child == null) return List.of();
+            String label = child.edgeLabel;
+            int p = commonPrefixLength(s, label);
+            if (p == s.length()) {          // prefix ends inside/at this edge
+                node = child;
+                at += label;
+                break;
+            }
+            if (p < label.length()) return List.of();   // diverges -> no matches
+            node = child;
+            at += label;
+            s = s.substring(label.length());
+        }
+        List<Map.Entry<String, V>> entries = new ArrayList<>();
+        collect(node, at, entries);
+        List<String> keys = new ArrayList<>(entries.size());
+        for (Map.Entry<String, V> e : entries) keys.add(e.getKey());
+        return keys;
+    }
+
+    private final class EntryIterator implements Iterator<Map.Entry<String, V>> {
+        private final Iterator<Map.Entry<String, V>> it = collect().iterator();
+        private int expectedModCount = modCount;
+        private Map.Entry<String, V> last;
+
+        @Override public boolean hasNext() { return it.hasNext(); }
+
+        @Override public Map.Entry<String, V> next() {
+            if (modCount != expectedModCount) throw new ConcurrentModificationException();
+            last = it.next();
+            return last;
+        }
+
+        @Override public void remove() {
+            if (last == null) throw new IllegalStateException();
+            if (modCount != expectedModCount) throw new ConcurrentModificationException();
+            RadixTrie.this.remove(last.getKey());
+            expectedModCount = modCount;
+            last = null;
+        }
     }
 }
