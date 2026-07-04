@@ -1,6 +1,8 @@
 package com.gimlism.translucent.trie.core;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -90,6 +92,33 @@ class RadixTrieInsertTest {
             RadixTrieInvariants.assertValid(t.snapshot(), present);
         }
         for (int i = 0; i < keys.length; i++) assertEquals(i, t.get(keys[i]));
+    }
+
+    @Test
+    void nonStringAndNullArgumentsAreTolerated() {
+        var t = new RadixTrie<Integer>();
+        t.put("she", 1);
+        // get/containsKey/remove take Object and must not throw on a non-String or null
+        assertNull(t.get(42));
+        assertNull(t.get(null));
+        assertFalse(t.containsKey(42));
+        assertFalse(t.containsKey(null));
+        assertNull(t.remove(42));
+        assertNull(t.remove(null));
+        assertEquals(1, t.size());
+    }
+
+    @Test
+    void valueReplaceIsNonStructuralAndDoesNotInvalidateIterators() {
+        var t = new RadixTrie<Integer>();
+        t.put("a", 0);
+        t.put("b", 1);
+        var it = t.entrySet().iterator();
+        it.next();
+        t.put("a", 99);                 // value replace: non-structural, no modCount bump
+        assertEquals(99, t.get("a"));
+        assertEquals(2, t.size());       // size unchanged
+        assertDoesNotThrow(it::next);    // in-flight iteration survives
     }
 
     @Test

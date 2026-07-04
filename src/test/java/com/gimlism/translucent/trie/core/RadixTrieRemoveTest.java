@@ -3,6 +3,7 @@ package com.gimlism.translucent.trie.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.trie.consumer.TrieRecordingListener;
@@ -15,6 +16,7 @@ import com.gimlism.translucent.trie.events.Remove;
 import com.gimlism.translucent.trie.events.SplitEdge;
 import com.gimlism.translucent.trie.events.TrieEvent;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +122,37 @@ class RadixTrieRemoveTest {
         assertFalse(t.containsKey(first.getKey()));
         assertEquals(2, t.size());
         assertEquals(List.of("ab", "b"), new ArrayList<>(t.keySet()));
+    }
+
+    @Test
+    void reentrantRemoveFromListenerRejected() {
+        var t = of("a", "b");
+        t.addListener(e -> t.remove("a")); // mutation from within dispatch
+        assertThrows(ConcurrentModificationException.class, () -> t.remove("b"));
+    }
+
+    @Test
+    void iteratorRemoveThenContinueKeepsIterating() {
+        var t = of("a", "ab", "b", "c");
+        Iterator<Map.Entry<String, Integer>> it = t.entrySet().iterator();
+        it.next();     // "a"
+        it.remove();   // deletes "a" (merges the "a" node into "ab"); modCount resynced
+        var rest = new ArrayList<String>();
+        while (it.hasNext()) rest.add(it.next().getKey());
+        assertEquals(List.of("ab", "b", "c"), rest); // iteration continues without CME
+        assertFalse(t.containsKey("a"));
+        assertEquals(3, t.size());
+    }
+
+    @Test
+    void clearEmptiesTheTrie() {
+        // clear() (inherited) loops entrySet().iterator().remove(), driving merges along the way
+        var t = of("a", "ab", "abc", "b", "");
+        t.clear();
+        assertTrue(t.isEmpty());
+        assertEquals(0, t.size());
+        assertFalse(t.containsKey("abc"));
+        assertNull(t.get(""));
     }
 
     @Test

@@ -35,9 +35,14 @@ class RadixTrieIterationTest {
         var t = of("she", "shell", "shore", "short", "a", "ab");
         assertEquals(List.of("she", "shell", "shore", "short"), t.keysWithPrefix("sh"));
         assertEquals(List.of("she", "shell"), t.keysWithPrefix("she")); // "she" is itself a key + prefix
+        assertEquals(List.of("shore", "short"), t.keysWithPrefix("sho")); // ends STRICTLY inside the "sho.." edge
         assertEquals(List.of("a", "ab", "she", "shell", "shore", "short"), t.keysWithPrefix(""));
         assertEquals(List.of(), t.keysWithPrefix("zzz"));
         assertEquals(List.of(), t.keysWithPrefix("shx")); // diverges mid-edge
+        assertThrows(NullPointerException.class, () -> t.keysWithPrefix(null));
+        // result is an unmodifiable snapshot in both the match and no-match paths
+        assertThrows(UnsupportedOperationException.class, () -> t.keysWithPrefix("sh").add("x"));
+        assertThrows(UnsupportedOperationException.class, () -> t.keysWithPrefix("zzz").add("x"));
     }
 
     @Test

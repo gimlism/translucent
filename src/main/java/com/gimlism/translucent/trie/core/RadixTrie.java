@@ -15,6 +15,7 @@ import com.gimlism.translucent.trie.events.TrieSnapshot;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
@@ -27,6 +28,12 @@ import java.util.Set;
  * {@code String}-labelled edges (single-child chains collapse into one multi-character
  * edge). Every mutation is observable through an immutable {@link TrieEvent} stream.
  * First consumer of the generic instrumentation substrate.
+ *
+ * <p><b>Known limitation (this slice):</b> entries returned by {@link #entrySet()} are
+ * immutable snapshots, so {@link java.util.Map.Entry#setValue(Object)} throws
+ * {@link UnsupportedOperationException} rather than writing through. Update via
+ * {@link #put(String, Object)} instead. (This fails fast rather than silently losing a
+ * write; a later slice may route entry updates through the mutators to emit events.)
  */
 public class RadixTrie<V> extends AbstractMap<String, V> {
 
@@ -83,8 +90,10 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
                     boolean newKey = !node.isKey;
                     node.isKey = true;
                     node.value = value;
-                    if (newKey) size++;
-                    modCount++;
+                    if (newKey) {           // a value-replace is non-structural: don't invalidate iterators
+                        size++;
+                        modCount++;
+                    }
                     emit(new Put(key, value, old, newKey, snapshot()));
                     return old;
                 }
@@ -251,8 +260,9 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
         for (TrieNode<V> c : n.children.values()) collect(c, prefix + c.edgeLabel, out);
     }
 
-    /** Keys with the given prefix, lexicographically. */
+    /** Keys with the given prefix, lexicographically (an unmodifiable snapshot). */
     public List<String> keysWithPrefix(String prefix) {
+        Objects.requireNonNull(prefix, "null prefix");
         TrieNode<V> node = root;
         String s = prefix;
         String at = "";
@@ -271,11 +281,14 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
             at += label;
             s = s.substring(label.length());
         }
-        List<Map.Entry<String, V>> entries = new ArrayList<>();
-        collect(node, at, entries);
-        List<String> keys = new ArrayList<>(entries.size());
-        for (Map.Entry<String, V> e : entries) keys.add(e.getKey());
-        return keys;
+        List<String> keys = new ArrayList<>();
+        collectKeys(node, at, keys);
+        return Collections.unmodifiableList(keys);
+    }
+
+    private void collectKeys(TrieNode<V> n, String prefix, List<String> out) {
+        if (n.isKey) out.add(prefix);
+        for (TrieNode<V> c : n.children.values()) collectKeys(c, prefix + c.edgeLabel, out);
     }
 
     private final class EntryIterator implements Iterator<Map.Entry<String, V>> {
