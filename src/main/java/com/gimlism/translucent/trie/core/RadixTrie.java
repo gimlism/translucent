@@ -3,7 +3,10 @@ package com.gimlism.translucent.trie.core;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
 import com.gimlism.translucent.trie.events.CreateNode;
 import com.gimlism.translucent.trie.events.Descend;
+import com.gimlism.translucent.trie.events.MergeEdge;
+import com.gimlism.translucent.trie.events.Prune;
 import com.gimlism.translucent.trie.events.Put;
+import com.gimlism.translucent.trie.events.Remove;
 import com.gimlism.translucent.trie.events.SplitEdge;
 import com.gimlism.translucent.trie.events.TrieEdge;
 import com.gimlism.translucent.trie.events.TrieEvent;
@@ -130,6 +133,61 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
         } finally {
             mutating = false;
         }
+    }
+
+    @Override
+    public V remove(Object key) {
+        if (!(key instanceof String k)) return null;
+        beginMutation();
+        try {
+            TrieNode<V> parent = null;
+            TrieNode<V> node = root;
+            String s = k;
+            while (!s.isEmpty()) {
+                TrieNode<V> child = node.children.get(s.charAt(0));
+                if (child == null || !s.startsWith(child.edgeLabel)) return null; // path breaks
+                parent = node;
+                node = child;
+                s = s.substring(child.edgeLabel.length());
+            }
+            if (!node.isKey) return null;                 // node exists but isn't a key
+            V old = node.value;
+            node.isKey = false;
+            node.value = null;
+            size--;
+            modCount++;
+            emit(new Remove(k, old, snapshot()));
+
+            if (node == root) return old;                 // removed the "" key; the root stays
+            if (node.children.size() >= 2) return old;    // still a branch
+            if (node.children.size() == 1) {              // non-key with one child -> absorb it
+                String start = k.substring(0, k.length() - node.edgeLabel.length());
+                mergeWithChild(node, start);
+                return old;
+            }
+            // leaf: prune from its parent
+            parent.children.remove(node.edgeLabel.charAt(0));
+            emit(new Prune(node.edgeLabel, k, snapshot()));
+            if (parent != root && !parent.isKey && parent.children.size() == 1) {
+                String parentEnd = k.substring(0, k.length() - node.edgeLabel.length());
+                String parentStart = parentEnd.substring(0, parentEnd.length() - parent.edgeLabel.length());
+                mergeWithChild(parent, parentStart);
+            }
+            return old;
+        } finally {
+            mutating = false;
+        }
+    }
+
+    /** Absorb {@code node}'s sole remaining child into it (concatenate labels). {@code start} = path to node's start. */
+    private void mergeWithChild(TrieNode<V> node, String start) {
+        TrieNode<V> child = node.children.firstEntry().getValue();
+        node.children.clear();
+        node.edgeLabel = node.edgeLabel + child.edgeLabel;
+        node.isKey = child.isKey;
+        node.value = child.value;
+        node.children.putAll(child.children);
+        emit(new MergeEdge(node.edgeLabel, start + node.edgeLabel, snapshot()));
     }
 
     private static int commonPrefixLength(String a, String b) {
