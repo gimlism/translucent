@@ -1,10 +1,11 @@
 package com.gimlism.translucent.hashmap.events;
 
+import com.gimlism.translucent.substrate.events.StructureSnapshot;
 import java.util.List;
 
 /** Immutable whole-map state at a point in time. */
 public record MapSnapshot(int capacity, int size, int threshold,
-                          List<BucketSnapshot> buckets) {
+                          List<BucketSnapshot> buckets) implements StructureSnapshot {
     public MapSnapshot {
         buckets = List.copyOf(buckets);
         if (buckets.size() != capacity) {

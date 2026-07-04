@@ -1,5 +1,7 @@
 package com.gimlism.translucent.arraylist.events;
 
+import com.gimlism.translucent.substrate.events.StructureEvent;
+
 /**
  * An immutable, self-contained record of a single list state change.
  *
@@ -14,7 +16,7 @@ package com.gimlism.translucent.arraylist.events;
  *   <li><b>remove:</b> {@code Shift}* (low→high) {@code → RemoveAt}.</li>
  * </ul>
  */
-public sealed interface ListEvent
+public sealed interface ListEvent extends StructureEvent
         permits Append, Insert, Set, RemoveAt, Shift, Grow {
     /**
      * Whole-list snapshot at the moment this event was emitted. For most events this

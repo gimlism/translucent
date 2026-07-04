@@ -1,5 +1,7 @@
 package com.gimlism.translucent.hashmap.events;
 
+import com.gimlism.translucent.substrate.events.StructureEvent;
+
 /**
  * An immutable, self-contained record of a single map state change.
  *
@@ -19,7 +21,7 @@ package com.gimlism.translucent.hashmap.events;
  *   <li><b>resize:</b> a single {@link Resize} carrying both before and after.</li>
  * </ul>
  */
-public sealed interface MapEvent
+public sealed interface MapEvent extends StructureEvent
         permits Put, Remove, Collision, Resize, Treeify, Untreeify, Rotation, Recolor {
     /**
      * Whole-map snapshot at the moment this event was emitted.
