@@ -5,7 +5,7 @@ import com.gimlism.translucent.arraylist.events.ListEventFormatter;
 import com.gimlism.translucent.arraylist.events.ListEventListener;
 import java.io.PrintStream;
 
-/** Prints a human-readable line per event. Validates the stream end to end. */
+/** Prints a human-readable line per event (formatting only; no invariant checking). */
 public class ConsoleListEventLogger implements ListEventListener {
     private final PrintStream out;
 

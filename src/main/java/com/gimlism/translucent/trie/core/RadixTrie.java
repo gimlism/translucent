@@ -94,7 +94,7 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
                         size++;
                         modCount++;
                     }
-                    emit(new Put(key, value, old, newKey, snapshot()));
+                    emit(new Put(key, value, old, newKey, key, snapshot()));
                     return old;
                 }
                 char c = s.charAt(0);
@@ -165,7 +165,7 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
             node.value = null;
             size--;
             modCount++;
-            emit(new Remove(k, old, snapshot()));
+            emit(new Remove(k, old, k, snapshot()));
 
             if (node == root) return old;                 // removed the "" key; the root stays
             if (node.children.size() >= 2) return old;    // still a branch

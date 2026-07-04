@@ -5,7 +5,7 @@ import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.MapEventListener;
 import java.io.PrintStream;
 
-/** Prints a human-readable line per event. Validates the stream end to end. */
+/** Prints a human-readable line per event (formatting only; no invariant checking). */
 public class ConsoleEventLogger implements MapEventListener {
     private final PrintStream out;
 

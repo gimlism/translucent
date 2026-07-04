@@ -1,6 +1,11 @@
 package com.gimlism.translucent.trie.events;
 
-/** Turns a {@link TrieEvent} into its canonical one-line human-readable label. */
+/**
+ * Turns a {@link TrieEvent} into its canonical one-line human-readable label.
+ *
+ * <p>Lives in the {@code events} package so every presentation layer (the console
+ * logger, a future renderer) shares one formatting of the event vocabulary.
+ */
 public final class TrieEventFormatter {
     private TrieEventFormatter() {}
 
@@ -15,7 +20,7 @@ public final class TrieEventFormatter {
                 ? "PUT \"" + p.key() + "\"=" + p.value() + " (new)"
                 : "PUT \"" + p.key() + "\"=" + p.value() + " (replaced " + p.previousValue() + ")";
             case Remove r -> "REMOVE \"" + r.key() + "\" (was " + r.removedValue() + ")";
-            case MergeEdge m -> "MERGE -> \"" + m.mergedLabel() + "\"";
+            case MergeEdge m -> "MERGE \"" + m.mergedLabel() + "\" -> \"" + m.path() + "\"";
             case Prune pr -> "PRUNE \"" + pr.label() + "\" <- \"" + pr.path() + "\"";
         };
     }

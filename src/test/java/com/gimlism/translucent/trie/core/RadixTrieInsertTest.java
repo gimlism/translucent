@@ -122,6 +122,17 @@ class RadixTrieInsertTest {
     }
 
     @Test
+    void putEventCarriesPathEqualToKey() {
+        var t = new RadixTrie<Integer>();
+        var rec = new TrieRecordingListener();
+        t.addListener(rec);
+        t.put("shore", 1);
+        Put p = (Put) rec.events().get(rec.events().size() - 1); // terminal Put
+        assertEquals("shore", p.key());
+        assertEquals("shore", p.path());
+    }
+
+    @Test
     void reentrantMutationFromListenerRejected() {
         var t = new RadixTrie<Integer>();
         t.addListener(e -> t.put("x", 0));
