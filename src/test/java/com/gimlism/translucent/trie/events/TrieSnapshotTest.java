@@ -26,6 +26,13 @@ class TrieSnapshotTest {
     }
 
     @Test
+    void rejectsNullRootAndNegativeSize() {
+        var root = new TrieNodeSnapshot(false, null, List.of());
+        assertThrows(NullPointerException.class, () -> new TrieSnapshot(null, 0));
+        assertThrows(IllegalArgumentException.class, () -> new TrieSnapshot(root, -1));
+    }
+
+    @Test
     void childrenListIsImmutable() {
         var kids = new java.util.ArrayList<TrieEdge>();
         var node = new TrieNodeSnapshot(false, null, kids);
