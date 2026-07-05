@@ -3,7 +3,7 @@ package com.gimlism.translucent.hashmap.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import com.gimlism.translucent.hashmap.consumer.RecordingListener;
+import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
 import com.gimlism.translucent.hashmap.events.ChainSnapshot;
 import com.gimlism.translucent.hashmap.events.EntrySnapshot;
 import com.gimlism.translucent.hashmap.events.MapEvent;
@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
  */
 class MapFrameContentTest {
 
-    private static <T extends MapEvent> T firstOf(RecordingListener rec, Class<T> type) {
+    private static <T extends MapEvent> T firstOf(MapRecordingListener rec, Class<T> type) {
         return rec.events().stream().filter(type::isInstance).map(type::cast).findFirst().orElseThrow();
     }
 
@@ -32,7 +32,7 @@ class MapFrameContentTest {
     @Test
     void treeifyFrameIsTheAnnounceChainNotYetATree() {
         var map = new TeachingHashMap<Integer, String>(); // treeify at 4, minTreeify 8 == cap 8
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         for (int k : new int[]{0, 8, 16, 24}) map.put(k, "v" + k);
         // the Treeify frame is emitted BEFORE conversion: bucket 0 is still a chain of all four
@@ -46,7 +46,7 @@ class MapFrameContentTest {
     void untreeifyFrameIsTheSettledSurvivorChain() {
         var map = new TeachingHashMap<Integer, String>(8, 100.0f, 4, 2, 8);
         for (int k : new int[]{0, 8, 16, 24}) map.put(k, "v" + k); // treeify
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.remove(0); // 4 -> 3, still a tree
         map.remove(8); // 3 -> 2 (<= untreeifyThreshold) -> untreeify
@@ -60,7 +60,7 @@ class MapFrameContentTest {
         var map = new TeachingHashMap<Integer, String>();
         map.put(0, "a");   // bucket 0
         map.put(16, "b");  // bucket 0 too (0 & 7 == 16 & 7 == 0), tail-appended -> [0, 16]
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.forceResize(); // cap 8 -> 16; 0 & 15 == 16 & 15 == 0, so both stay in bucket 0
 

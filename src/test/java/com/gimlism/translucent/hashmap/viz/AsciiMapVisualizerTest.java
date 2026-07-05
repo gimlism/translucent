@@ -8,13 +8,13 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-class AsciiVisualizerTest {
+class AsciiMapVisualizerTest {
     @Test
     void livePrintsAFramePerMutation() {
         var buffer = new ByteArrayOutputStream();
         var out = new PrintStream(buffer, true, StandardCharsets.UTF_8);
         var map = new TeachingHashMap<Integer, String>();
-        map.addListener(new AsciiVisualizer(out, new AsciiRenderer(new Palette(Palette.Mode.PLAIN))));
+        map.addListener(new AsciiMapVisualizer(out, new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN))));
 
         map.put(0, "zero");
         map.put(8, "eight"); // collision in bucket 0

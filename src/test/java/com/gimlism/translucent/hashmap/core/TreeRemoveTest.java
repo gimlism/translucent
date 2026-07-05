@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.gimlism.translucent.hashmap.consumer.RecordingListener;
+import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
 import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.Recolor;
 import com.gimlism.translucent.hashmap.events.Remove;
@@ -41,7 +41,7 @@ class TreeRemoveTest {
     @Test
     void shrinkingBelowThresholdUntreeifiesToChain() {
         var map = treeBin(4); // 4-node tree
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.remove(0);  // 4 -> 3, still a tree (RB-delete)
         assertTrue(map.isTreeBin(0));
@@ -60,7 +60,7 @@ class TreeRemoveTest {
     @Test
     void balancingDeleteEmitsRotationOrRecolorButNoUntreeify() {
         var map = treeBin(8);
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.remove(0);
         assertTrue(map.isTreeBin(0));
@@ -80,7 +80,7 @@ class TreeRemoveTest {
     @Test
     void deleteEventsCarryConsistentSize() {
         var map = treeBin(8);
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.remove(32);
         int expected = map.size();
@@ -107,7 +107,7 @@ class TreeRemoveTest {
         // 3 survivors > untreeifyThreshold(2) => RB-delete path with fixup events.
         var map = new TeachingHashMap<Integer, String>(8, 100.0f, 4, 2, 8);
         for (int k : new int[]{16, 8, 24, 0}) map.put(k, "v" + k);
-        var rec = new com.gimlism.translucent.hashmap.consumer.RecordingListener();
+        var rec = new com.gimlism.translucent.hashmap.consumer.MapRecordingListener();
         map.addListener(rec);
         map.remove(16);
         boolean sawBalancing = false;

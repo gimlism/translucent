@@ -13,7 +13,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class AsciiEventRenderTest {
-    private final AsciiRenderer r = new AsciiRenderer(new Palette(Palette.Mode.PLAIN));
+    private final AsciiMapRenderer r = new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN));
 
     @Test
     void renderEventPutsLabelAboveMapAndHighlightsBucket() {
@@ -23,7 +23,7 @@ class AsciiEventRenderTest {
         var put = new Put(1, "one", null, 1, true, snap);
         String out = r.renderEvent(put);
         String expected = String.join("\n",
-            "PUT 1=one -> bucket 1 (new)",  // ConsoleEventLogger.format(put)
+            "PUT 1=one -> bucket 1 (new)",  // ConsoleMapEventLogger.format(put)
             "map: cap=2 size=1 threshold=1",
             "  [0] ·",
             "> [1] 1=one");                 // bucket 1 highlighted
@@ -33,12 +33,12 @@ class AsciiEventRenderTest {
     @Test
     void affectedBucketIsMinusOneForResize() {
         var snap = new MapSnapshot(0, 0, 0, List.of());
-        assertEquals(-1, AsciiRenderer.affectedBucket(new Resize(8, 16, snap, snap)));
+        assertEquals(-1, AsciiMapRenderer.affectedBucket(new Resize(8, 16, snap, snap)));
     }
 
     @Test
     void affectedBucketReadsBucketIndexForBucketEvents() {
         var snap = new MapSnapshot(0, 0, 0, List.of());
-        assertEquals(3, AsciiRenderer.affectedBucket(new Put("k", "v", null, 3, true, snap)));
+        assertEquals(3, AsciiMapRenderer.affectedBucket(new Put("k", "v", null, 3, true, snap)));
     }
 }

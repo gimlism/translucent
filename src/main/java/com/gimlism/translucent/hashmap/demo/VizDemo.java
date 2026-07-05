@@ -1,7 +1,7 @@
 package com.gimlism.translucent.hashmap.demo;
 
 import com.gimlism.translucent.hashmap.core.TeachingHashMap;
-import com.gimlism.translucent.hashmap.viz.AsciiVisualizer;
+import com.gimlism.translucent.hashmap.viz.AsciiMapVisualizer;
 import java.io.PrintStream;
 
 /**
@@ -17,7 +17,7 @@ public class VizDemo {
     static void run(PrintStream out) {
         var map = new TeachingHashMap<Integer, String>();
         // Palette.auto(): ANSI colour on a real terminal, plain text when piped or captured.
-        map.addListener(new AsciiVisualizer(out));
+        map.addListener(new AsciiMapVisualizer(out));
 
         out.println("== inserting keys that collide in bucket 0 until it treeifies (then resizes) ==");
         for (int k : new int[]{0, 8, 16, 24, 32, 40, 48, 56}) {

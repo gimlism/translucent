@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.gimlism.translucent.hashmap.consumer.RecordingListener;
+import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
 import com.gimlism.translucent.hashmap.events.Color;
 import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.Recolor;
@@ -40,7 +40,7 @@ class TreeifyTest {
     @Test
     void treeifyEmitsTreeifyThenBalancingEvents() {
         var map = collidingMap();
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.put(0, "a");
         map.put(8, "b");
@@ -87,7 +87,7 @@ class TreeifyTest {
     @Test
     void terminalTreeifyEventSnapshotShowsBlackRoot() {
         var map = new TeachingHashMap<Integer, String>();
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         for (int k : new int[]{0, 8, 16, 24}) map.put(k, "v" + k);
         MapEvent last = null;
@@ -107,7 +107,7 @@ class TreeifyTest {
     void treeBinInsertBalancingEventsCarryConsistentSize() {
         // high load factor => no resize; treeify bucket 0, then insert more into it
         var map = new TeachingHashMap<Integer, String>(8, 100.0f, 4, 2, 8);
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         for (int k : new int[]{0, 8, 16, 24}) map.put(k, "v" + k); // treeify
         boolean sawBalancing = false;

@@ -2,7 +2,7 @@ package com.gimlism.translucent.hashmap.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.gimlism.translucent.hashmap.consumer.RecordingListener;
+import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
 import com.gimlism.translucent.hashmap.events.Put;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,7 +15,7 @@ class MapEntryAndBulkTest {
     void setValueOnAChainEntryWritesThroughButEmitsNoEvent() {
         var map = new TeachingHashMap<Integer, String>();
         map.put(1, "a");
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
 
         Map.Entry<Integer, String> e = map.entrySet().iterator().next();
@@ -27,7 +27,7 @@ class MapEntryAndBulkTest {
     @Test
     void putAllEmitsOnePutPerEntry() {
         var map = new TeachingHashMap<Integer, String>();
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
 
         var source = new LinkedHashMap<Integer, String>();

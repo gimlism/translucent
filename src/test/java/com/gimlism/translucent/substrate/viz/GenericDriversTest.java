@@ -7,7 +7,7 @@ import com.gimlism.translucent.arraylist.events.ListEvent;
 import com.gimlism.translucent.arraylist.viz.AsciiListRenderer;
 import com.gimlism.translucent.hashmap.core.TeachingHashMap;
 import com.gimlism.translucent.hashmap.events.MapEvent;
-import com.gimlism.translucent.hashmap.viz.AsciiRenderer;
+import com.gimlism.translucent.hashmap.viz.AsciiMapRenderer;
 import com.gimlism.translucent.hashmap.viz.Palette;
 import com.gimlism.translucent.substrate.events.RecordingListener;
 import java.io.ByteArrayInputStream;
@@ -23,7 +23,7 @@ class GenericDriversTest {
         var map = new TeachingHashMap<Integer, String>();
         map.addListener(new Visualizer<MapEvent>(
             new PrintStream(buffer, true, StandardCharsets.UTF_8),
-            new AsciiRenderer(new Palette(Palette.Mode.PLAIN))));
+            new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN))));
         map.put(1, "a");
         assertTrue(buffer.toString(StandardCharsets.UTF_8).contains("PUT 1=a"), buffer.toString());
     }
@@ -49,7 +49,7 @@ class GenericDriversTest {
         var rec = new RecordingListener<MapEvent>();
         map.addListener(rec);
         map.put(1, "a");
-        var replayer = new Replayer<MapEvent>(rec.events(), new AsciiRenderer(new Palette(Palette.Mode.PLAIN)));
+        var replayer = new Replayer<MapEvent>(rec.events(), new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN)));
         var buffer = new ByteArrayOutputStream();
         replayer.run(new ByteArrayInputStream("q\n".getBytes(StandardCharsets.UTF_8)),
                      new PrintStream(buffer, true, StandardCharsets.UTF_8));

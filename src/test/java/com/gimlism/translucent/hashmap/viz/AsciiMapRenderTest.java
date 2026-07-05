@@ -14,7 +14,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class AsciiMapRenderTest {
-    private final AsciiRenderer r = new AsciiRenderer(new Palette(Palette.Mode.PLAIN));
+    private final AsciiMapRenderer r = new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN));
 
     @Test
     void rendersHeaderEmptyAndChainWithHighlight() {
