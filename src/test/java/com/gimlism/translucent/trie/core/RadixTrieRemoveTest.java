@@ -59,7 +59,7 @@ class RadixTrieRemoveTest {
         var rec = new TrieRecordingListener();
         t.addListener(rec);
         assertEquals(2, t.remove("sh"));
-        assertEquals(List.of("REMOVE:sh"), rec.events().stream().map(RadixTrieRemoveTest::tag).toList());
+        assertEquals(List.of("DESC:sh", "REMOVE:sh"), rec.events().stream().map(RadixTrieRemoveTest::tag).toList());
         assertFalse(t.containsKey("sh"));
         assertEquals(0, t.get("she"));
         assertEquals(1, t.get("shore"));
@@ -73,7 +73,8 @@ class RadixTrieRemoveTest {
         var rec = new TrieRecordingListener();
         t.addListener(rec);
         assertEquals(1, t.remove("shell"));
-        assertEquals(List.of("REMOVE:shell", "PRUNE:ll"), rec.events().stream().map(RadixTrieRemoveTest::tag).toList());
+        assertEquals(List.of("DESC:she", "DESC:ll", "REMOVE:shell", "PRUNE:ll"),
+            rec.events().stream().map(RadixTrieRemoveTest::tag).toList());
         assertEquals(0, t.get("she"));
         assertEquals(1, t.size());
     }
@@ -86,7 +87,7 @@ class RadixTrieRemoveTest {
         var rec = new TrieRecordingListener();
         t.addListener(rec);
         assertEquals(0, t.remove("shell"));
-        assertEquals(List.of("REMOVE:shell", "PRUNE:ell", "MERGE:shore"),
+        assertEquals(List.of("DESC:sh", "DESC:ell", "REMOVE:shell", "PRUNE:ell", "MERGE:shore"),
             rec.events().stream().map(RadixTrieRemoveTest::tag).toList());
         assertEquals(1, t.get("shore"));
         assertEquals(1, t.size());
@@ -99,7 +100,8 @@ class RadixTrieRemoveTest {
         var rec = new TrieRecordingListener();
         t.addListener(rec);
         assertEquals(0, t.remove("sh"));
-        assertEquals(List.of("REMOVE:sh", "MERGE:shore"), rec.events().stream().map(RadixTrieRemoveTest::tag).toList());
+        assertEquals(List.of("DESC:sh", "REMOVE:sh", "MERGE:shore"),
+            rec.events().stream().map(RadixTrieRemoveTest::tag).toList());
         assertEquals(1, t.get("shore"));
         assertFalse(t.containsKey("sh"));
     }
@@ -161,7 +163,8 @@ class RadixTrieRemoveTest {
         var rec = new TrieRecordingListener();
         t.addListener(rec);
         t.remove("she");
-        Remove r = (Remove) rec.events().get(0); // Remove leads the burst
+        // the walk is narrated (Descend*) before the Remove marker
+        Remove r = rec.events().stream().filter(e -> e instanceof Remove).map(e -> (Remove) e).findFirst().orElseThrow();
         assertEquals("she", r.key());
         assertEquals("she", r.path());
     }

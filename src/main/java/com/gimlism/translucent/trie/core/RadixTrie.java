@@ -150,17 +150,26 @@ public class RadixTrie<V> extends AbstractMap<String, V> {
         if (!(key instanceof String k)) return null;
         beginMutation();
         try {
+            record Step(String label, String path) {}
+            List<Step> walk = new ArrayList<>();
             TrieNode<V> parent = null;
             TrieNode<V> node = root;
             String s = k;
+            String path = "";
             while (!s.isEmpty()) {
                 TrieNode<V> child = node.children.get(s.charAt(0));
-                if (child == null || !s.startsWith(child.edgeLabel)) return null; // path breaks
+                if (child == null || !s.startsWith(child.edgeLabel)) return null; // path breaks -> no-op
                 parent = node;
                 node = child;
+                path += child.edgeLabel;
+                walk.add(new Step(child.edgeLabel, path)); // buffered; narrated only if the remove proceeds
                 s = s.substring(child.edgeLabel.length());
             }
-            if (!node.isKey) return null;                 // node exists but isn't a key
+            if (!node.isKey) return null;                 // node exists but isn't a key -> no-op
+            // The remove will proceed: narrate the walk (traversal frames over the unchanged tree),
+            // then perform it. Buffering keeps no-op removes above silent.
+            TrieSnapshot walked = snapshot();
+            for (Step step : walk) emit(new Descend(step.label(), step.path(), walked));
             V old = node.value;
             node.isKey = false;
             node.value = null;
