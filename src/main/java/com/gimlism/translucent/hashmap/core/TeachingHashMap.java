@@ -36,16 +36,19 @@ import java.util.Set;
  * load-factor resize. Chains that reach the treeify threshold (and whose table
  * is at least the min treeify capacity) are converted into red-black trees.
  *
- * <p><b>Known limitation (this slice):</b> mutating a value via
- * {@link Map.Entry#setValue(Object)} on an entry obtained from {@link #entrySet()},
- * and the inherited {@link #replaceAll(java.util.function.BiFunction)} (which uses
- * {@code setValue} internally), currently do NOT emit events. Moreover, treeify and
- * untreeify <em>copy</em> a bucket's nodes into fresh {@code TreeNode}/{@code Node}
- * instances, so an entry captured before such a conversion aliases a now-detached
- * node: a later {@code setValue} on it is silently <em>lost</em> (the live map is
- * unchanged and no exception is thrown). Iterate-then-mutate in a single pass, or
- * write through {@link #put}, to be safe. This will be addressed in a later slice
- * when entry views are wrapped to route through the map's mutators.
+ * <p><b>Entry-view writes are observable.</b> {@link Map.Entry#setValue(Object)} on an
+ * entry from {@link #entrySet()} (and the inherited
+ * {@link #replaceAll(java.util.function.BiFunction)}, which uses it) routes through the
+ * map: it re-finds the live node by key, so the write always lands on the live map, and
+ * it emits a replacement {@link com.gimlism.translucent.hashmap.events.Put} event.
+ * Calling {@code setValue} for a key no longer present throws {@link IllegalStateException}.
+ *
+ * <p>An entry from the {@link #entrySet()} iterator exposes a <em>cached view</em> of its
+ * value: {@link Map.Entry#getValue()} returns the value read at iteration time, not a live
+ * re-read, so it will not reflect a concurrent change to that key made through the map after
+ * the entry was produced. Only {@code setValue} re-finds the live node — and it returns that
+ * live node's current value (which may differ from {@code getValue()} if the key was mutated
+ * since iteration), matching {@code java.util.HashMap}'s live-entry semantics.
  */
 public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
 
@@ -459,6 +462,33 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         return null;
     }
 
+    /**
+     * Write-through value replacement for an entry-view {@code setValue}. Re-finds the
+     * live node by key (so a node detached by a prior treeify/untreeify/resize cannot be
+     * silently written), assigns the value, and emits a replacement {@link Put}. A value
+     * replacement is not structural, so {@code modCount} is left untouched — that is what
+     * lets an inherited {@code replaceAll} iterate and set every entry without invalidating
+     * its own iterator.
+     *
+     * @throws IllegalStateException if {@code key} is no longer present in the map
+     */
+    private V setValueThroughEntry(K key, V newValue) {
+        beginMutation();
+        try {
+            Node<K, V> live = findNode(key);
+            if (live == null) {
+                throw new IllegalStateException("entry no longer in map");
+            }
+            V old = live.value;
+            live.value = newValue;
+            int i = indexFor(hash(key), table.length);
+            emit(new Put(key, newValue, old, i, false, snapshot()));
+            return old;
+        } finally {
+            dispatcher.endMutation();
+        }
+    }
+
     @Override
     public int size() {
         return size;
@@ -534,7 +564,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
                 slot++;
                 nextNode = advanceToFirst();
             }
-            return lastReturned;
+            return new LiveEntry(lastReturned.key, lastReturned.value);
         }
 
         @Override
@@ -544,6 +574,48 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             TeachingHashMap.this.remove(lastReturned.key);
             expectedModCount = modCount;
             lastReturned = null;
+        }
+    }
+
+    /**
+     * The entry object handed out by {@link EntryIterator#next()}. Unlike the raw
+     * {@link Node}, its {@link #setValue} routes through {@link #setValueThroughEntry}
+     * so the write is observable and always lands on the live map. {@code getValue}
+     * returns the value cached at iteration time; only {@code setValue} re-finds.
+     */
+    private final class LiveEntry implements Map.Entry<K, V> {
+        private final K key;
+        private V cachedValue;
+
+        LiveEntry(K key, V value) {
+            this.key = key;
+            this.cachedValue = value;
+        }
+
+        @Override public K getKey() { return key; }
+        @Override public V getValue() { return cachedValue; }
+
+        @Override
+        public V setValue(V newValue) {
+            V old = setValueThroughEntry(key, newValue);
+            cachedValue = newValue;
+            return old;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Map.Entry<?, ?> e)) return false;
+            return Objects.equals(key, e.getKey()) && Objects.equals(cachedValue, e.getValue());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(key) ^ Objects.hashCode(cachedValue);
+        }
+
+        @Override
+        public String toString() {
+            return key + "=" + cachedValue;
         }
     }
 }
