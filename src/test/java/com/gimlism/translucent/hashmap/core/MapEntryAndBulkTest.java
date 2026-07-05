@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
+import com.gimlism.translucent.hashmap.events.MapEventListener;
 import com.gimlism.translucent.hashmap.events.Put;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -111,14 +112,20 @@ class MapEntryAndBulkTest {
         var map = new TeachingHashMap<Integer, String>();
         map.put(1, "a");
         Map.Entry<Integer, String> captured = map.entrySet().iterator().next();
-        map.addListener(ev -> captured.setValue("X")); // re-entrant write during dispatch
+        MapEventListener reentrant = ev -> captured.setValue("X"); // re-entrant write during dispatch
+        map.addListener(reentrant);
 
         // the next put's Put event dispatches to the listener, whose setValue calls
         // beginMutation while the map is already mutating -> ConcurrentModificationException
         assertThrows(ConcurrentModificationException.class, () -> map.put(2, "b"));
-        // the guard is cleared in finally, so the outer put still landed and the map is usable
         assertEquals("a", map.get(1));   // the rejected setValue never wrote
         assertEquals(2, map.size());
+
+        // the guard must have been released in put()'s finally: with the bad listener gone,
+        // the map still accepts mutations (a stuck 'mutating' flag would make this throw)
+        map.removeListener(reentrant);
+        map.put(3, "c");
+        assertEquals(3, map.size());
     }
 
     @Test
