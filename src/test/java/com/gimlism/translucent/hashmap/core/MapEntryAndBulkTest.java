@@ -142,4 +142,15 @@ class MapEntryAndBulkTest {
         assertNotNull(second);
         assertEquals("A", map.get(1));
     }
+
+    @Test
+    void getValueReturnsValueCachedAtIterationTimeNotLive() {
+        var map = new TeachingHashMap<Integer, String>();
+        map.put(1, "a");
+        Map.Entry<Integer, String> e = map.entrySet().iterator().next(); // caches "a"
+
+        map.put(1, "z");   // same key mutated through the map, behind the captured entry
+        assertEquals("z", map.get(1));    // the live map moved on
+        assertEquals("a", e.getValue());  // the captured entry still reports its cached value
+    }
 }
