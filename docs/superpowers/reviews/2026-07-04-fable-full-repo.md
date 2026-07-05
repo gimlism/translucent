@@ -78,8 +78,8 @@ The ArrayList is the gold standard (exact event grammars + mid-slide frame conte
 
 ## Recommended sequencing
 
-1. **Quick consistency batch** *(this pass)* — reconcile console-logger Javadocs (CO6); add `TrieSnapshot` validation (CO3); give trie `Put`/`Remove` a `path` (CO4); fix `MergeEdge` formatter dropping `path` + add layering Javadoc (CO5).
-2. **`EventDispatcher<E>` extraction** (D1) — the one real design improvement; also resolves CO7 and the exception-message drift.
-3. **Listener-exception safety** (C1) — decide document-vs-isolate, apply uniformly (ties into #2).
-4. **Test-coverage hardening** (§4) — close the trie event-frame gap first (highest value), then live-RB-bin / resize-order / setValue.
-5. **Naming symmetry rename** (D2) + the **`Descend`/narration decision** (D3) — more opinionated; worth a discussion. Several §4 and D4 items fold naturally into the planned trie-visualizer slice.
+1. ✅ **Quick consistency batch** — reconcile console-logger Javadocs (CO6); add `TrieSnapshot` validation (CO3); give trie `Put`/`Remove` a `path` (CO4); fix `MergeEdge` formatter dropping `path` + add layering Javadoc (CO5). *(PR #11, merged.)*
+2. ✅ **`EventDispatcher<E>` extraction** (D1) — the one real design improvement; also resolves CO7 and the exception-message drift. *(PR #12, merged.)*
+3. ✅ **Listener-exception safety** (C1) — chosen: document-only (the contract now lives on `EventDispatcher`/`StructureEventListener`). *(PR #12, merged.)*
+4. ✅ **Test-coverage hardening** (§4) — closed the trie event-frame gap (highest value), plus live-RB-bin invariants, tree-bin-path auto-resize, resize chain-order, treeify/untreeify frames, null key in a tree bin, `setValue`, `putAll`, `keysWithPrefix` edges, and `Replayer` input edges. *(This pass; +17 tests.)* Not closed (deliberate): `resize()` at `MAXIMUM_CAPACITY` (needs a `newCapacity`-style extraction to be testable — a production change, deferred).
+5. ⬜ **Naming symmetry rename** (D2) + the **`Descend`/narration decision** (D3) — more opinionated; worth a discussion. Several D4 items fold naturally into the planned trie-visualizer slice.
