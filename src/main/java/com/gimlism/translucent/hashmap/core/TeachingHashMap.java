@@ -42,6 +42,13 @@ import java.util.Set;
  * map: it re-finds the live node by key, so the write always lands on the live map, and
  * it emits a replacement {@link com.gimlism.translucent.hashmap.events.Put} event.
  * Calling {@code setValue} for a key no longer present throws {@link IllegalStateException}.
+ *
+ * <p>An entry from the {@link #entrySet()} iterator exposes a <em>cached view</em> of its
+ * value: {@link Map.Entry#getValue()} returns the value read at iteration time, not a live
+ * re-read, so it will not reflect a concurrent change to that key made through the map after
+ * the entry was produced. Only {@code setValue} re-finds the live node — and it returns that
+ * live node's current value (which may differ from {@code getValue()} if the key was mutated
+ * since iteration), matching {@code java.util.HashMap}'s live-entry semantics.
  */
 public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
 

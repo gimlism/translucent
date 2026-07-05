@@ -52,7 +52,10 @@ A private final class `LiveEntry implements Map.Entry<K, V>`:
 - Fields: `key` and `cachedValue` (captured at `next()` time).
 - `getKey()` → `key`; `getValue()` → `cachedValue`.
 - `setValue(v)` → delegates to `setValueThroughEntry(key, v)`, updates `cachedValue` to
-  `v`, returns the old value it reported.
+  `v`, and returns the value `setValueThroughEntry` reports — the **live node's** old value
+  at write time. This can differ from `getValue()`/`cachedValue` if the key was mutated
+  through the map since iteration, matching `java.util.HashMap`'s live-entry `setValue`
+  semantics (the returned value is the one actually replaced on the live map).
 - `equals` / `hashCode` per the `Map.Entry` contract, using `cachedValue`, so
   `entrySet().contains(...)` and set semantics are preserved.
 
