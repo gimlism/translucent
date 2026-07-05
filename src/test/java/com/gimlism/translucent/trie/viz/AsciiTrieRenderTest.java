@@ -65,6 +65,27 @@ class AsciiTrieRenderTest {
     }
 
     @Test
+    void pruneFrameHighlightsTheParentThatLostTheChild() {
+        // after Prune "ll" <- "shell": the "e" (she) node has lost its "ll" child but survives
+        var e = new TrieNodeSnapshot(true, 1, List.of());
+        var ore = new TrieNodeSnapshot(true, 3, List.of());
+        var sh = new TrieNodeSnapshot(false, null,
+            List.of(new TrieEdge("e", e), new TrieEdge("ore", ore)));
+        var root = new TrieNodeSnapshot(false, null, List.of(new TrieEdge("sh", sh)));
+        var afterPrune = new TrieSnapshot(root, 2);
+
+        String out = r.renderEvent(new Prune("ll", "shell", afterPrune));
+        String expected = String.join("\n",
+            "PRUNE \"ll\" <- \"shell\"",
+            "trie: size=2",
+            "  (root)",
+            "    \"sh\"",
+            ">     \"e\" ●=1",   // the parent "she", highlighted — not the vanished "shell"
+            "      \"ore\" ●=3");
+        assertEquals(expected, out);
+    }
+
+    @Test
     void renderEventPutsLabelAboveTreeAndHighlightsThePath() {
         Put p = new Put("she", 1, null, true, "she", sheShore());
         String out = r.renderEvent(p);
@@ -79,7 +100,8 @@ class AsciiTrieRenderTest {
         assertEquals("sh", AsciiTrieRenderer.affectedPath(new SplitEdge("shore", "sh", "sh", s)));
         assertEquals("shell", AsciiTrieRenderer.affectedPath(new CreateNode("ll", "shell", s)));
         assertEquals("she", AsciiTrieRenderer.affectedPath(new Remove("she", 1, "she", s)));
-        assertEquals("shell", AsciiTrieRenderer.affectedPath(new Prune("ll", "shell", s)));
+        // a Prune's leaf is gone from after(); highlight the parent that lost the child ("shell" - "ll")
+        assertEquals("she", AsciiTrieRenderer.affectedPath(new Prune("ll", "shell", s)));
         assertEquals("shore", AsciiTrieRenderer.affectedPath(new MergeEdge("shore", "shore", s)));
     }
 }

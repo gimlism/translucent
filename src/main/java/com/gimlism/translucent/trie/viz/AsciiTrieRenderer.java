@@ -47,7 +47,12 @@ public final class AsciiTrieRenderer implements EventRenderer<TrieEvent> {
         return TrieEventFormatter.format(e) + "\n" + renderTrie(e.after(), affectedPath(e));
     }
 
-    /** The path (root-to-node label concatenation) an event concerns — every trie event carries one. */
+    /**
+     * The path (root-to-node label concatenation) of the node to highlight for an event.
+     * Usually the event's own {@code path}; for a {@link Prune} that node has just been deleted,
+     * so we highlight its <em>parent</em> (the node that lost the child, which survives in
+     * {@code after()}) — {@code path} minus the pruned edge label.
+     */
     public static String affectedPath(TrieEvent e) {
         return switch (e) {
             case Descend d -> d.path();
@@ -56,7 +61,7 @@ public final class AsciiTrieRenderer implements EventRenderer<TrieEvent> {
             case Put p -> p.path();
             case Remove r -> r.path();
             case MergeEdge m -> m.path();
-            case Prune pr -> pr.path();
+            case Prune pr -> pr.path().substring(0, pr.path().length() - pr.label().length());
         };
     }
 }
