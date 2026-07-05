@@ -1,6 +1,6 @@
 package com.gimlism.translucent.hashmap.demo;
 
-import com.gimlism.translucent.hashmap.consumer.ConsoleEventLogger;
+import com.gimlism.translucent.hashmap.consumer.ConsoleMapEventLogger;
 import com.gimlism.translucent.hashmap.core.TeachingHashMap;
 import java.io.PrintStream;
 
@@ -12,7 +12,7 @@ public class Demo {
 
     static void run(PrintStream out) {
         var map = new TeachingHashMap<Integer, String>();
-        map.addListener(new ConsoleEventLogger(out));
+        map.addListener(new ConsoleMapEventLogger(out));
 
         out.println("== inserting keys that collide in bucket 0 until it treeifies ==");
         for (int k : new int[]{0, 8, 16, 24, 32, 40, 48, 56}) { // 4th key hits treeifyThreshold; 8 keys → resize at 7th

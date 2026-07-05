@@ -3,7 +3,7 @@ package com.gimlism.translucent.hashmap.viz;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.gimlism.translucent.hashmap.consumer.RecordingListener;
+import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
 import com.gimlism.translucent.hashmap.core.TeachingHashMap;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,10 +11,10 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-class AsciiReplayerTest {
-    private static RecordingListener recordThreePuts() {
+class AsciiMapReplayerTest {
+    private static MapRecordingListener recordThreePuts() {
         var map = new TeachingHashMap<Integer, String>();
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.put(1, "a");
         map.put(2, "b");
@@ -25,7 +25,7 @@ class AsciiReplayerTest {
     @Test
     void steppingForwardBackAndQuitWalksFrames() {
         var rec = recordThreePuts(); // 3 events
-        var replayer = new AsciiReplayer(rec.events(), new AsciiRenderer(new Palette(Palette.Mode.PLAIN)));
+        var replayer = new AsciiMapReplayer(rec.events(), new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN)));
         var buffer = new ByteArrayOutputStream();
         // next (0->1), back (1->0), quit
         var in = new ByteArrayInputStream("\nb\nq\n".getBytes(StandardCharsets.UTF_8));
@@ -41,7 +41,7 @@ class AsciiReplayerTest {
     @Test
     void autoPlayRendersEveryFrameInOrder() {
         var rec = recordThreePuts();
-        var replayer = new AsciiReplayer(rec.events(), new AsciiRenderer(new Palette(Palette.Mode.PLAIN)));
+        var replayer = new AsciiMapReplayer(rec.events(), new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN)));
         var buffer = new ByteArrayOutputStream();
         replayer.autoPlay(new PrintStream(buffer, true, StandardCharsets.UTF_8), 0);
         String out = buffer.toString(StandardCharsets.UTF_8);

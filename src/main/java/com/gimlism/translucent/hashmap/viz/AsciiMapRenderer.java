@@ -5,7 +5,7 @@ import com.gimlism.translucent.hashmap.events.ChainSnapshot;
 import com.gimlism.translucent.hashmap.events.Collision;
 import com.gimlism.translucent.hashmap.events.EmptyBucket;
 import com.gimlism.translucent.hashmap.events.EntrySnapshot;
-import com.gimlism.translucent.hashmap.events.EventFormatter;
+import com.gimlism.translucent.hashmap.events.MapEventFormatter;
 import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.MapSnapshot;
 import com.gimlism.translucent.hashmap.events.Put;
@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.StringJoiner;
 
 /** Pure renderer: turns immutable snapshots/events into ASCII text. No I/O. */
-public final class AsciiRenderer implements EventRenderer<MapEvent> {
+public final class AsciiMapRenderer implements EventRenderer<MapEvent> {
     private final Palette palette;
 
-    public AsciiRenderer(Palette palette) {
+    public AsciiMapRenderer(Palette palette) {
         this.palette = palette;
     }
 
@@ -78,9 +78,9 @@ public final class AsciiRenderer implements EventRenderer<MapEvent> {
         };
     }
 
-    /** The event's one-line label (from {@link EventFormatter}) above the resulting map. */
+    /** The event's one-line label (from {@link MapEventFormatter}) above the resulting map. */
     public String renderEvent(MapEvent e) {
-        return EventFormatter.format(e) + "\n" + renderMap(e.after(), affectedBucket(e));
+        return MapEventFormatter.format(e) + "\n" + renderMap(e.after(), affectedBucket(e));
     }
 
     /** The bucket an event touched, or −1 for a whole-table Resize. */

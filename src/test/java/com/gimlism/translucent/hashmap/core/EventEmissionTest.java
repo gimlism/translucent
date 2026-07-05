@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.gimlism.translucent.hashmap.consumer.RecordingListener;
+import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
 import com.gimlism.translucent.hashmap.events.Collision;
 import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.MapEventListener;
@@ -21,7 +21,7 @@ class EventEmissionTest {
     @Test
     void newEntryEmitsPut() {
         var map = new TeachingHashMap<String, Integer>();
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.put("a", 1);
         assertEquals(1, rec.events().size());
@@ -36,7 +36,7 @@ class EventEmissionTest {
     void replacementEmitsPutWithPreviousValue() {
         var map = new TeachingHashMap<String, Integer>();
         map.put("a", 1);
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.put("a", 2);
         assertEquals(1, rec.events().size());
@@ -50,7 +50,7 @@ class EventEmissionTest {
     void collisionEmitsPutThenCollision() {
         var map = new TeachingHashMap<Integer, String>();
         map.put(0, "zero");
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.put(8, "eight"); // bucket 0 already occupied
         assertEquals(2, rec.events().size());
@@ -64,7 +64,7 @@ class EventEmissionTest {
     @Test
     void resizeEmittedAfterThresholdBreach() {
         var map = new TeachingHashMap<Integer, Integer>();
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         for (int k = 1; k <= 7; k++) map.put(k, k); // 7th breaches threshold 6
         List<MapEvent> events = rec.events();
@@ -82,7 +82,7 @@ class EventEmissionTest {
     void removeEmitsRemove() {
         var map = new TeachingHashMap<String, Integer>();
         map.put("a", 1);
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         assertEquals(1, map.remove("a"));
         assertEquals(1, rec.events().size());
@@ -94,7 +94,7 @@ class EventEmissionTest {
     @Test
     void removeMissingKeyEmitsNothing() {
         var map = new TeachingHashMap<String, Integer>();
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.remove("nope");
         assertTrue(rec.events().isEmpty());
@@ -106,7 +106,7 @@ class EventEmissionTest {
         map.put(1, 1);
         map.put(2, 2);
         map.put(3, 3);
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
         map.clear();
         assertEquals(3, rec.events().size());
@@ -117,7 +117,7 @@ class EventEmissionTest {
     @Test
     void listenerMayUnregisterItselfDuringDispatch() {
         var map = new TeachingHashMap<Integer, Integer>();
-        var survivor = new RecordingListener();
+        var survivor = new MapRecordingListener();
         MapEventListener[] selfRemoving = new MapEventListener[1];
         selfRemoving[0] = e -> map.removeListener(selfRemoving[0]);
         map.addListener(selfRemoving[0]);

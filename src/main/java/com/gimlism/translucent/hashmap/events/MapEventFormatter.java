@@ -7,8 +7,8 @@ package com.gimlism.translucent.hashmap.events;
  * ({@code consumer}'s logger, {@code viz}'s renderer) can share one formatting
  * of the event vocabulary without depending on each other.
  */
-public final class EventFormatter {
-    private EventFormatter() {}
+public final class MapEventFormatter {
+    private MapEventFormatter() {}
 
     /** The human-readable line for an event. */
     public static String format(MapEvent event) {

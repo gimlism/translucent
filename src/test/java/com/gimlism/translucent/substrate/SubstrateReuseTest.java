@@ -7,7 +7,7 @@ import com.gimlism.translucent.arraylist.events.ListEvent;
 import com.gimlism.translucent.arraylist.viz.AsciiListRenderer;
 import com.gimlism.translucent.hashmap.core.TeachingHashMap;
 import com.gimlism.translucent.hashmap.events.MapEvent;
-import com.gimlism.translucent.hashmap.viz.AsciiRenderer;
+import com.gimlism.translucent.hashmap.viz.AsciiMapRenderer;
 import com.gimlism.translucent.hashmap.viz.Palette;
 import com.gimlism.translucent.substrate.events.RecordingListener;
 import com.gimlism.translucent.substrate.events.StructureEvent;
@@ -40,7 +40,7 @@ class SubstrateReuseTest {
         list.add("z");
 
         // same renderAll<E>, two different structures
-        assertTrue(renderAll(mapRec.events(), new AsciiRenderer(new Palette(Palette.Mode.PLAIN)))
+        assertTrue(renderAll(mapRec.events(), new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN)))
             .contains("PUT 1=a"));
         assertTrue(renderAll(listRec.events(), new AsciiListRenderer())
             .contains("APPEND z @ 0"));

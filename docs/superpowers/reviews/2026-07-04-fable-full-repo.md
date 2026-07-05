@@ -82,4 +82,8 @@ The ArrayList is the gold standard (exact event grammars + mid-slide frame conte
 2. ✅ **`EventDispatcher<E>` extraction** (D1) — the one real design improvement; also resolves CO7 and the exception-message drift. *(PR #12, merged.)*
 3. ✅ **Listener-exception safety** (C1) — chosen: document-only (the contract now lives on `EventDispatcher`/`StructureEventListener`). *(PR #12, merged.)*
 4. ✅ **Test-coverage hardening** (§4) — closed the trie event-frame gap (highest value), plus live-RB-bin invariants, tree-bin-path auto-resize, resize chain-order, treeify/untreeify frames, null key in a tree bin, `setValue`, `putAll`, `keysWithPrefix` edges, and `Replayer` input edges. *(This pass; +17 tests.)* Not closed (deliberate): `resize()` at `MAXIMUM_CAPACITY` (needs a `newCapacity`-style extraction to be testable — a production change, deferred).
-5. ⬜ **Naming symmetry rename** (D2) + the **`Descend`/narration decision** (D3) — more opinionated; worth a discussion. Several D4 items fold naturally into the planned trie-visualizer slice.
+5. ✅ **Naming symmetry rename** (D2) + the **`Descend`/narration decision** (D3). Chosen: rename the hashmap's unprefixed types to `Map*` (matching the `List*`/`Trie*` siblings, killing the `RecordingListener` collision); and **embrace narration** — `Descend` is documented as a traversal event on `StructureEvent`, and the trie's remove walk now narrates too (grammar `Descend* → Remove → [Prune] → [MergeEdge]`). *(This pass.)*
+
+---
+
+**All five batches complete.** Remaining review items are deliberately deferred, not dropped: `CO1`/`CO2` (the `setValue` three-behaviours and the trie `Remove`-leads convention — both documented and now consciously accepted), the `resize()`-at-`MAXIMUM_CAPACITY` test gap (needs a production extraction), and `D4` (the trie viz layer + `Palette` detection move + grammar-recipe in `substrate/package-info`) — all fold naturally into the planned **trie-visualizer slice**.

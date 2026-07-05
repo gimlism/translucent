@@ -15,7 +15,7 @@ class StructureModelTest {
     @Test
     void mapEventIsAStructureEventWithAStructureSnapshot() {
         var map = new TeachingHashMap<Integer, String>();
-        var rec = new com.gimlism.translucent.hashmap.consumer.RecordingListener();
+        var rec = new com.gimlism.translucent.hashmap.consumer.MapRecordingListener();
         map.addListener(rec);
         map.put(1, "a");
         MapEvent e = rec.events().get(0);

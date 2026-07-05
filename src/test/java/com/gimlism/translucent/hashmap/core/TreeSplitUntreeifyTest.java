@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.gimlism.translucent.hashmap.consumer.RecordingListener;
+import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
 import com.gimlism.translucent.hashmap.events.Untreeify;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +15,7 @@ class TreeSplitUntreeifyTest {
         // 0,8,16,24 -> bucket 0 tree; on resize to 16: 0,16 -> bucket 0, 8,24 -> bucket 8 (each half = 2 <= untreeifyThreshold)
         for (int k : new int[]{0, 8, 16, 24}) map.put(k, "v" + k);
         assertTrue(map.isTreeBin(0));
-        var rec = new RecordingListener();
+        var rec = new MapRecordingListener();
         map.addListener(rec);
 
         map.forceResize();
