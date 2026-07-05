@@ -3,11 +3,14 @@ package com.gimlism.translucent.hashmap.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
 import com.gimlism.translucent.hashmap.events.Put;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -81,5 +84,55 @@ class MapEntryAndBulkTest {
         // putAll funnels through put(): one new-entry Put per source entry
         long puts = rec.events().stream().filter(ev -> ev instanceof Put && ((Put) ev).newEntry()).count();
         assertEquals(3, puts);
+    }
+
+    @Test
+    void replaceAllEmitsOnePutPerEntry() {
+        var map = new TeachingHashMap<Integer, String>();
+        map.put(1, "a");
+        map.put(2, "b");
+        map.put(3, "c");
+        var rec = new MapRecordingListener();
+        map.addListener(rec);
+
+        map.replaceAll((k, v) -> v.toUpperCase());
+
+        assertEquals("A", map.get(1));
+        assertEquals("B", map.get(2));
+        assertEquals("C", map.get(3));
+        // replaceAll iterates entrySet and setValues each -> one replacement Put per entry
+        long puts = rec.events().stream()
+                .filter(ev -> ev instanceof Put && !((Put) ev).newEntry()).count();
+        assertEquals(3, puts);
+    }
+
+    @Test
+    void setValueFromWithinAListenerIsRejected() {
+        var map = new TeachingHashMap<Integer, String>();
+        map.put(1, "a");
+        Map.Entry<Integer, String> captured = map.entrySet().iterator().next();
+        map.addListener(ev -> captured.setValue("X")); // re-entrant write during dispatch
+
+        // the next put's Put event dispatches to the listener, whose setValue calls
+        // beginMutation while the map is already mutating -> ConcurrentModificationException
+        assertThrows(ConcurrentModificationException.class, () -> map.put(2, "b"));
+        // the guard is cleared in finally, so the outer put still landed and the map is usable
+        assertEquals("a", map.get(1));   // the rejected setValue never wrote
+        assertEquals(2, map.size());
+    }
+
+    @Test
+    void setValueDoesNotBumpModCountSoOpenIteratorsSurvive() {
+        var map = new TeachingHashMap<Integer, String>();
+        map.put(1, "a");
+        map.put(2, "b");
+        Iterator<Map.Entry<Integer, String>> it = map.entrySet().iterator();
+        Map.Entry<Integer, String> first = it.next();   // iterator now open
+        first.setValue("A");                            // value replacement: not structural
+
+        // a structural mod would make this next() throw ConcurrentModificationException
+        Map.Entry<Integer, String> second = it.next();
+        assertNotNull(second);
+        assertEquals("A", map.get(1));
     }
 }
