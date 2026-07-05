@@ -11,8 +11,8 @@
 ## Global Constraints
 
 - Package `com.gimlism.translucent.trie.viz`; depends only on `trie.events` and `substrate.viz`. No dependency on `hashmap.*`/`arraylist.*`.
-- Layout: header `trie: size=<S>`; root line `(root)`; each descendant node on its own line, indented 2 spaces per depth, edge label in quotes; a key node appends `●=<value>` (root included when the `""` key exists); highlight prefix `> ` for the node at the event's path, `  ` otherwise.
-- `affectedPath(TrieEvent)` returns the event's `path` (total — every variant has one).
+- Layout: header `trie: size=<S>`; root line `(root)`; each descendant node on its own line, indented 2 spaces per depth, edge label in quotes; a key node appends `●=<value>` (root included when the `""` key exists); highlight prefix `> ` for the node at the event's locus, `  ` otherwise.
+- `affectedPath(TrieEvent)` returns the path of the node to highlight — the event's `path` for every variant except `Prune`, which returns the parent's path (`path` minus the pruned edge label) since its own leaf is gone from `after()`.
 - Both drivers render through the one pure `AsciiTrieRenderer`; thin `Ascii*` subclasses mirror the map/list idiom (incl. a default-renderer convenience constructor on the visualizer).
 - `exec:java` default stays `hashmap.demo.VizDemo`.
 
@@ -316,6 +316,6 @@ public class TrieVizDemo {
 
 ## Notes for the reviewer / final review
 
-- The **`String` path locus** (vs the siblings' `int`) is the design point — it's what makes the narrated `Descend` walk animate. Every `TrieEvent` carries a `path` (uniform since CO4), so `affectedPath` needs no −1/none sentinel; a path that matches no live node (a `Prune`d leaf) just highlights nothing.
+- The **`String` path locus** (vs the siblings' `int`) is the design point — it's what makes the narrated `Descend` walk animate. Every `TrieEvent` carries a `path` (uniform since CO4), so `affectedPath` needs no −1/none sentinel. A `Prune`'s own leaf is gone from `after()`, so `affectedPath` returns its parent's path instead (so the deletion frame highlights the node that lost the child rather than nothing); any locus matching no live node highlights nothing.
 - `●` is a non-ASCII marker (like the map/list use `·`/box-drawing); tests assert it as a literal, output is UTF-8.
 - Deferred (unchanged): the remaining D4 items (`Palette` detection move, grammar recipe in `substrate/package-info`) and the second trie implementation.

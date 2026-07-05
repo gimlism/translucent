@@ -34,7 +34,7 @@ viz slices; the substrate `Visualizer`/`Replayer` come for free.
 |---|---|
 | Layout | **Top-down indented N-ary tree.** Root line `(root)`; each child on its own line, indented 2 spaces per depth, showing its edge label in quotes. |
 | Key marker | A key node shows `●=<value>` after its label (the root too, if the `""` key is present). Non-key internal nodes show only their label. |
-| Highlight | The node at the event's `path` is prefixed `> ` (others `  `), matching the map's 2-char highlight convention. A `path` that matches no node (e.g. a `Prune`'d leaf, now gone) simply highlights nothing — honest. |
+| Highlight | The node at the event's locus is prefixed `> ` (others `  `), matching the map's 2-char highlight convention. The locus is normally the event's `path`; for a `Prune` (whose leaf is gone from `after()`) it is the surviving **parent** that lost the child — `path` minus the pruned edge label — so the deletion is still visible. A locus matching no node highlights nothing. |
 | Colour / `Palette` | **None** — trie nodes are uncoloured (like the list renderer; unlike the map's red-black `Palette`). |
 | Drive modes | **Both** a live `Visualizer<TrieEvent>` and a step-through `Replayer<TrieEvent>`, via thin `Ascii*` subclasses (same idiom as the map/list). |
 
@@ -52,9 +52,11 @@ New package `com.gimlism.translucent.trie.viz`, depending only on `trie.events` 
   - `highlightPath` (`null` for none) prefixes the matching node's line with `> `.
 - `String renderEvent(TrieEvent e)` — `TrieEventFormatter.format(e)` then
   `renderTrie(e.after(), affectedPath(e))`.
-- `static String affectedPath(TrieEvent e)` — returns the event's `path` (total: every
-  variant carries one). This is the trie's analogue of the map's `affectedBucket` / the
-  list's `affectedIndex`, but a `String` locus rather than an `int`.
+- `static String affectedPath(TrieEvent e)` — the path of the node to highlight (total: every
+  variant carries a `path`). Usually the event's own `path`; for a `Prune` it is the parent's
+  path (`path` minus the pruned edge label), since the leaf is gone. This is the trie's analogue
+  of the map's `affectedBucket` / the list's `affectedIndex`, but a `String` locus rather than
+  an `int`.
 
 ### 2. `AsciiTrieVisualizer extends Visualizer<TrieEvent>` — live driver
 
