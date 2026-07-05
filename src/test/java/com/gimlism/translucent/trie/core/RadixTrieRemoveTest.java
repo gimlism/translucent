@@ -53,7 +53,7 @@ class RadixTrieRemoveTest {
     }
 
     @Test
-    void removeBranchKeyEmitsOnlyRemove() {
+    void removeBranchKeyNarratesWalkThenRemovesWithoutCompression() {
         // "sh" is a key AND an internal branch (>=2 children: she, shore)
         var t = of("she", "shore", "sh");
         var rec = new TrieRecordingListener();
