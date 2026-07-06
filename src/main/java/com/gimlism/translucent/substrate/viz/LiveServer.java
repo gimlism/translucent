@@ -110,14 +110,15 @@ public final class LiveServer {
     private void handleEvents(HttpExchange ex) throws IOException {
         ex.getResponseHeaders().set("Content-Type", "text/event-stream; charset=utf-8");
         ex.getResponseHeaders().set("Cache-Control", "no-cache");
-        ex.sendResponseHeaders(200, 0); // 0 => chunked, open-ended
-        ex.getResponseBody().flush(); // push headers to the client now — don't wait for the first frame
-        Conn c = new Conn(ex.getResponseBody());
-        synchronized (lock) {
-            if (lastFrame != null) c.enqueue(lastFrame); // snapshot-on-connect
-            conns.add(c);
-        }
+        OutputStream os = ex.getResponseBody();
+        Conn c = new Conn(os);
         try {
+            ex.sendResponseHeaders(200, 0); // 0 => chunked, open-ended
+            os.flush(); // push headers to the client now — don't wait for the first frame
+            synchronized (lock) {
+                if (lastFrame != null) c.enqueue(lastFrame); // snapshot-on-connect
+                conns.add(c);
+            }
             while (true) {
                 c.write(c.queue.take()); // parks until the next frame
             }
