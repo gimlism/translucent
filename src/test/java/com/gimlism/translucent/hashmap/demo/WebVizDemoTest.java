@@ -1,8 +1,7 @@
-package com.gimlism.translucent.hashmap.core;
+package com.gimlism.translucent.hashmap.demo;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.gimlism.translucent.hashmap.demo.WebVizDemo;
 import org.junit.jupiter.api.Test;
 
 class WebVizDemoTest {

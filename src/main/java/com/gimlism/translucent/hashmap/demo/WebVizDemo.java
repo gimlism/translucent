@@ -25,8 +25,8 @@ public class WebVizDemo {
         System.out.println("Wrote " + out.toAbsolutePath());
     }
 
-    /** The self-contained HTML replay for the standard story (test seam — no filesystem). */
-    public static String buildHtml() {
+    /** The self-contained HTML replay for the standard story (package-private test seam — no filesystem). */
+    static String buildHtml() {
         var map = new TeachingHashMap<Integer, String>();
         var rec = new MapRecordingListener();
         map.addListener(rec);
