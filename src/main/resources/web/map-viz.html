@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeachingHashMap — replay</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1b1b1d; --muted:#777; --card:#fff;
+          --edge:#8a8a8a; --cell:#eceef2; --cellb:#c8ccd4; --red:#d64545; --black:#333; --hl:#f5a623; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16171a; --fg:#e8e8ea; --muted:#999; --card:#1f2126; --edge:#8a8a8a;
+            --cell:#2a2d33; --cellb:#41454d; --red:#e05a5a; --black:#c9ccd2; --hl:#f5a623; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px system-ui,sans-serif; }
+  #app { max-width: 960px; margin: 0 auto; padding: 18px; }
+  h1 { font-size: 16px; font-weight:600; margin: 0 0 12px; }
+  #bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+  button { font:inherit; padding:6px 12px; border:1px solid var(--cellb); border-radius:8px;
+           background:var(--card); color:var(--fg); cursor:pointer; }
+  button:disabled { opacity:.4; cursor:default; }
+  #counter { color:var(--muted); font-variant-numeric: tabular-nums; }
+  #caption { font-weight:600; min-height:1.4em; margin-bottom:8px; }
+  #stage { background:var(--card); border:1px solid var(--cellb); border-radius:12px; padding:10px;
+           transition: opacity .18s ease; overflow:auto; }
+  svg text { fill: var(--fg); font: 13px system-ui, sans-serif; }
+  .idx { fill: var(--muted); font-weight:600; }
+  .cell rect { fill: var(--cell); stroke: var(--cellb); }
+  .cell.hl rect, .node.hl circle { stroke: var(--hl); stroke-width: 3; }
+  .edge { stroke: var(--edge); stroke-width: 2; }
+  .node circle { stroke: #0006; stroke-width: 1.5; }
+  .node.red circle { fill: var(--red); }
+  .node.black circle { fill: var(--black); }
+  .node text, .cell text { fill: #fff; }
+  .cell text { fill: var(--fg); }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>TeachingHashMap — web replay</h1>
+  <div id="caption"></div>
+  <div id="bar">
+    <button id="prev">◀ prev</button>
+    <button id="play">▶ play</button>
+    <button id="next">next ▶</button>
+    <span id="counter"></span>
+  </div>
+  <div id="stage"><svg id="svg"></svg></div>
+</div>
+<script>
+"use strict";
+const DATA = /*__FRAMES__*/;
+const frames = (DATA && DATA.frames) || [];
+const svg = document.getElementById("svg");
+const stage = document.getElementById("stage");
+const caption = document.getElementById("caption");
+const counter = document.getElementById("counter");
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
+const playBtn = document.getElementById("play");
+
+const PAD = 14, IDX_W = 40, ROW_GAP = 12, CELL_W = 66, CELL_H = 30, ARROW = 20,
+      NODE_R = 16, H_GAP = 42, V_GAP = 54;
+let idx = 0, timer = null;
+
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+function txt(s) { return s === null ? "∅" : String(s); }
+
+// Lay out a tree bin: in-order slot (x) + depth (y) per node, then parent->child edges.
+function buildTree(root) {
+  const nodes = [], edges = [], pos = new Map();
+  let slot = 0, maxDepth = 0;
+  (function assign(n, depth) {            // in-order: left, self, right -> slots read left-to-right
+    if (!n) return;
+    assign(n.left, depth + 1);
+    const rec = { key: n.key, color: n.color, s: slot++, depth };
+    maxDepth = Math.max(maxDepth, depth);
+    nodes.push(rec);
+    pos.set(n, rec);
+    assign(n.right, depth + 1);
+  })(root, 0);
+  (function link(n) {                     // one edge from each node to each present child
+    if (!n) return;
+    const p = pos.get(n);
+    if (n.left)  { edges.push([p, pos.get(n.left)]);  link(n.left); }
+    if (n.right) { edges.push([p, pos.get(n.right)]); link(n.right); }
+  })(root);
+  return { nodes, edges, slots: slot, depth: maxDepth };
+}
+
+function renderBucket(b, x0, y0, hl) {
+  // returns { markup, width, height }
+  if (b.kind === "empty") {
+    return { markup: `<text x="${x0}" y="${y0 + CELL_H/2 + 4}" fill="var(--muted)">·</text>`,
+             width: CELL_W, height: CELL_H };
+  }
+  if (b.kind === "chain") {
+    let m = "", x = x0;
+    b.entries.forEach((e, i) => {
+      if (i > 0) m += `<line class="edge" x1="${x-ARROW}" y1="${y0+CELL_H/2}" x2="${x}" y2="${y0+CELL_H/2}"/>`;
+      const on = String(e.key) === hl ? " hl" : "";
+      m += `<g class="cell${on}"><rect x="${x}" y="${y0}" width="${CELL_W}" height="${CELL_H}" rx="6"/>`
+         + `<text x="${x+CELL_W/2}" y="${y0+CELL_H/2+4}" text-anchor="middle">${esc(txt(e.key))}=${esc(txt(e.value))}</text></g>`;
+      x += CELL_W + ARROW;
+    });
+    return { markup: m, width: b.entries.length * (CELL_W + ARROW), height: CELL_H };
+  }
+  // tree
+  const t = buildTree(b.root);
+  const cx = s => x0 + s * H_GAP + NODE_R;
+  const cy = d => y0 + d * V_GAP + NODE_R;
+  let m = "";
+  t.edges.forEach(([p, c]) => {
+    m += `<line class="edge" x1="${cx(p.s)}" y1="${cy(p.depth)}" x2="${cx(c.s)}" y2="${cy(c.depth)}"/>`;
+  });
+  t.nodes.forEach(n => {
+    const on = String(n.key) === hl ? " hl" : "";
+    const cls = n.color === "RED" ? "red" : "black";
+    m += `<g class="node ${cls}${on}"><circle cx="${cx(n.s)}" cy="${cy(n.depth)}" r="${NODE_R}"/>`
+       + `<text x="${cx(n.s)}" y="${cy(n.depth)+4}" text-anchor="middle">${esc(txt(n.key))}</text></g>`;
+  });
+  return { markup: m, width: Math.max(1, t.slots) * H_GAP, height: (t.depth + 1) * V_GAP };
+}
+
+function renderFrame(f) {
+  const hl = (f.event && f.event.highlightKey != null) ? String(f.event.highlightKey) : null;
+  const buckets = f.map.buckets;
+  let y = PAD, maxW = 0, body = "";
+  buckets.forEach((b, i) => {
+    const contentX = PAD + IDX_W;
+    const r = renderBucket(b, contentX, y, hl);
+    body += `<text class="idx" x="${PAD}" y="${y + CELL_H/2 + 4}">${i}</text>`;
+    body += r.markup;
+    maxW = Math.max(maxW, contentX + r.width + PAD);
+    y += r.height + ROW_GAP;
+  });
+  const width = Math.max(320, maxW), height = y + PAD;
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.innerHTML = body;
+}
+
+function render() {
+  const f = frames[idx];
+  caption.textContent = f ? f.event.label : "(no events to replay)";
+  counter.textContent = frames.length ? `frame ${idx + 1} / ${frames.length}` : "";
+  prevBtn.disabled = idx <= 0;
+  nextBtn.disabled = idx >= frames.length - 1;
+  if (f) renderFrame(f); else svg.innerHTML = "";
+  // light cross-fade
+  stage.style.opacity = "0";
+  requestAnimationFrame(() => requestAnimationFrame(() => { stage.style.opacity = "1"; }));
+}
+
+function go(n) { idx = Math.max(0, Math.min(frames.length - 1, n)); render(); }
+function stop() { if (timer) { clearInterval(timer); timer = null; playBtn.textContent = "▶ play"; } }
+prevBtn.onclick = () => { stop(); go(idx - 1); };
+nextBtn.onclick = () => { stop(); go(idx + 1); };
+playBtn.onclick = () => {
+  if (timer) { stop(); return; }
+  if (idx >= frames.length - 1) idx = 0;
+  playBtn.textContent = "⏸ pause";
+  timer = setInterval(() => { if (idx >= frames.length - 1) { stop(); } else { go(idx + 1); } }, 900);
+};
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { stop(); go(idx + 1); }
+  else if (e.key === "ArrowLeft") { stop(); go(idx - 1); }
+});
+render();
+</script>
+</body>
+</html>
