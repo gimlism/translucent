@@ -25,6 +25,7 @@
            transition: opacity .18s ease; overflow:auto; }
   svg text { fill: var(--fg); font: 13px system-ui, sans-serif; }
   .idx { fill: var(--muted); font-weight:600; }
+  .idx.hl { fill: var(--hl); font-weight: 700; }
   .cell rect { fill: var(--cell); stroke: var(--cellb); }
   .cell.hl rect, .node.hl circle { stroke: var(--hl); stroke-width: 3; }
   .edge { stroke: var(--edge); stroke-width: 2; }
@@ -124,12 +125,13 @@ function renderBucket(b, x0, y0, hl) {
 
 function renderFrame(f) {
   const hl = (f.event && f.event.highlightKey != null) ? String(f.event.highlightKey) : null;
+  const hlBucket = (f.event && f.event.bucket != null) ? f.event.bucket : -1;
   const buckets = f.map.buckets;
   let y = PAD, maxW = 0, body = "";
   buckets.forEach((b, i) => {
     const contentX = PAD + IDX_W;
     const r = renderBucket(b, contentX, y, hl);
-    body += `<text class="idx" x="${PAD}" y="${y + CELL_H/2 + 4}">${i}</text>`;
+    body += `<text class="idx${i === hlBucket ? " hl" : ""}" x="${PAD}" y="${y + CELL_H/2 + 4}">${i}</text>`;
     body += r.markup;
     maxW = Math.max(maxW, contentX + r.width + PAD);
     y += r.height + ROW_GAP;

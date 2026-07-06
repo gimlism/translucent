@@ -3,6 +3,7 @@ package com.gimlism.translucent.hashmap.viz;
 import com.gimlism.translucent.hashmap.events.BucketSnapshot;
 import com.gimlism.translucent.hashmap.events.ChainSnapshot;
 import com.gimlism.translucent.hashmap.events.Collision;
+import com.gimlism.translucent.hashmap.events.EmptyBucket;
 import com.gimlism.translucent.hashmap.events.EntrySnapshot;
 import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.MapSnapshot;
@@ -112,23 +113,25 @@ public final class MapJsonSerializer {
 
     private static void writeBucket(JsonWriter w, BucketSnapshot b) {
         w.beginObject();
-        if (b instanceof ChainSnapshot c) {
-            w.name("kind").value("chain");
-            w.name("entries").beginArray();
-            for (EntrySnapshot en : c.entries()) {
-                w.beginObject();
-                w.name("key").value(str(en.key()));
-                w.name("value").value(str(en.value()));
-                w.name("hash").value((long) en.hash());
-                w.endObject();
+        switch (b) {
+            case ChainSnapshot c -> {
+                w.name("kind").value("chain");
+                w.name("entries").beginArray();
+                for (EntrySnapshot en : c.entries()) {
+                    w.beginObject();
+                    w.name("key").value(str(en.key()));
+                    w.name("value").value(str(en.value()));
+                    w.name("hash").value((long) en.hash());
+                    w.endObject();
+                }
+                w.endArray();
             }
-            w.endArray();
-        } else if (b instanceof TreeSnapshot t) {
-            w.name("kind").value("tree");
-            w.name("root");
-            writeNode(w, t.root());
-        } else { // EmptyBucket
-            w.name("kind").value("empty");
+            case TreeSnapshot t -> {
+                w.name("kind").value("tree");
+                w.name("root");
+                writeNode(w, t.root());
+            }
+            case EmptyBucket e -> w.name("kind").value("empty");
         }
         w.endObject();
     }

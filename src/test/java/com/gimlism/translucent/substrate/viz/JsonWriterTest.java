@@ -45,4 +45,10 @@ class JsonWriterTest {
         assertEquals("{}", new JsonWriter().beginObject().endObject().toString());
         assertEquals("[]", new JsonWriter().beginArray().endArray().toString());
     }
+
+    @Test
+    void escapesLessThanToProtectInlineScriptEmbedding() {
+        String json = new JsonWriter().value("</script>").toString();
+        assertEquals("\"\\u003c/script>\"", json);
+    }
 }
