@@ -38,6 +38,13 @@ public final class MapJsonSerializer {
         return w.toString();
     }
 
+    /** One event → the JSON for a single {@code { "event":…, "map":… }} frame (no {@code frames} wrapper). */
+    public static String toFrame(MapEvent e) {
+        JsonWriter w = new JsonWriter();
+        writeFrame(w, e);
+        return w.toString();
+    }
+
     private static void writeFrame(JsonWriter w, MapEvent e) {
         w.beginObject();
         w.name("event");
