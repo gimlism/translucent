@@ -13,6 +13,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
         <junit.version>5.10.2</junit.version>
+        <!-- Default demo for `mvn exec:java`; override on the CLI with -Dexec.mainClass=... -->
+        <exec.mainClass>com.gimlism.translucent.hashmap.demo.VizDemo</exec.mainClass>
     </properties>
 
     <dependencies>
@@ -31,13 +33,16 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
             </plugin>
-            <!-- `mvn exec:java` runs the live ASCII visual demo; override with -Dexec.mainClass=... -->
+            <!-- `mvn exec:java` runs the live ASCII visual demo (VizDemo, the exec.mainClass
+                 default above); override with -Dexec.mainClass=... e.g. the web-viz exporter
+                 (…demo.WebVizDemo) or the text log (…demo.Demo). Referencing the property
+                 rather than hardcoding the class is what makes the -D override take effect. -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.2.0</version>
                 <configuration>
-                    <mainClass>com.gimlism.translucent.hashmap.demo.VizDemo</mainClass>
+                    <mainClass>${exec.mainClass}</mainClass>
                 </configuration>
             </plugin>
         </plugins>
