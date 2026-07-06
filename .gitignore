@@ -1,3 +1,6 @@
+# ── Agent scratch (Superpowers ledgers, task briefs/reports, brainstorm mockups) ──
+.superpowers/
+
 # ── Build output ─────────────────────────────────────────
 # Maven
 target/

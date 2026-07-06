@@ -616,7 +616,7 @@ Create `src/main/resources/web/map-viz.html` (complete, self-contained; the toke
     <button id="next">next ▶</button>
     <span id="counter"></span>
   </div>
-  <div id="stage"><svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div id="stage"><svg id="svg"></svg></div>  <!-- inline SVG in HTML5 is auto-namespaced; no xmlns needed (and it would trip the no-http:// self-containment test) -->
 </div>
 <script>
 "use strict";
