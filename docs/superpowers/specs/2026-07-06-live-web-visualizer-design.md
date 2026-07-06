@@ -127,10 +127,12 @@ new browser connects mid-session:
 ## Event-frame check (recurring bug pattern)
 
 The live path serializes **the event's own already-settled snapshot** at emit time — the same
-discipline the offline serializer relies on. The one live-specific hazard: snapshot-on-connect
-must send the map's **current** committed snapshot (not a stale cached one), so `LiveServer`
-must ask `MapLiveVisualizer` for the latest frame at connect time, after the most recent event
-has fully committed.
+discipline the offline serializer relies on (`toFrame` reads `e.after()`; it never recomputes).
+Snapshot-on-connect is therefore trivially safe: `LiveServer` replays **the last frame it
+broadcast**, and every frame already embeds the full committed snapshot from its event's
+`after()` — so a new connection sees the current committed state with no callback into the
+structure. (This is why `LiveServer` stays map-agnostic: it must NOT reach back into
+`MapLiveVisualizer`/the map at connect time — the cached last frame is the source of truth.)
 
 ## Testing
 
