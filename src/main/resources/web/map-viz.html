@@ -151,7 +151,7 @@ function refreshMeta() {
   counter.textContent = frames.length ? `frame ${idx + 1} / ${frames.length}` : "";
   prevBtn.disabled = idx <= 0;
   nextBtn.disabled = idx >= frames.length - 1;
-  const behind = frames.length - 1 - idx;
+  const behind = Math.max(0, frames.length - 1 - idx);
   liveBtn.hidden = !(LIVE && behind > 0);
   liveBtn.textContent = `⏭ ${behind} new — jump to live`;
 }

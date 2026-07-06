@@ -47,6 +47,7 @@ public class LiveWebVizDemo {
             new CountDownLatch(1).await(); // never counted down — Ctrl-C runs the shutdown hook and exits
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            server.stop(); // interrupted (e.g. IDE stop) — the shutdown hook won't fire, so release the port here
         }
     }
 }
