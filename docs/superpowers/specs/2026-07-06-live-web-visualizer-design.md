@@ -56,18 +56,30 @@ arrive one at a time, after the browser has connected, for an open-ended session
 | Late-joiner / reconnect | **Snapshot-on-connect.** SSE only delivers events *after* connection, and `EventSource` auto-reconnects on drop. Because every `MapEvent` already carries a full whole-structure snapshot, the server sends the **current snapshot as frame 0** to every new/reconnecting connection — so a mid-session or reconnecting browser is never blank, and multi-viewer works with no extra machinery. |
 | Live scrub UX | **Follow-tail unless scrubbed back.** Auto-advance to the newest frame as mutations arrive, *unless* the viewer has scrubbed to an earlier frame — then hold position and show a `N new — jump to live` affordance. |
 | Binding | **`127.0.0.1` by default**, bind address is a constructor arg → LAN/classroom (`0.0.0.0`) is a config flip, not a redesign. Threading is multi-viewer-ready from the start. |
+| Thread model | **Virtual threads** — `server.setExecutor(Executors.newVirtualThreadPerTaskExecutor())`. A held-open SSE connection is a thread parked-and-idle almost its whole life (the canonical virtual-thread workload), so this removes the pool-cap sizing knob entirely: classroom scale stops being a decision. `newVirtualThreadPerTaskExecutor` is a Java 21 API → compiles cleanly at `release=21`. |
 | Port | **Configurable; default a fixed friendly port** (predictable teaching URL). If that port is occupied, fall back to an **OS-assigned free port** and print the actual URL. (`port 0` = always ephemeral.) |
 | Open browser | **Default on** via `java.awt.Desktop.browse`, with a graceful fallback to just printing the URL when headless/unavailable; suppressible via a flag. |
 | Lifecycle | The student's `main()` mutations run and finish, but the **server keeps the JVM alive** so the final state stays live/scrubbable. Clean shutdown on Ctrl-C; a `stop()` for tests. This is the real behavioral change from today's mutate-and-exit demos. |
 | Where intelligence lives | Unchanged from PR #17: **all layout/classification/highlight logic is pre-computed in the Java serializer**; the JS stays a dumb renderer of frames. Live mode only changes where frames *come from*, not what a frame *is*. |
 
-## Threading (the #1 landmine)
+## Threading (the #1 landmine) and fan-out
 
-`HttpServer`'s default executor is **serial (single-threaded)**. A held-open SSE response on
+`HttpServer`'s default executor is **serial (single-threaded)**: a held-open SSE response on
 it starves the server — the next viewer's page GET (and every future request) blocks behind
-the first open stream. It is silent until the *second* connection. Therefore `LiveServer`
-**must** call `server.setExecutor(pool)` with a bounded thread pool; **each open SSE connection
-holds one thread** for its lifetime. This is designed in from the start, not retrofitted.
+the first open stream, silent until the *second* connection. `LiveServer` therefore **must**
+set an explicit executor. It uses **`Executors.newVirtualThreadPerTaskExecutor()`**: each open
+SSE connection holds its own (virtual, ~KB, parked-and-idle) thread for its lifetime, so there
+is no thread-pool cap to size and classroom scale is a non-issue. (Pinning — a pre-JDK-24
+concern where `synchronized` pinned the carrier — is moot on the JDK 26 runtime per JEP 491;
+the `release=21` target is bytecode-level only and does not affect runtime pinning behavior.)
+
+**Fan-out must not let a slow client block the mutator.** `broadcast(frame)` runs on the
+student's mutating thread; it must not write synchronously to every socket, or one stalled
+browser wedges the teaching session. So each connection owns a **bounded outbound queue**:
+`broadcast` *enqueues* to every connection (never blocks) and each connection's own virtual
+thread drains and writes. A dead/slow client backs up only its own queue (on overflow: drop
+the connection, not the session). Virtual threads make "one draining thread per connection"
+free, which is why this robust design costs nothing here.
 
 ## Components
 
@@ -76,7 +88,7 @@ HashMap specifics stay in `hashmap/viz`, mirroring the existing seam.
 
 | Component | Package | Responsibility | Tested |
 |---|---|---|---|
-| `LiveServer` | `substrate/viz` | Wrap `HttpServer`. Serve the page at `/`; hold SSE connections at `/events`; own the thread pool + connection registry; `broadcast(String frameJson)` to all connections; **snapshot-on-connect** (send a supplied frame 0 to each new connection); `start(bindAddr, port)` / `stop()`; keep the JVM alive. **Map-agnostic.** | ✅ unit (JDK `HttpClient`) |
+| `LiveServer` | `substrate/viz` | Wrap `HttpServer` with a **virtual-thread executor**. Serve the page at `/`; hold SSE connections at `/events`; own the connection registry, each connection with a **bounded outbound queue** drained by its own virtual thread; `broadcast(String frameJson)` enqueues to all connections (non-blocking); **snapshot-on-connect** (send a supplied frame 0 to each new connection); `start(bindAddr, port)` / `stop()`; keep the JVM alive. **Map-agnostic.** | ✅ unit (JDK `HttpClient`) |
 | `MapLiveVisualizer` | `hashmap/viz` | A `MapEventListener` (the live twin of `MapRecordingListener`). On each event, serialize **one** frame and `server.broadcast(...)`. Also supplies the current snapshot frame for snapshot-on-connect. | ✅ unit |
 | `MapJsonSerializer` | `hashmap/viz` | **Refactor:** extract a per-event `toFrame(MapEvent)` that emits a single frame object; `toJson(list)` becomes "join many `toFrame`s into the `frames` array." Live calls `toFrame` per event; baked path unchanged in output. | ✅ unit |
 | `map-viz.html` template | `src/main/resources/web/` | Add live mode: open `EventSource('/events')`, feed frames into the existing `applyFrame()`, follow-tail + `jump to live`. Baked mode unchanged. | ⛔ inspection |
@@ -119,8 +131,9 @@ has fully committed.
 - **`LiveServer`** (zero-dep, JDK `java.net.http.HttpClient` against a real server on an
   ephemeral port): the page serves at `/`; a GET to `/events` receives the injected
   snapshot-on-connect frame first; a `broadcast(...)` after connect is received as a `data:`
-  message; a second concurrent connection is served promptly (guards the serial-executor
-  landmine); `stop()` releases the port.
+  message; a second concurrent connection is served promptly *while the first stays open*
+  (guards the serial-executor landmine); a `broadcast` reaches two concurrent connections;
+  `stop()` releases the port.
 - **`MapLiveVisualizer`:** a `put` produces one broadcast whose frame equals
   `MapJsonSerializer.toFrame(thatEvent)`; the connect-frame reflects the current map state.
 - **`MapJsonSerializer.toFrame`:** one event → one well-formed frame object; `toJson(list)`
