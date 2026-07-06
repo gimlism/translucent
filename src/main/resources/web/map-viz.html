@@ -104,7 +104,8 @@ function renderBucket(b, x0, y0, hl) {
          + `<text x="${x+CELL_W/2}" y="${y0+CELL_H/2+4}" text-anchor="middle">${esc(txt(e.key))}=${esc(txt(e.value))}</text></g>`;
       x += CELL_W + ARROW;
     });
-    return { markup: m, width: b.entries.length * (CELL_W + ARROW), height: CELL_H };
+    const n = b.entries.length;
+    return { markup: m, width: n * CELL_W + Math.max(0, n - 1) * ARROW, height: CELL_H };
   }
   // tree
   const t = buildTree(b.root);

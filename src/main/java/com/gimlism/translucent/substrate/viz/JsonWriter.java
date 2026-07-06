@@ -19,6 +19,11 @@ public final class JsonWriter {
     /** True immediately after {@link #name}: the next value fills that member, so it emits no comma. */
     private boolean expectingValue = false;
 
+    /** U+2028 LINE SEPARATOR — valid unescaped in JSON, but a line terminator in pre-ES2019 JS. */
+    private static final char LINE_SEPARATOR = ' ';
+    /** U+2029 PARAGRAPH SEPARATOR — same hazard as {@link #LINE_SEPARATOR} for inline-script embedding. */
+    private static final char PARAGRAPH_SEPARATOR = ' ';
+
     public JsonWriter beginObject() { pre(); out.append('{'); counts.push(0); return this; }
     public JsonWriter endObject()   { out.append('}'); counts.pop(); post(); return this; }
     public JsonWriter beginArray()  { pre(); out.append('['); counts.push(0); return this; }
@@ -60,10 +65,15 @@ public final class JsonWriter {
                 case '\t' -> out.append("\\t");
                 case '\b' -> out.append("\\b");
                 case '\f' -> out.append("\\f");
+                // '<' can't form </script> and terminate the inline <script> the JSON is embedded in.
                 case '<'  -> out.append("\\u003c");
                 default -> {
-                    if (c < 0x20) out.append(String.format("\\u%04x", (int) c));
-                    else out.append(c);
+                    // Control chars, plus U+2028/U+2029 which are JS (pre-ES2019) line terminators.
+                    if (c < 0x20 || c == LINE_SEPARATOR || c == PARAGRAPH_SEPARATOR) {
+                        out.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        out.append(c);
+                    }
                 }
             }
         }
