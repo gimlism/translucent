@@ -53,7 +53,7 @@ arrive one at a time, after the browser has connected, for an open-ended session
 | Why not WebSocket | The JDK ships a WebSocket *client* but **no server**, so WS would cost a third-party dependency and buy nothing SSE-down + POST-up doesn't. Rejected on the zero-dep ethos. |
 | Zero new dependencies | Preserved. Server, SSE framing, and JSON are all hand-rolled / JDK-only, matching the rest of the project. |
 | One template or two | **One template, two data sources.** `map-viz.html` gains a live mode: if served with a live flag it opens `new EventSource('/events')` and feeds each frame into the *same* `applyFrame()`; otherwise it reads the baked `/*__FRAMES__*/` array as today. The offline exporter is untouched. |
-| Late-joiner / reconnect | **Snapshot-on-connect.** SSE only delivers events *after* connection, and `EventSource` auto-reconnects on drop. Because every `MapEvent` already carries a full whole-structure snapshot, the server sends the **current snapshot as frame 0** to every new/reconnecting connection — so a mid-session or reconnecting browser is never blank, and multi-viewer works with no extra machinery. |
+| Late-joiner / reconnect | **Snapshot-on-connect.** SSE only delivers events *after* connection, and `EventSource` auto-reconnects on drop. Because every `MapEvent` already carries a full whole-structure snapshot, and each frame embeds that snapshot, the server simply **caches the last frame it broadcast** and replays it to every new/reconnecting connection as frame 0 — so a mid-session or reconnecting browser is never blank, and multi-viewer works with no extra machinery. (Caching the last frame the server *saw* keeps `LiveServer` fully map-agnostic — it needs no callback into the structure.) A viewer who connects before the very first mutation sees a "waiting" state until one arrives. |
 | Live scrub UX | **Follow-tail unless scrubbed back.** Auto-advance to the newest frame as mutations arrive, *unless* the viewer has scrubbed to an earlier frame — then hold position and show a `N new — jump to live` affordance. |
 | Binding | **`127.0.0.1` by default**, bind address is a constructor arg → LAN/classroom (`0.0.0.0`) is a config flip, not a redesign. Threading is multi-viewer-ready from the start. |
 | Thread model | **Virtual threads** — `server.setExecutor(Executors.newVirtualThreadPerTaskExecutor())`. A held-open SSE connection is a thread parked-and-idle almost its whole life (the canonical virtual-thread workload), so this removes the pool-cap sizing knob entirely: classroom scale stops being a decision. `newVirtualThreadPerTaskExecutor` is a Java 21 API → compiles cleanly at `release=21`. |
@@ -77,9 +77,13 @@ the `release=21` target is bytecode-level only and does not affect runtime pinni
 student's mutating thread; it must not write synchronously to every socket, or one stalled
 browser wedges the teaching session. So each connection owns a **bounded outbound queue**:
 `broadcast` *enqueues* to every connection (never blocks) and each connection's own virtual
-thread drains and writes. A dead/slow client backs up only its own queue (on overflow: drop
-the connection, not the session). Virtual threads make "one draining thread per connection"
-free, which is why this robust design costs nothing here.
+thread drains and writes. A dead/slow client backs up only its own queue; on overflow the
+queue **drops its oldest frame** to make room for the newest — the slow viewer skips
+intermediate steps and converges to the latest state, never stalling the session (and, under
+follow-tail, the latest is what they want anyway). A short lock around "set last frame + offer
+to all" and "capture last frame + register" keeps snapshot-on-connect race-free without any
+I/O inside the lock. Virtual threads make "one draining thread per connection" free, which is
+why this robust design costs nothing here.
 
 ## Components
 
@@ -88,11 +92,13 @@ HashMap specifics stay in `hashmap/viz`, mirroring the existing seam.
 
 | Component | Package | Responsibility | Tested |
 |---|---|---|---|
-| `LiveServer` | `substrate/viz` | Wrap `HttpServer` with a **virtual-thread executor**. Serve the page at `/`; hold SSE connections at `/events`; own the connection registry, each connection with a **bounded outbound queue** drained by its own virtual thread; `broadcast(String frameJson)` enqueues to all connections (non-blocking); **snapshot-on-connect** (send a supplied frame 0 to each new connection); `start(bindAddr, port)` / `stop()`; keep the JVM alive. **Map-agnostic.** | ✅ unit (JDK `HttpClient`) |
-| `MapLiveVisualizer` | `hashmap/viz` | A `MapEventListener` (the live twin of `MapRecordingListener`). On each event, serialize **one** frame and `server.broadcast(...)`. Also supplies the current snapshot frame for snapshot-on-connect. | ✅ unit |
+| `LiveServer` | `substrate/viz` | Wrap `HttpServer` with a **virtual-thread executor**. Serve the page at `/`; hold SSE connections at `/events`; own the connection registry, each connection with a **bounded outbound queue** drained by its own virtual thread; `broadcast(String frameJson)` caches the frame and enqueues to all connections (non-blocking); **snapshot-on-connect** (replay the cached last frame to each new connection); `start()` / `stop()` / `port()`; port fallback to ephemeral if the requested one is taken. **Map-agnostic** (never references any structure type). | ✅ unit (JDK `HttpClient`) |
+| `MapLiveVisualizer` | `hashmap/viz` | A `MapEventListener` (the live twin of `MapRecordingListener`). On each event, serialize **one** frame via `MapJsonSerializer.toFrame` and hand it to a `Consumer<String>` sink (the server's `broadcast`). | ✅ unit |
 | `MapJsonSerializer` | `hashmap/viz` | **Refactor:** extract a per-event `toFrame(MapEvent)` that emits a single frame object; `toJson(list)` becomes "join many `toFrame`s into the `frames` array." Live calls `toFrame` per event; baked path unchanged in output. | ✅ unit |
-| `map-viz.html` template | `src/main/resources/web/` | Add live mode: open `EventSource('/events')`, feed frames into the existing `applyFrame()`, follow-tail + `jump to live`. Baked mode unchanged. | ⛔ inspection |
-| `LiveWebVizDemo` (stub) | `hashmap/demo` | The **student stub**: map + `MapLiveVisualizer` + `LiveServer` pre-wired, a marked `// TODO: your mutations here` block, browser auto-opens. Run via `mvn exec:java -Dexec.mainClass=…demo.LiveWebVizDemo`. | ⛔ demo |
+| `MapWebExporter` | `hashmap/viz` | **Extend:** add `liveHtml()` (template with `frames = null`, live flag on) alongside `toHtml(json)` (baked, live flag off). Both inject the two template tokens. | ✅ unit |
+| `map-viz.html` template | `src/main/resources/web/` | Add live mode behind a `/*__LIVE__*/` flag: open `EventSource('/events')`, feed frames into the existing `renderFrame()`, follow-tail + a `jump to live` button. Baked mode unchanged. | ⛔ inspection |
+| `BrowserLauncher` | `hashmap/demo` | Open a URL via `java.awt.Desktop`; silently no-op on headless/unsupported (never throws). Demo glue. | ⛔ trivial |
+| `LiveWebVizDemo` (stub) | `hashmap/demo` | The **student stub**: map + `MapLiveVisualizer` + `LiveServer` pre-wired, a marked `// TODO: your mutations here` block, browser auto-opens, server keeps the JVM alive until Ctrl-C. Run via `mvn exec:java -Dexec.mainClass=…demo.LiveWebVizDemo`. | ⛔ demo |
 
 ## Data flow (Slice 1)
 
@@ -109,9 +115,9 @@ new browser connects mid-session:
 
 ## Front-end (delta over PR #17)
 
-- **New:** a live mode that opens `new EventSource('/events')` and calls the *existing*
-  `applyFrame(frame)` on each message — the renderer, layout, highlight, and cross-fade are all
-  reused verbatim.
+- **New:** a live mode that opens `new EventSource('/events')` and pushes each arriving frame
+  through the *existing* `renderFrame(frame)` (via `go`/`render`) — the renderer, layout,
+  highlight, and cross-fade are all reused verbatim.
 - **New:** follow-tail logic — append arriving frames to the timeline; auto-advance to the
   newest **unless** the viewer has scrubbed back, in which case hold and show
   `N new — jump to live`.
