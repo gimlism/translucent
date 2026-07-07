@@ -126,4 +126,22 @@ class MapCommandInterpreterTest {
         interp.execute("get 1", map); // read → no event → no frame
         assertTrue(frames.isEmpty(), "reads emit no frame");
     }
+
+    @Test
+    void nullLineIsANoOpWithoutThrowing() {
+        CommandResult r = interp.execute(null, map);
+        assertEquals("", r.message());
+        assertFalse(r.quit());
+        assertEquals(0, map.size());
+    }
+
+    @Test
+    void errorPathsForRemoveGetContainsKey() {
+        assertEquals("not an integer: 'foo'", interp.execute("remove foo", map).message());
+        assertEquals("usage: remove <int-key>", interp.execute("remove", map).message());
+        assertEquals("usage: get <int-key>", interp.execute("get", map).message());
+        assertEquals("not an integer: 'foo'", interp.execute("containsKey foo", map).message());
+        assertEquals("usage: containsKey <int-key>", interp.execute("contains", map).message());
+        assertEquals(0, map.size(), "no error path mutated the map");
+    }
 }

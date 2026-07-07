@@ -18,6 +18,9 @@ public final class MapCommandInterpreter {
 
     /** Parse {@code line}, apply it to {@code map}, and return the result to show the user. */
     public CommandResult execute(String line, TeachingHashMap<Integer, String> map) {
+        if (line == null) {
+            return CommandResult.of(""); // null (e.g. an empty POST body) — treat as a blank no-op
+        }
         String trimmed = line.strip();
         if (trimmed.isEmpty()) {
             return CommandResult.of(""); // blank line: silent no-op
