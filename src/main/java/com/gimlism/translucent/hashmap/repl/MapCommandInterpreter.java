@@ -98,13 +98,13 @@ public final class MapCommandInterpreter {
     public String helpText() {
         return String.join("\n",
                 "TeachingHashMap live REPL — type commands; mutations render live in the browser.",
-                "  put <int> <value>   insert or update a key (value may contain spaces)",
-                "  remove <int>        remove a key",
-                "  get <int>           look up a key (prints the value; no viz change)",
-                "  containsKey <int>   test membership (alias: contains)",
-                "  size                number of entries",
-                "  clear               remove all entries",
-                "  help                show this help",
-                "  quit                stop the server and exit (alias: exit)");
+                "  put <int-key> <value>   insert or update a key (value may contain spaces)",
+                "  remove <int-key>        remove a key",
+                "  get <int-key>           look up a key (prints the value; no viz change)",
+                "  containsKey <int-key>   test membership (alias: contains)",
+                "  size                    number of entries",
+                "  clear                   remove all entries",
+                "  help                    show this help",
+                "  quit                    stop the server and exit (alias: exit)");
     }
 }
