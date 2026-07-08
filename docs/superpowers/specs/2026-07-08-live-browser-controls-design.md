@@ -84,9 +84,18 @@ The park-until-Ctrl-C lifecycle mirrors `LiveWebVizDemo.awaitShutdown` (shutdown
 `CountDownLatch`, with `stop()` in the `InterruptedException` path so an IDE stop releases the
 port).
 
-### C. The template (`map-viz.html`) gains a command input, gated on the live token
+### C. The template (`map-viz.html`) gains a command input, gated on a dedicated controls token
 
-Inside the existing `if (LIVE) { ... }` block (which already opens the `EventSource`):
+The template gets a **new `/*__CONTROLS__*/` token** injected as a boolean `CONTROLS` flag,
+**separate from `LIVE`**. "Controls enabled" is a distinct fact from "live SSE mirror": all three
+live demos serve `liveHtml()` (so `LIVE` is true in each), but only `LiveControlsDemo` wires a
+command handler into its server. Gating the input on `LIVE` alone would render a command box in
+`LiveReplDemo` and `LiveWebVizDemo` too, where a POST would 405 (those demos drive the map from the
+terminal / from code, not the browser). So the command UI is gated on **`CONTROLS`**, and a new
+`MapWebExporter.controlsHtml()` (frames null, live true, controls true) is what `LiveControlsDemo`
+serves. `liveHtml()` keeps controls **false**, so the two older demos are visually unchanged.
+
+Inside the SSE-connected live path, when `CONTROLS` is true:
 
 - Render a text input + a **Run** button in the control bar, plus a small status line for the
   response text.
@@ -95,7 +104,8 @@ Inside the existing `if (LIVE) { ... }` block (which already opens the `EventSou
 - **The viz is not updated from the POST response.** The redraw arrives on its own through the
   existing `/events` SSE stream (mutation → event → broadcast). The response text is separate
   feedback (see "Why the text response exists").
-- In replay mode (`LIVE` is false — no server to POST to) the command input is **not rendered**.
+- When `CONTROLS` is false (replay mode, or the two older live demos) the command input is **not
+  rendered**.
 
 The input-box + `fetch` JS is **untested-by-design**, like the rest of the dumb renderer —
 browser-verified via the standard live-viz recipe.
@@ -161,6 +171,8 @@ run on two threads and both would mutate a non-thread-safe `TeachingHashMap`.
   - `POST /command` on a server built with a `null` handler → `405`.
   - A non-POST method on `/command` → `405`.
   - Existing root + SSE tests remain green.
+- **`MapWebExporter` unit test (hashmap/viz):** `controlsHtml()` sets the `CONTROLS` flag to
+  `true` (and live true, frames null); `liveHtml()` keeps it `false`.
 - **Headless end-to-end test (hashmap/viz):** stand up a `LiveServer` wired to a real map +
   interpreter (as `LiveControlsDemo` does), open an SSE connection, `POST /command` a `put`, and
   assert a frame carrying that mutation arrives on `/events`. Exercises the whole
@@ -174,8 +186,11 @@ run on two threads and both would mutate a non-thread-safe `TeachingHashMap`.
 
 - `src/main/java/com/gimlism/translucent/substrate/viz/LiveServer.java` — 4th ctor param +
   `POST /command` context (retain 3-arg ctor delegating with `null`).
+- `src/main/java/com/gimlism/translucent/hashmap/viz/MapWebExporter.java` — new `/*__CONTROLS__*/`
+  token + `controlsHtml()`.
 - `src/main/java/com/gimlism/translucent/hashmap/demo/LiveControlsDemo.java` — **new**.
-- `src/main/resources/web/map-viz.html` — command input + `fetch` POST inside the `LIVE` block.
+- `src/main/resources/web/map-viz.html` — `const CONTROLS` + command input + `fetch` POST, gated on
+  `CONTROLS`.
 - `src/test/java/com/gimlism/translucent/substrate/viz/LiveServerTest.java` — POST/405 cases.
 - New or extended end-to-end test under `src/test/java/com/gimlism/translucent/hashmap/viz/`.
 
