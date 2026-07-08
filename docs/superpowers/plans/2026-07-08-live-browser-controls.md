@@ -26,7 +26,9 @@
 - `src/test/java/com/gimlism/translucent/substrate/viz/LiveServerTest.java` — **modify**: add POST-handler, null-handler-405, and non-POST-405 tests.
 - `src/main/java/com/gimlism/translucent/hashmap/viz/MapWebExporter.java` — **modify**: add `/*__CONTROLS__*/` token + `controlsHtml()`; thread a third replacement through `inject`.
 - `src/test/java/com/gimlism/translucent/hashmap/viz/MapWebExporterControlsTest.java` — **create**: assert `controlsHtml()` sets `CONTROLS=true`, `liveHtml()` keeps it `false`.
-- `src/main/java/com/gimlism/translucent/hashmap/demo/LiveControlsDemo.java` — **create**: the browser-driven demo + a static `commandHandler(...)` test seam.
+- `src/main/java/com/gimlism/translucent/hashmap/demo/DemoLifecycle.java` — **create**: shared `awaitShutdown(LiveServer)` (park-until-Ctrl-C + clean stop), extracted from `LiveWebVizDemo` so both live-server demos share it (no verbatim duplication).
+- `src/main/java/com/gimlism/translucent/hashmap/demo/LiveWebVizDemo.java` — **modify**: delete its private `awaitShutdown`, call `DemoLifecycle.awaitShutdown(server)`.
+- `src/main/java/com/gimlism/translucent/hashmap/demo/LiveControlsDemo.java` — **create**: the browser-driven demo + a static `commandHandler(...)` test seam; parks via `DemoLifecycle.awaitShutdown`.
 - `src/test/java/com/gimlism/translucent/hashmap/demo/LiveControlsEndToEndTest.java` — **create**: POST a command over HTTP through the real handler wiring, assert a frame arrives on `/events`.
 - `src/main/resources/web/map-viz.html` — **modify**: read `const CONTROLS = /*__CONTROLS__*/;`, render the command input + `fetch` POST when `CONTROLS` is true.
 
@@ -326,17 +328,68 @@ git commit -m "feat(viz): CONTROLS token + MapWebExporter.controlsHtml()"
 
 ---
 
-## Task 3: `LiveControlsDemo` + headless end-to-end test
+## Task 3: shared `DemoLifecycle` + `LiveControlsDemo` + headless end-to-end test
 
 **Files:**
+- Create: `src/main/java/com/gimlism/translucent/hashmap/demo/DemoLifecycle.java`
+- Modify: `src/main/java/com/gimlism/translucent/hashmap/demo/LiveWebVizDemo.java`
 - Create: `src/main/java/com/gimlism/translucent/hashmap/demo/LiveControlsDemo.java`
 - Create: `src/test/java/com/gimlism/translucent/hashmap/demo/LiveControlsEndToEndTest.java`
 
 **Interfaces:**
 - Consumes: `LiveServer(String, String, int, Function<String,String>)` (Task 1), `MapWebExporter.controlsHtml()` (Task 2), existing `TeachingHashMap`, `MapCommandInterpreter`, `MapLiveVisualizer`, `BrowserLauncher`.
-- Produces: `static java.util.function.Function<String,String> LiveControlsDemo.commandHandler(TeachingHashMap<Integer,String> map, MapCommandInterpreter interpreter)` — the serialized `line → interpreter.execute(line, map).message()` closure. This is the demo's tested seam (like `LiveReplDemo.runRepl`); `main` and the end-to-end test both use it.
+- Produces:
+  - `static void DemoLifecycle.awaitShutdown(LiveServer server)` — park the calling thread until Ctrl-C, stopping the server cleanly on the way out. Package-private, shared by `LiveWebVizDemo` and `LiveControlsDemo`.
+  - `static java.util.function.Function<String,String> LiveControlsDemo.commandHandler(TeachingHashMap<Integer,String> map, MapCommandInterpreter interpreter)` — the serialized `line → interpreter.execute(line, map).message()` closure. This is the demo's tested seam (like `LiveReplDemo.runRepl`); `main` and the end-to-end test both use it.
 
-- [ ] **Step 1: Write the failing end-to-end test**
+- [ ] **Step 1: Extract `DemoLifecycle.awaitShutdown` (pure move, no behavior change)**
+
+Create `src/main/java/com/gimlism/translucent/hashmap/demo/DemoLifecycle.java` with the lifecycle logic lifted verbatim from `LiveWebVizDemo`:
+
+```java
+package com.gimlism.translucent.hashmap.demo;
+
+import com.gimlism.translucent.substrate.viz.LiveServer;
+import java.util.concurrent.CountDownLatch;
+
+/** Shared demo lifecycle: keep the JVM alive so a live {@link LiveServer} stays serving until Ctrl-C. */
+final class DemoLifecycle {
+
+    private DemoLifecycle() {}
+
+    /** Park the calling thread until Ctrl-C (or interrupt); stop the server cleanly on the way out. */
+    static void awaitShutdown(LiveServer server) {
+        Runtime.getRuntime().addShutdownHook(new Thread(server::stop));
+        try {
+            new CountDownLatch(1).await(); // never counted down — Ctrl-C runs the shutdown hook and exits
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            server.stop(); // interrupted (e.g. IDE stop) — the shutdown hook won't fire, so release the port here
+        }
+    }
+}
+```
+
+Then edit `LiveWebVizDemo.java`: delete its private `awaitShutdown` method and the now-unused `import java.util.concurrent.CountDownLatch;`, and change the call site from `awaitShutdown(server);` to:
+
+```java
+        DemoLifecycle.awaitShutdown(server);
+```
+
+- [ ] **Step 2: Verify the extraction compiles and the suite is still green**
+
+Run: `mvn -q test`
+Expected: PASS — `awaitShutdown` is untested (it parks forever), so this is a behavior-preserving move; the whole suite stays green. If compilation fails, check the `CountDownLatch` import was removed from `LiveWebVizDemo` and added to `DemoLifecycle`.
+
+- [ ] **Step 3: Commit the extraction**
+
+```bash
+git add src/main/java/com/gimlism/translucent/hashmap/demo/DemoLifecycle.java \
+        src/main/java/com/gimlism/translucent/hashmap/demo/LiveWebVizDemo.java
+git commit -m "refactor(demo): extract shared DemoLifecycle.awaitShutdown"
+```
+
+- [ ] **Step 4: Write the failing end-to-end test**
 
 Create `src/test/java/com/gimlism/translucent/hashmap/demo/LiveControlsEndToEndTest.java`:
 
@@ -414,12 +467,12 @@ class LiveControlsEndToEndTest {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 5: Run the test to verify it fails**
 
 Run: `mvn -q test -Dtest=LiveControlsEndToEndTest`
 Expected: FAIL — `LiveControlsDemo` does not exist yet (compile error).
 
-- [ ] **Step 3: Create `LiveControlsDemo`**
+- [ ] **Step 6: Create `LiveControlsDemo`**
 
 Create `src/main/java/com/gimlism/translucent/hashmap/demo/LiveControlsDemo.java`:
 
@@ -432,7 +485,6 @@ import com.gimlism.translucent.hashmap.viz.MapLiveVisualizer;
 import com.gimlism.translucent.hashmap.viz.MapWebExporter;
 import com.gimlism.translucent.substrate.viz.LiveServer;
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 
 /**
@@ -458,7 +510,7 @@ public class LiveControlsDemo {
         BrowserLauncher.open(url);
         System.out.println("Live controls — serving at " + url + " — type commands in the browser; Ctrl-C to stop.");
 
-        awaitShutdown(server);
+        DemoLifecycle.awaitShutdown(server);
     }
 
     /**
@@ -477,26 +529,15 @@ public class LiveControlsDemo {
             }
         };
     }
-
-    /** Park the main thread until Ctrl-C; stop the server cleanly on the way out. */
-    private static void awaitShutdown(LiveServer server) {
-        Runtime.getRuntime().addShutdownHook(new Thread(server::stop));
-        try {
-            new CountDownLatch(1).await(); // never counted down — Ctrl-C runs the shutdown hook and exits
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            server.stop(); // interrupted (e.g. IDE stop) — the shutdown hook won't fire, so release the port here
-        }
-    }
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 7: Run the test to verify it passes**
 
 Run: `mvn -q test -Dtest=LiveControlsEndToEndTest`
 Expected: PASS — the POST returns `put 42 = x` and a `Put` frame arrives on `/events`.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/main/java/com/gimlism/translucent/hashmap/demo/LiveControlsDemo.java \
@@ -620,10 +661,10 @@ Expected: PASS — all prior tests plus the ~5 new Java tests from Tasks 1–3 (
 Run: `grep -nE "import com.gimlism.translucent.(hashmap|arraylist|trie)" src/main/java/com/gimlism/translucent/substrate/viz/LiveServer.java`
 Expected: **no output** — the substrate must not import any concrete structure. (An empty result confirms agnosticism held.)
 
-- [ ] **Step 3: Confirm the two older demos are visually unchanged**
+- [ ] **Step 3: Confirm the older demos changed only as intended**
 
-Run: `git diff --stat HEAD~4 -- src/main/java/com/gimlism/translucent/hashmap/demo/LiveReplDemo.java src/main/java/com/gimlism/translucent/hashmap/demo/LiveWebVizDemo.java`
-Expected: **no output** — neither older demo was modified. (They keep serving `liveHtml()` → `CONTROLS=false` → no command box.)
+Run: `git diff --stat main -- src/main/java/com/gimlism/translucent/hashmap/demo/LiveReplDemo.java src/main/java/com/gimlism/translucent/hashmap/demo/LiveWebVizDemo.java`
+Expected: `LiveReplDemo.java` — **not listed** (untouched). `LiveWebVizDemo.java` — listed with a small delta (only the `awaitShutdown` extraction: deleted method + import, one changed call site). Both still serve `liveHtml()` → `CONTROLS=false` → no command box. If `LiveReplDemo.java` appears, or `LiveWebVizDemo`'s delta is more than the extraction, investigate.
 
 - [ ] **Step 4: Commit any stray fixes, then hand off to the whole-branch review**
 
