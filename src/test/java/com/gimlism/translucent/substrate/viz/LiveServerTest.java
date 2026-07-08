@@ -119,4 +119,39 @@ class LiveServerTest {
             assertEquals(List.of("{\"f\":7}", "{\"f\":7}"), got);
         });
     }
+
+    private void startWithHandler(java.util.function.Function<String, String> handler) throws IOException {
+        server = new LiveServer("<html></html>", "127.0.0.1", 0, handler);
+        server.start();
+    }
+
+    private HttpResponse<String> post(String path, String body) throws IOException, InterruptedException {
+        return client.send(HttpRequest.newBuilder(URI.create(base() + path))
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .build(), BodyHandlers.ofString());
+    }
+
+    @Test
+    void postCommandInvokesTheHandlerAndReturnsItsText() throws Exception {
+        startWithHandler(line -> "echo:" + line);
+        HttpResponse<String> resp = post("/command", "put 8 v8");
+        assertEquals(200, resp.statusCode());
+        assertEquals("echo:put 8 v8", resp.body());
+    }
+
+    @Test
+    void postCommandWithNoHandlerIs405() throws Exception {
+        startWithPage("<html></html>"); // 3-arg ctor => null handler
+        HttpResponse<String> resp = post("/command", "put 8 v8");
+        assertEquals(405, resp.statusCode());
+    }
+
+    @Test
+    void getOnCommandIs405() throws Exception {
+        startWithHandler(line -> "unused");
+        HttpResponse<String> resp = client.send(
+                HttpRequest.newBuilder(URI.create(base() + "/command")).GET().build(),
+                BodyHandlers.ofString());
+        assertEquals(405, resp.statusCode());
+    }
 }

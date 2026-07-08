@@ -3,6 +3,7 @@ package com.gimlism.translucent.substrate.viz;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.BindException;
 import java.net.InetSocketAddress;
@@ -13,6 +14,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 
 /**
  * Generic live-viz transport: serves one HTML page and streams JSON frames to every connected
@@ -31,6 +33,7 @@ public final class LiveServer {
     private static final int QUEUE_CAPACITY = 256;
 
     private final String pageHtml;
+    private final Function<String, String> commandHandler; // nullable — null => POST /command 405s
     private final String bindAddr;
     private final int requestedPort;
 
@@ -42,10 +45,21 @@ public final class LiveServer {
     private ExecutorService executor;
     private int port;
 
+    /** No-controls server (SSE mirror only): a {@code POST /command} returns 405. */
     public LiveServer(String pageHtml, String bindAddr, int port) {
+        this(pageHtml, bindAddr, port, null);
+    }
+
+    /**
+     * @param commandHandler applied to each {@code POST /command} body, its return value sent back
+     *     as {@code text/plain}; {@code null} disables the endpoint (405). Kept as an opaque
+     *     {@code String -> String} so this server stays structure-agnostic.
+     */
+    public LiveServer(String pageHtml, String bindAddr, int port, Function<String, String> commandHandler) {
         this.pageHtml = pageHtml;
         this.bindAddr = bindAddr;
         this.requestedPort = port;
+        this.commandHandler = commandHandler;
     }
 
     /** Bind (ephemeral fallback if the requested port is taken), install handlers, start serving. */
@@ -56,6 +70,7 @@ public final class LiveServer {
         server.setExecutor(executor);
         server.createContext("/", this::handleRoot);
         server.createContext("/events", this::handleEvents);
+        server.createContext("/command", this::handleCommand);
         server.start();
     }
 
@@ -128,6 +143,24 @@ public final class LiveServer {
         } finally {
             if (c != null) conns.remove(c); // c is null if we failed before registering
             ex.close();
+        }
+    }
+
+    private void handleCommand(HttpExchange ex) throws IOException {
+        if (commandHandler == null || !"POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(405, -1);
+            ex.close();
+            return;
+        }
+        String line;
+        try (InputStream is = ex.getRequestBody()) {
+            line = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        byte[] body = commandHandler.apply(line).getBytes(StandardCharsets.UTF_8);
+        ex.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
+        ex.sendResponseHeaders(200, body.length);
+        try (OutputStream os = ex.getResponseBody()) {
+            os.write(body);
         }
     }
 
