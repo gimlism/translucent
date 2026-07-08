@@ -5,7 +5,6 @@ import com.gimlism.translucent.hashmap.viz.MapLiveVisualizer;
 import com.gimlism.translucent.hashmap.viz.MapWebExporter;
 import com.gimlism.translucent.substrate.viz.LiveServer;
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * The student sandbox: a running {@link TeachingHashMap} whose every mutation renders live in the
@@ -37,17 +36,6 @@ public class LiveWebVizDemo {
         map.remove(16);
         // ---------------------------------------------------------------
 
-        awaitShutdown(server);
-    }
-
-    /** Park the main thread so the JVM stays alive until Ctrl-C; stop the server cleanly on the way out. */
-    private static void awaitShutdown(LiveServer server) {
-        Runtime.getRuntime().addShutdownHook(new Thread(server::stop));
-        try {
-            new CountDownLatch(1).await(); // never counted down — Ctrl-C runs the shutdown hook and exits
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            server.stop(); // interrupted (e.g. IDE stop) — the shutdown hook won't fire, so release the port here
-        }
+        DemoLifecycle.awaitShutdown(server);
     }
 }
