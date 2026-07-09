@@ -20,17 +20,23 @@ public final class MapWebExporter {
     private static final String TEMPLATE_RESOURCE = "/web/map-viz.html";
     private static final String FRAMES_TOKEN = "/*__FRAMES__*/";
     private static final String LIVE_TOKEN = "/*__LIVE__*/";
+    private static final String CONTROLS_TOKEN = "/*__CONTROLS__*/";
 
     private MapWebExporter() {}
 
-    /** The self-contained baked HTML with {@code framesJson} injected and live mode OFF. */
+    /** The self-contained baked HTML with {@code framesJson} injected; live + controls OFF. */
     public static String toHtml(String framesJson) {
-        return inject(framesJson, "false");
+        return inject(framesJson, "false", "false");
     }
 
-    /** The HTML for live mode: no baked frames ({@code DATA = null}), live mode ON (opens an EventSource). */
+    /** Live mode (SSE), no browser controls: {@code DATA = null}, live ON, controls OFF. */
     public static String liveHtml() {
-        return inject("null", "true");
+        return inject("null", "true", "false");
+    }
+
+    /** Live mode with browser command controls: {@code DATA = null}, live ON, controls ON. */
+    public static String controlsHtml() {
+        return inject("null", "true", "true");
     }
 
     /** Write {@link #toHtml(String)} to {@code out} (UTF-8). */
@@ -38,15 +44,21 @@ public final class MapWebExporter {
         Files.writeString(out, toHtml(framesJson));
     }
 
-    private static String inject(String framesReplacement, String liveReplacement) {
+    private static String inject(String framesReplacement, String liveReplacement, String controlsReplacement) {
         String template = readTemplate();
-        if (!template.contains(FRAMES_TOKEN)) {
-            throw new IllegalStateException("template " + TEMPLATE_RESOURCE + " is missing token " + FRAMES_TOKEN);
+        requireToken(template, FRAMES_TOKEN);
+        requireToken(template, LIVE_TOKEN);
+        requireToken(template, CONTROLS_TOKEN);
+        return template
+                .replace(FRAMES_TOKEN, framesReplacement)
+                .replace(LIVE_TOKEN, liveReplacement)
+                .replace(CONTROLS_TOKEN, controlsReplacement);
+    }
+
+    private static void requireToken(String template, String token) {
+        if (!template.contains(token)) {
+            throw new IllegalStateException("template " + TEMPLATE_RESOURCE + " is missing token " + token);
         }
-        if (!template.contains(LIVE_TOKEN)) {
-            throw new IllegalStateException("template " + TEMPLATE_RESOURCE + " is missing token " + LIVE_TOKEN);
-        }
-        return template.replace(FRAMES_TOKEN, framesReplacement).replace(LIVE_TOKEN, liveReplacement);
     }
 
     private static String readTemplate() {
