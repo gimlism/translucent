@@ -43,26 +43,27 @@ class LiveControlsEndToEndTest {
                 InputStream body = client.send(
                         HttpRequest.newBuilder(URI.create(base + "/events")).build(),
                         BodyHandlers.ofInputStream()).body();
-                var r = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8));
-                while (server.openConnections() < 1) Thread.sleep(10);
+                try (var r = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8))) {
+                    while (server.openConnections() < 1) Thread.sleep(10);
 
-                // POST a command; the response is the interpreter's text
-                var resp = client.send(HttpRequest.newBuilder(URI.create(base + "/command"))
-                                .POST(BodyPublishers.ofString("put 42 x", StandardCharsets.UTF_8)).build(),
-                        BodyHandlers.ofString());
-                assertEquals("put 42 = x", resp.body());
+                    // POST a command; the response is the interpreter's text
+                    var resp = client.send(HttpRequest.newBuilder(URI.create(base + "/command"))
+                                    .POST(BodyPublishers.ofString("put 42 x", StandardCharsets.UTF_8)).build(),
+                            BodyHandlers.ofString());
+                    assertEquals("put 42 = x", resp.body());
 
-                // the mutation's frame arrives on the SSE stream
-                String line;
-                while ((line = r.readLine()) != null) {
-                    if (line.startsWith("data: ")) {
-                        String frame = line.substring("data: ".length());
-                        assertTrue(frame.contains("\"type\":\"Put\""), "frame carries the Put event");
-                        assertTrue(frame.contains("\"highlightKey\":\"42\""), "frame highlights the put key");
-                        return;
+                    // the mutation's frame arrives on the SSE stream
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        if (line.startsWith("data: ")) {
+                            String frame = line.substring("data: ".length());
+                            assertTrue(frame.contains("\"type\":\"Put\""), "frame carries the Put event");
+                            assertTrue(frame.contains("\"highlightKey\":\"42\""), "frame highlights the put key");
+                            return;
+                        }
                     }
+                    throw new IOException("no data line received");
                 }
-                throw new IOException("no data line received");
             });
         } finally {
             server.stop();
