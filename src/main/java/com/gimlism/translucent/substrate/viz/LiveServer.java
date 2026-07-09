@@ -156,7 +156,8 @@ public final class LiveServer {
         try (InputStream is = ex.getRequestBody()) {
             line = new String(is.readAllBytes(), StandardCharsets.UTF_8);
         }
-        byte[] body = commandHandler.apply(line).getBytes(StandardCharsets.UTF_8);
+        String result = commandHandler.apply(line);
+        byte[] body = (result == null ? "" : result).getBytes(StandardCharsets.UTF_8);
         ex.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
         ex.sendResponseHeaders(200, body.length);
         try (OutputStream os = ex.getResponseBody()) {

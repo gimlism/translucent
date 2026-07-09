@@ -154,4 +154,12 @@ class LiveServerTest {
                 BodyHandlers.ofString());
         assertEquals(405, resp.statusCode());
     }
+
+    @Test
+    void postCommandWithANullHandlerResultReturnsEmpty200() throws Exception {
+        startWithHandler(line -> null);
+        HttpResponse<String> resp = post("/command", "anything");
+        assertEquals(200, resp.statusCode());
+        assertEquals("", resp.body());
+    }
 }
