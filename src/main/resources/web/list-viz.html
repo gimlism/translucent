@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeachingArrayList — replay</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1b1b1d; --muted:#777; --card:#fff;
+          --cell:#eceef2; --cellb:#c8ccd4; --empty:#f2f3f5; --emptyb:#d9dce2; --hl:#f5a623;
+          --conn:#8a8a8a; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16171a; --fg:#e8e8ea; --muted:#999; --card:#1f2126;
+            --cell:#2a2d33; --cellb:#41454d; --empty:#202226; --emptyb:#31343a; --hl:#f5a623;
+            --conn:#8a8a8a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px system-ui,sans-serif; }
+  #app { max-width: 960px; margin: 0 auto; padding: 18px; }
+  h1 { font-size: 16px; font-weight:600; margin: 0 0 12px; }
+  #bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+  button { font:inherit; padding:6px 12px; border:1px solid var(--cellb); border-radius:8px;
+           background:var(--card); color:var(--fg); cursor:pointer; }
+  button:disabled { opacity:.4; cursor:default; }
+  #counter { color:var(--muted); font-variant-numeric: tabular-nums; }
+  #caption { font-weight:600; min-height:1.4em; margin-bottom:8px; }
+  #stage { background:var(--card); border:1px solid var(--cellb); border-radius:12px; padding:10px;
+           transition: opacity .18s ease; overflow:auto; }
+  svg text { fill: var(--fg); font: 13px system-ui, sans-serif; }
+  .tier { fill: var(--muted); font-weight:600; font-size:12px; }
+  .idx { fill: var(--muted); font-weight:600; }
+  .idx.hl { fill: var(--hl); font-weight:700; }
+  .cell rect { fill: var(--cell); stroke: var(--cellb); }
+  .cell.empty rect { fill: var(--empty); stroke: var(--emptyb); stroke-dasharray:4 3; }
+  .cell.hl rect { stroke: var(--hl); stroke-width: 3; }
+  .cell text { fill: var(--fg); }
+  .conn { stroke: var(--conn); stroke-width: 1.5; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>TeachingArrayList — web replay</h1>
+  <div id="caption"></div>
+  <div id="bar">
+    <button id="prev">◀ prev</button>
+    <button id="play">▶ play</button>
+    <button id="next">next ▶</button>
+    <span id="counter"></span>
+  </div>
+  <div id="stage"><svg id="svg"></svg></div>
+</div>
+<script>
+"use strict";
+const DATA = /*__FRAMES__*/;
+const frames = (DATA && DATA.frames) || [];
+const svg = document.getElementById("svg");
+const stage = document.getElementById("stage");
+const caption = document.getElementById("caption");
+const counter = document.getElementById("counter");
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
+const playBtn = document.getElementById("play");
+
+const PAD = 16, CELL_W = 60, CELL_H = 34, CELL_GAP = 4, CONNECTOR_H = 40, LABEL_H = 22;
+let idx = 0, timer = null;
+
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+function txt(s) { return s === null ? "∅" : String(s); }
+const colX = i => PAD + i * (CELL_W + CELL_GAP);
+
+// Elements of the nearest prior non-Shift frame. The logical row freezes to this during a
+// Shift burst, so the top tier holds still while the backing array copies element-by-element.
+function settledLogical(i) {
+  for (let j = i; j >= 0; j--) {
+    if (frames[j].event.type !== "Shift") {
+      const L = frames[j].list;
+      return L.slots.slice(0, L.size).map(s => s.filled ? s.element : null);
+    }
+  }
+  const L = frames[i].list;
+  return L.slots.slice(0, L.size).map(s => s.filled ? s.element : null);
+}
+
+function cell(x, y, text, filled, hl) {
+  const cls = "cell" + (filled ? "" : " empty") + (hl ? " hl" : "");
+  const label = filled
+    ? `<text x="${x + CELL_W / 2}" y="${y + CELL_H / 2 + 4}" text-anchor="middle">${esc(txt(text))}</text>`
+    : "";
+  return `<g class="${cls}"><rect x="${x}" y="${y}" width="${CELL_W}" height="${CELL_H}" rx="6"/>${label}</g>`;
+}
+
+function renderFrame(f) {
+  const L = f.list, ev = f.event;
+  const cap = L.capacity, size = L.size, slots = L.slots;
+  const isShift = ev.type === "Shift";
+  const topLogical = isShift
+    ? settledLogical(idx)
+    : slots.slice(0, size).map(s => s.filled ? s.element : null);
+
+  const topY = PAD + 14, bottomY = topY + CELL_H + CONNECTOR_H;
+
+  const hlBottom = new Set();
+  if (isShift) {
+    if (ev.fromIndex != null) hlBottom.add(ev.fromIndex);
+    if (ev.toIndex != null) hlBottom.add(ev.toIndex);
+  } else if (ev.type === "Grow") {
+    for (let i = ev.oldCapacity; i < ev.newCapacity; i++) hlBottom.add(i);
+  } else if (ev.index != null) {
+    hlBottom.add(ev.index);
+  }
+
+  let body = "";
+  body += `<text class="tier" x="${PAD}" y="${topY - 6}">logical list · size ${size}</text>`;
+  body += `<text class="tier" x="${PAD}" y="${bottomY - 6}">backing array · capacity ${cap}</text>`;
+
+  // top logical tier
+  topLogical.forEach((el, j) => {
+    const hl = !isShift && ev.index === j;
+    body += cell(colX(j), topY, el, true, hl);
+  });
+
+  // connectors — only on settled frames; during a shift the two tiers decouple
+  if (!isShift) {
+    topLogical.forEach((_, j) => {
+      const x = colX(j) + CELL_W / 2;
+      body += `<line class="conn" x1="${x}" y1="${topY + CELL_H}" x2="${x}" y2="${bottomY}"/>`;
+    });
+  }
+
+  // bottom backing tier + index labels
+  for (let i = 0; i < cap; i++) {
+    const s = slots[i];
+    body += cell(colX(i), bottomY, s.filled ? s.element : null, s.filled, hlBottom.has(i));
+    body += `<text class="idx${hlBottom.has(i) ? " hl" : ""}" x="${colX(i) + CELL_W / 2}" `
+          + `y="${bottomY + CELL_H + 16}" text-anchor="middle">${i}</text>`;
+  }
+
+  const width = Math.max(320, PAD * 2 + cap * (CELL_W + CELL_GAP) - CELL_GAP);
+  const height = bottomY + CELL_H + LABEL_H + PAD;
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.innerHTML = body;
+}
+
+function refreshMeta() {
+  counter.textContent = frames.length ? `frame ${idx + 1} / ${frames.length}` : "";
+  prevBtn.disabled = idx <= 0;
+  nextBtn.disabled = idx >= frames.length - 1;
+}
+
+function render() {
+  const f = frames[idx];
+  caption.textContent = f ? f.event.label : "(no events to replay)";
+  if (f) renderFrame(f); else svg.innerHTML = "";
+  stage.style.opacity = "0";
+  requestAnimationFrame(() => requestAnimationFrame(() => { stage.style.opacity = "1"; }));
+  refreshMeta();
+}
+
+function go(n) { idx = Math.max(0, Math.min(frames.length - 1, n)); render(); }
+function stop() { if (timer) { clearInterval(timer); timer = null; playBtn.textContent = "▶ play"; } }
+prevBtn.onclick = () => { stop(); go(idx - 1); };
+nextBtn.onclick = () => { stop(); go(idx + 1); };
+playBtn.onclick = () => {
+  if (timer) { stop(); return; }
+  if (idx >= frames.length - 1) idx = 0;
+  playBtn.textContent = "⏸ pause";
+  timer = setInterval(() => { if (idx >= frames.length - 1) stop(); else go(idx + 1); }, 900);
+};
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { stop(); go(idx + 1); }
+  else if (e.key === "ArrowLeft") { stop(); go(idx - 1); }
+});
+render();
+</script>
+</body>
+</html>
