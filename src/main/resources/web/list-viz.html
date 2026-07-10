@@ -109,7 +109,7 @@ function renderFrame(f) {
   }
 
   let body = "";
-  body += `<text class="tier" x="${PAD}" y="${topY - 6}">logical list · size ${size}</text>`;
+  body += `<text class="tier" x="${PAD}" y="${topY - 6}">logical list · size ${topLogical.length}</text>`;
   body += `<text class="tier" x="${PAD}" y="${bottomY - 6}">backing array · capacity ${cap}</text>`;
 
   // top logical tier
