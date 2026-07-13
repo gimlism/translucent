@@ -507,7 +507,6 @@ package com.gimlism.translucent.arraylist.demo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.arraylist.core.TeachingArrayList;
 import com.gimlism.translucent.arraylist.repl.ListCommandInterpreter;
@@ -557,16 +556,19 @@ class ListLiveControlsEndToEndTest {
                             BodyHandlers.ofString());
                     assertEquals("appended \"hi\" at 0", resp.body());
 
-                    // the mutation's frame arrives on the SSE stream
+                    // the mutation surfaces as a live frame. A fresh TeachingArrayList is lazy
+                    // (capacity 0), so the first add emits a Grow frame BEFORE the Append — skip
+                    // non-Append data lines and assert the Append arrives.
                     String line;
                     while ((line = r.readLine()) != null) {
                         if (line.startsWith("data: ")) {
                             String frame = line.substring("data: ".length());
-                            assertTrue(frame.contains("\"type\":\"Append\""), "frame carries the Append event");
-                            return;
+                            if (frame.contains("\"type\":\"Append\"")) {
+                                return; // the POST's mutation surfaced as a live Append frame
+                            }
                         }
                     }
-                    throw new IOException("no data line received");
+                    throw new IOException("no Append frame received");
                 }
             });
         } finally {
