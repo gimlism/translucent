@@ -37,9 +37,11 @@ public final class ListWebExporter {
         String template = readTemplate();
         requireToken(template, FRAMES_TOKEN);
         requireToken(template, LIVE_TOKEN);
+        // Replace the fixed-value LIVE token first and inject the user-controlled frames LAST, so a
+        // frame whose content happens to contain the literal LIVE token can't be rewritten by it.
         return template
-                .replace(FRAMES_TOKEN, framesReplacement)
-                .replace(LIVE_TOKEN, liveReplacement);
+                .replace(LIVE_TOKEN, liveReplacement)
+                .replace(FRAMES_TOKEN, framesReplacement);
     }
 
     /** Write {@link #toHtml(String)} to {@code out} (UTF-8). */

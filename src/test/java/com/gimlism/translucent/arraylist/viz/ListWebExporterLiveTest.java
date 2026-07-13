@@ -24,4 +24,15 @@ class ListWebExporterLiveTest {
         assertTrue(html.contains("const DATA = {\"frames\":[]};"), "baked frames injected");
         assertTrue(html.contains("const LIVE = false;"), "live mode off for the baked file");
     }
+
+    @Test
+    void bakedFrameDataContainingTheLiveTokenIsNotCorrupted() {
+        // A serialized frame can contain the literal token as user data (JsonWriter escapes < and
+        // control chars, but not the /*__…__*/ shape). Token substitution must inject the user
+        // frames LAST so it never rewrites their content.
+        String frames = "{\"frames\":[{\"element\":\"/*__LIVE__*/\"}]}";
+        String html = ListWebExporter.toHtml(frames);
+        assertTrue(html.contains("\"element\":\"/*__LIVE__*/\""), "user data containing the LIVE token survives intact");
+        assertTrue(html.contains("const LIVE = false;"), "the real LIVE token is still replaced");
+    }
 }
