@@ -61,9 +61,9 @@ Grammar:
 |---|---|---|---|
 | `add <value>` | `list.add(value)` | `appended "<v>" at <i>` (i = new last index) | yes |
 | `insert <index> <value>` | `list.add(index, value)` | `inserted "<v>" at <index>` | yes |
-| `set <index> <value>` | old = `list.set(index, value)` | `set <index> = <v> (was <old>)` | yes |
+| `set <index> <value>` | old = `list.set(index, value)` | `set <index> = "<v>" (was "<old>")` | yes |
 | `remove <index>` | old = `list.remove(index)` | `removed "<old>" at <index>` | yes |
-| `get <index>` | `list.get(index)` | `get <index> -> <v>` | **no** |
+| `get <index>` | `list.get(index)` | `get <index> → "<v>"` | **no** |
 | `size` | `list.size()` | `size = <n>` | no |
 | `help` | — | help text | no |
 | `quit` (alias `exit`) | — | `bye`, quit=true | no |
