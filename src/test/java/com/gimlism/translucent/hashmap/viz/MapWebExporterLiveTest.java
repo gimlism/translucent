@@ -24,4 +24,15 @@ class MapWebExporterLiveTest {
         assertTrue(html.contains("const DATA = {\"frames\":[]};"), "baked frames injected");
         assertTrue(html.contains("const LIVE = false;"), "live mode off for the baked file");
     }
+
+    @Test
+    void bakedFrameDataContainingTheLiveTokenIsNotCorrupted() {
+        // Issue #23: a serialized map key/value can contain the literal token as user data. Token
+        // substitution must inject the user frames LAST (via the shared WebVizTemplate) so it never
+        // rewrites their content.
+        String frames = "{\"frames\":[{\"highlightKey\":\"/*__LIVE__*/\"}]}";
+        String html = MapWebExporter.toHtml(frames);
+        assertTrue(html.contains("\"highlightKey\":\"/*__LIVE__*/\""), "user data containing the LIVE token survives intact");
+        assertTrue(html.contains("const LIVE = false;"), "the real LIVE token is still replaced");
+    }
 }
