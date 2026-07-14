@@ -66,6 +66,9 @@ class TrieCommandInterpreterTest {
         // no match → empty list
         assertEquals("keysWithPrefix \"xyz\" → []",
                 interp.execute("keysWithPrefix xyz", trie).message());
+        // a second token is rejected (a prefix is a single token; empty is still allowed above)
+        assertEquals("usage: keysWithPrefix [prefix]",
+                interp.execute("keysWithPrefix sh extra", trie).message());
     }
 
     @Test
@@ -122,6 +125,19 @@ class TrieCommandInterpreterTest {
         assertEquals("usage: get <key>", interp.execute("get", trie).message());
         assertEquals("usage: containsKey <key>", interp.execute("contains", trie).message());
         assertEquals(0, trie.size(), "no error path mutated the trie");
+    }
+
+    @Test
+    void extraTokensOnReadsAreRejectedAsUsageErrors() {
+        interp.execute("put shore 1", trie);
+        // a key is a single token; a trailing token is malformed input, not a space-bearing key
+        assertEquals("usage: get <key>", interp.execute("get shore extra", trie).message());
+        assertEquals("usage: remove <key>", interp.execute("remove shore extra", trie).message());
+        assertEquals("usage: containsKey <key>",
+                interp.execute("containsKey shore extra", trie).message());
+        // the reject path is inert: nothing was removed, the trie is untouched
+        assertEquals(1, trie.size(), "a rejected read mutated nothing");
+        assertEquals(1, trie.get("shore"));
     }
 
     @Test

@@ -12,10 +12,12 @@ import java.util.Locale;
  * live rendering is a side-effect of the listener, not of this class. {@link #execute} never
  * throws: every malformed input becomes an error message.
  *
- * <p>Keys are {@code String} (the first token — no spaces, no parsing), values are {@code Integer}.
- * This inverts the HashMap REPL (Integer key, String value): here only {@code put}'s value is
- * parsed, and {@code get}/{@code remove}/{@code containsKey} take the raw key token. This is the
- * shared entry point a browser-controls front-end will reuse in a later slice.
+ * <p>Keys are {@code String} — a single token (no spaces), values are {@code Integer}. This inverts
+ * the HashMap REPL (Integer key, String value): here only {@code put}'s value is parsed. The read
+ * verbs ({@code get}/{@code remove}/{@code containsKey}) take one key token and reject a trailing
+ * one as a usage error rather than treating it as a space-bearing key — so extra tokens surface as
+ * malformed input, matching the Map/List REPLs (where the key/index parse rejects them). This is
+ * the shared entry point a browser-controls front-end will reuse in a later slice.
  */
 public final class TrieCommandInterpreter {
 
@@ -48,29 +50,36 @@ public final class TrieCommandInterpreter {
                         : "set " + kv[0] + " = " + value + " (was " + old + ")");
             }
             case "remove": {
-                if (rest.isEmpty()) {
+                String key = soleKey(rest);
+                if (key == null) {
                     return CommandResult.of("usage: remove <key>");
                 }
-                Integer old = trie.remove(rest);
-                return CommandResult.of(old != null ? "removed " + rest : rest + " not found");
+                Integer old = trie.remove(key);
+                return CommandResult.of(old != null ? "removed " + key : key + " not found");
             }
             case "get": {
-                if (rest.isEmpty()) {
+                String key = soleKey(rest);
+                if (key == null) {
                     return CommandResult.of("usage: get <key>");
                 }
-                Integer v = trie.get(rest);
-                return CommandResult.of("get " + rest + " → " + (v != null ? v : "absent"));
+                Integer v = trie.get(key);
+                return CommandResult.of("get " + key + " → " + (v != null ? v : "absent"));
             }
             case "containskey":
             case "contains": {
-                if (rest.isEmpty()) {
+                String key = soleKey(rest);
+                if (key == null) {
                     return CommandResult.of("usage: containsKey <key>");
                 }
-                return CommandResult.of("containsKey " + rest + " → " + trie.containsKey(rest));
+                return CommandResult.of("containsKey " + key + " → " + trie.containsKey(key));
             }
             case "keyswithprefix":
             case "keys": {
-                List<String> keys = trie.keysWithPrefix(rest); // empty rest → "" → all keys
+                // A prefix is one token, but empty is allowed (lists all keys); reject only extras.
+                if (!rest.isEmpty() && rest.split("\\s+", 2).length > 1) {
+                    return CommandResult.of("usage: keysWithPrefix [prefix]");
+                }
+                List<String> keys = trie.keysWithPrefix(rest); // "" → all keys
                 return CommandResult.of("keysWithPrefix \"" + rest + "\" → " + keys);
             }
             case "size":
@@ -83,6 +92,19 @@ public final class TrieCommandInterpreter {
             default:
                 return CommandResult.of("unknown command: '" + cmd + "' (type 'help')");
         }
+    }
+
+    /**
+     * The single key token in {@code rest} (already free of leading whitespace), or {@code null} if
+     * {@code rest} is empty or carries more than one whitespace-separated token. A key is one token,
+     * so a trailing token is malformed input (a usage error), not a space-bearing key.
+     */
+    private static String soleKey(String rest) {
+        if (rest.isEmpty()) {
+            return null;
+        }
+        String[] tokens = rest.split("\\s+", 2);
+        return tokens.length == 1 ? tokens[0] : null;
     }
 
     /** {@code Integer} value of {@code token}, or {@code null} if it isn't a valid int. */
