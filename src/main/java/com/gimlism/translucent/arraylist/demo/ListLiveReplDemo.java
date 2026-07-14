@@ -1,10 +1,10 @@
 package com.gimlism.translucent.arraylist.demo;
 
 import com.gimlism.translucent.arraylist.core.TeachingArrayList;
-import com.gimlism.translucent.substrate.repl.CommandResult;
 import com.gimlism.translucent.arraylist.repl.ListCommandInterpreter;
 import com.gimlism.translucent.arraylist.viz.ListLiveVisualizer;
 import com.gimlism.translucent.arraylist.viz.ListWebExporter;
+import com.gimlism.translucent.substrate.repl.CommandResult;
 import com.gimlism.translucent.substrate.viz.BrowserLauncher;
 import com.gimlism.translucent.substrate.viz.LiveServer;
 import java.io.BufferedReader;
