@@ -1,9 +1,10 @@
-package com.gimlism.translucent.hashmap.repl;
+package com.gimlism.translucent.substrate.repl;
 
 /**
- * The outcome of one command: the {@code message} to show the user, and whether the REPL should
- * {@code quit}. Returned by {@link MapCommandInterpreter#execute}; the front-end (terminal REPL
- * now, browser POST in a later slice) decides how to present the message.
+ * The outcome of one REPL command: the {@code message} to show the user, and whether the REPL
+ * should {@code quit}. The shared result type for every teaching structure's command interpreter
+ * (HashMap, ArrayList, Trie); the front-end (terminal REPL now, browser POST in a later slice)
+ * decides how to present the message.
  */
 public record CommandResult(String message, boolean quit) {
 

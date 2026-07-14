@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.hashmap.core.TeachingHashMap;
 import com.gimlism.translucent.hashmap.viz.MapLiveVisualizer;
+import com.gimlism.translucent.substrate.repl.CommandResult;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 
