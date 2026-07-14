@@ -88,4 +88,23 @@ class TrieJsonSerializerTest {
         assertTrue(json.contains("\"highlightPath\":\"" + parent + "\""), json);
         assertFalse(json.contains("\"highlightPath\":\"" + prune.path() + "\""), json);
     }
+
+    @Test
+    void toFrameProducesASingleFrameWithNoFramesWrapper() {
+        var trie = new RadixTrie<Integer>();
+        var rec = new TrieRecordingListener();
+        trie.addListener(rec);
+        trie.put("shore", 1);
+
+        // toFrame of the last event equals that event's frame inside the full toJson blob
+        var events = rec.events();
+        String frame = TrieJsonSerializer.toFrame(events.get(events.size() - 1));
+
+        assertFalse(frame.contains("\"frames\""), "single frame carries no frames wrapper");
+        assertTrue(frame.startsWith("{\"event\":{"), frame);
+        assertTrue(frame.contains("\"type\":\"Put\""), frame);
+        assertTrue(frame.contains("\"trie\":{\"size\":1"), frame);
+        assertTrue(TrieJsonSerializer.toJson(events).contains(frame),
+                "the single frame is a substring of the full frames blob");
+    }
 }

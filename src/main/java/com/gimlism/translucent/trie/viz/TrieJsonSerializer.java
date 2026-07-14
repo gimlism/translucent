@@ -29,6 +29,13 @@ public final class TrieJsonSerializer {
         return w.toString();
     }
 
+    /** One event → the JSON for a single {@code { "event":…, "trie":… }} frame (no {@code frames} wrapper). */
+    public static String toFrame(TrieEvent e) {
+        JsonWriter w = new JsonWriter();
+        writeFrame(w, e);
+        return w.toString();
+    }
+
     private static void writeFrame(JsonWriter w, TrieEvent e) {
         w.beginObject();
         w.name("event");
