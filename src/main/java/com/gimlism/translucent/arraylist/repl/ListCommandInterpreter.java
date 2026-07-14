@@ -1,6 +1,7 @@
 package com.gimlism.translucent.arraylist.repl;
 
 import com.gimlism.translucent.arraylist.core.TeachingArrayList;
+import com.gimlism.translucent.substrate.repl.CommandResult;
 import java.util.Locale;
 
 /**

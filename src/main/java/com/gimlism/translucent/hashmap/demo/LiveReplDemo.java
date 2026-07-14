@@ -1,7 +1,7 @@
 package com.gimlism.translucent.hashmap.demo;
 
 import com.gimlism.translucent.hashmap.core.TeachingHashMap;
-import com.gimlism.translucent.hashmap.repl.CommandResult;
+import com.gimlism.translucent.substrate.repl.CommandResult;
 import com.gimlism.translucent.hashmap.repl.MapCommandInterpreter;
 import com.gimlism.translucent.hashmap.viz.MapLiveVisualizer;
 import com.gimlism.translucent.hashmap.viz.MapWebExporter;
