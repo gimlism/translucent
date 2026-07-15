@@ -29,6 +29,11 @@ public final class TrieWebExporter {
         return WebVizTemplate.inject(TEMPLATE_RESOURCE, "null", "true", "false");
     }
 
+    /** Live mode with browser command controls: {@code DATA = null}, live ON, controls ON. */
+    public static String controlsHtml() {
+        return WebVizTemplate.inject(TEMPLATE_RESOURCE, "null", "true", "true");
+    }
+
     /** Write {@link #toHtml(String)} to {@code out} (UTF-8). */
     public static void writeHtml(String framesJson, Path out) throws IOException {
         Files.writeString(out, toHtml(framesJson));

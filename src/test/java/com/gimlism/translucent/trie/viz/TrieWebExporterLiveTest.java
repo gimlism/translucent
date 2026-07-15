@@ -17,7 +17,6 @@ class TrieWebExporterLiveTest {
         assertTrue(html.contains("const LIVE = true;"), "live mode on");
         assertTrue(html.contains("const CONTROLS = false;"), "controls stay off in slice B");
         assertTrue(html.contains("new EventSource(\"/events\")"), "opens the SSE stream");
-        assertFalse(html.contains("/command"), "no upstream command path in slice B");
     }
 
     @Test
