@@ -31,11 +31,11 @@ class ListLiveControlsEndToEndTest {
         Function<String, String> handler = ListLiveControlsDemo.commandHandler(list, new ListCommandInterpreter());
         LiveServer server = new LiveServer(ListWebExporter.controlsHtml(), "127.0.0.1", 0, handler);
         server.start();
+        HttpClient client = HttpClient.newHttpClient();
         try {
             list.addListener(new ListLiveVisualizer(server::broadcast));
 
             assertTimeoutPreemptively(Duration.ofSeconds(3), () -> {
-                HttpClient client = HttpClient.newHttpClient();
                 String base = "http://127.0.0.1:" + server.port();
 
                 // open the SSE stream first, then wait until the server has registered it
@@ -67,6 +67,7 @@ class ListLiveControlsEndToEndTest {
                 }
             });
         } finally {
+            client.close();
             server.stop();
         }
     }

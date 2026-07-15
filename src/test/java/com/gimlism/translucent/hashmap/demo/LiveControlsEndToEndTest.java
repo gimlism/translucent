@@ -32,11 +32,11 @@ class LiveControlsEndToEndTest {
         Function<String, String> handler = LiveControlsDemo.commandHandler(map, new MapCommandInterpreter());
         LiveServer server = new LiveServer(MapWebExporter.controlsHtml(), "127.0.0.1", 0, handler);
         server.start();
+        HttpClient client = HttpClient.newHttpClient();
         try {
             map.addListener(new MapLiveVisualizer(server::broadcast));
 
             assertTimeoutPreemptively(Duration.ofSeconds(3), () -> {
-                HttpClient client = HttpClient.newHttpClient();
                 String base = "http://127.0.0.1:" + server.port();
 
                 // open the SSE stream first, then wait until the server has registered it
@@ -66,6 +66,7 @@ class LiveControlsEndToEndTest {
                 }
             });
         } finally {
+            client.close();
             server.stop();
         }
     }

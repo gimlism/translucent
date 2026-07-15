@@ -106,6 +106,6 @@ public final class MapCommandInterpreter {
                 "  size                    number of entries",
                 "  clear                   remove all entries",
                 "  help                    show this help",
-                "  quit                    stop the server and exit (alias: exit)");
+                "  quit                    end the session (alias: exit)");
     }
 }

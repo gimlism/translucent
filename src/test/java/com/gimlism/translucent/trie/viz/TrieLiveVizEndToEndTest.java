@@ -24,13 +24,13 @@ class TrieLiveVizEndToEndTest {
     void aMutationSurfacesAsALiveFrameOverHttp() throws IOException {
         LiveServer server = new LiveServer(TrieWebExporter.liveHtml(), "127.0.0.1", 0);
         server.start();
+        HttpClient client = HttpClient.newHttpClient();
         try {
             var trie = new RadixTrie<Integer>();
             trie.addListener(new TrieLiveVisualizer(server::broadcast));
             trie.put("cat", 1); // last event (Put) becomes the cached snapshot-on-connect frame
 
             assertTimeoutPreemptively(Duration.ofSeconds(3), () -> {
-                HttpClient client = HttpClient.newHttpClient();
                 InputStream bodyStream = client.send(
                         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.port() + "/events")).build(),
                         BodyHandlers.ofInputStream()).body();
@@ -49,6 +49,7 @@ class TrieLiveVizEndToEndTest {
                 }
             });
         } finally {
+            client.close();
             server.stop();
         }
     }

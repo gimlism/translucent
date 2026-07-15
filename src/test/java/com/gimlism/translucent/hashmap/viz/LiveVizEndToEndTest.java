@@ -24,30 +24,32 @@ class LiveVizEndToEndTest {
     void aMutationSurfacesAsALiveFrameOverHttp() throws IOException {
         LiveServer server = new LiveServer(MapWebExporter.liveHtml(), "127.0.0.1", 0);
         server.start();
+        HttpClient client = HttpClient.newHttpClient();
         try {
             var map = new TeachingHashMap<Integer, String>();
             map.addListener(new MapLiveVisualizer(server::broadcast));
             map.put(42, "x"); // becomes the cached last frame
 
             assertTimeoutPreemptively(Duration.ofSeconds(3), () -> {
-                HttpClient client = HttpClient.newHttpClient();
                 InputStream body = client.send(
                         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.port() + "/events")).build(),
                         BodyHandlers.ofInputStream()).body();
-                var r = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8));
-                String line;
-                while ((line = r.readLine()) != null) {
-                    if (line.startsWith("data: ")) {
-                        String frame = line.substring("data: ".length());
-                        assertTrue(frame.contains("\"type\":\"Put\""), "frame carries the Put event");
-                        assertTrue(frame.contains("\"highlightKey\":\"42\""), "frame highlights the put key");
-                        assertTrue(frame.contains("\"map\":{"), "frame carries the whole-map snapshot");
-                        return;
+                try (var r = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        if (line.startsWith("data: ")) {
+                            String frame = line.substring("data: ".length());
+                            assertTrue(frame.contains("\"type\":\"Put\""), "frame carries the Put event");
+                            assertTrue(frame.contains("\"highlightKey\":\"42\""), "frame highlights the put key");
+                            assertTrue(frame.contains("\"map\":{"), "frame carries the whole-map snapshot");
+                            return;
+                        }
                     }
+                    throw new IOException("no data line received");
                 }
-                throw new IOException("no data line received");
             });
         } finally {
+            client.close();
             server.stop();
         }
     }

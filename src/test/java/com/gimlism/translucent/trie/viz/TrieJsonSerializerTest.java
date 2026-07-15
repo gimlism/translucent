@@ -80,13 +80,14 @@ class TrieJsonSerializerTest {
                 .filter(Prune.class::isInstance).map(Prune.class::cast)
                 .findFirst().orElseThrow();
         String parent = AsciiTrieRenderer.affectedPath(prune);
-        // the pruned node's own path is longer than the highlighted (surviving) parent
-        assertTrue(prune.path().length() > parent.length(), "expected parent shorter than pruned path");
-        assertTrue(prune.path().startsWith(parent), "expected parent to be a prefix of pruned path");
+        // the story removes "shell" first; that leaf is the pruned node, and the node that lost the
+        // child (and survives in after()) is "she" — so the highlight must be "she", not "shell"
+        assertEquals("shell", prune.path(), "first prune removes the 'shell' leaf");
+        assertEquals("she", parent, "highlight the surviving parent, not the deleted node");
         // and the serialized frame for that prune highlights the parent, not the deleted node
         String json = TrieJsonSerializer.toJson(List.of(prune));
-        assertTrue(json.contains("\"highlightPath\":\"" + parent + "\""), json);
-        assertFalse(json.contains("\"highlightPath\":\"" + prune.path() + "\""), json);
+        assertTrue(json.contains("\"highlightPath\":\"she\""), json);
+        assertFalse(json.contains("\"highlightPath\":\"shell\""), json);
     }
 
     @Test
