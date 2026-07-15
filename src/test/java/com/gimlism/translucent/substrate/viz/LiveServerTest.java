@@ -28,7 +28,8 @@ class LiveServerTest {
 
     @AfterEach
     void tearDown() {
-        if (server != null) server.stop();
+        if (server != null) server.stop(); // closes any still-open SSE streams first...
+        client.close();                    // ...so this graceful close has no in-flight request to await
     }
 
     private void startWithPage(String page) throws IOException {

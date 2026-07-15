@@ -138,6 +138,6 @@ public final class ListCommandInterpreter {
                 "  get <index>             look up a value (prints it; no viz change)",
                 "  size                    number of elements",
                 "  help                    show this help",
-                "  quit                    stop the server and exit (alias: exit)");
+                "  quit                    end the session (alias: exit)");
     }
 }

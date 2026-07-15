@@ -31,11 +31,11 @@ class TrieLiveControlsEndToEndTest {
         Function<String, String> handler = TrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
         LiveServer server = new LiveServer(TrieWebExporter.controlsHtml(), "127.0.0.1", 0, handler);
         server.start();
+        HttpClient client = HttpClient.newHttpClient();
         try {
             trie.addListener(new TrieLiveVisualizer(server::broadcast));
 
             assertTimeoutPreemptively(Duration.ofSeconds(3), () -> {
-                HttpClient client = HttpClient.newHttpClient();
                 String base = "http://127.0.0.1:" + server.port();
 
                 // open the SSE stream first, then wait until the server has registered it
@@ -68,6 +68,7 @@ class TrieLiveControlsEndToEndTest {
                 }
             });
         } finally {
+            client.close();
             server.stop();
         }
     }

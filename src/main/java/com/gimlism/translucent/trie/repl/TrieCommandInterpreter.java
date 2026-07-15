@@ -128,6 +128,6 @@ public final class TrieCommandInterpreter {
                         + "(alias: keys; no viz change)",
                 "  size                     number of keys (no viz change)",
                 "  help                     show this help",
-                "  quit                     stop the server and exit (alias: exit)");
+                "  quit                     end the session (alias: exit)");
     }
 }

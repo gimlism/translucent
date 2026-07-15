@@ -24,13 +24,13 @@ class ListLiveVizEndToEndTest {
     void aMutationSurfacesAsALiveFrameOverHttp() throws IOException {
         LiveServer server = new LiveServer(ListWebExporter.liveHtml(), "127.0.0.1", 0);
         server.start();
+        HttpClient client = HttpClient.newHttpClient();
         try {
             var list = new TeachingArrayList<String>(4);
             list.addListener(new ListLiveVisualizer(server::broadcast));
             list.add("z"); // becomes the cached last frame (an Append)
 
             assertTimeoutPreemptively(Duration.ofSeconds(3), () -> {
-                HttpClient client = HttpClient.newHttpClient();
                 InputStream bodyStream = client.send(
                         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.port() + "/events")).build(),
                         BodyHandlers.ofInputStream()).body();
@@ -49,6 +49,7 @@ class ListLiveVizEndToEndTest {
                 }
             });
         } finally {
+            client.close();
             server.stop();
         }
     }
