@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.gimlism.translucent.treeset.events.Add;
 import com.gimlism.translucent.treeset.events.Compare;
 import com.gimlism.translucent.treeset.events.SetEvent;
+import com.gimlism.translucent.treeset.events.SetEventListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -159,5 +160,18 @@ class TeachingTreeSetAddTest {
         set.add(1); // seed so the next add emits a Compare mid-operation
         set.addListener(e -> set.clear()); // a listener that illegally mutates during dispatch
         assertThrows(ConcurrentModificationException.class, () -> set.add(2));
+    }
+
+    @Test
+    void mutatingFromWithinAReadNarrationListenerIsRejected() {
+        TeachingTreeSet<Integer> set = new TeachingTreeSet<>();
+        for (int k : new int[]{10, 5, 15}) set.add(k);
+        SetEventListener bad = e -> set.add(99); // illegal: mutate during a read's Compare narration
+        set.addListener(bad);
+        // contains() narrates Compare via emitRead, so the guard now catches a mutating read-listener.
+        assertThrows(ConcurrentModificationException.class, () -> set.contains(15));
+        set.removeListener(bad);
+        assertEquals(3, set.size(), "the rejected read did not mutate the set");
+        assertFalse(set.contains(99));
     }
 }

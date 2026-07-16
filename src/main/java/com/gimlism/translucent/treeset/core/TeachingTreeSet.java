@@ -79,11 +79,11 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
         while (node != null) {
             int c = compare(e, node.element);
             if (c == 0) {
-                emit(new Compare(node.element, null, true, snapshot()));
+                emitRead(new Compare(node.element, null, true, snapshot()));
                 return true;
             }
             Direction went = c < 0 ? Direction.LEFT : Direction.RIGHT;
-            emit(new Compare(node.element, went, false, snapshot()));
+            emitRead(new Compare(node.element, went, false, snapshot()));
             node = c < 0 ? node.left : node.right;
         }
         return false;
@@ -241,13 +241,13 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
         while (node != null) {
             int c = compare(e, node.element);
             if (c == 0) {
-                emit(new Compare(node.element, null, true, snapshot()));
+                emitRead(new Compare(node.element, null, true, snapshot()));
                 if (inclusive) return node;
                 // exclusive: step to the neighbour on the requested side
                 return up ? successor(node) : predecessor(node);
             }
             Direction went = c < 0 ? Direction.LEFT : Direction.RIGHT;
-            emit(new Compare(node.element, went, false, snapshot()));
+            emitRead(new Compare(node.element, went, false, snapshot()));
             if (up) {                       // ceiling/higher: smallest element > (or >=) e
                 if (c < 0) { best = node; node = node.left; }
                 else { node = node.right; }
@@ -354,6 +354,11 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
 
     private void emit(SetEvent event) {
         dispatcher.emit(event);
+    }
+
+    /** Emit a read-narration event (a Compare during contains/navigation), guarding the walk against a mutating listener. */
+    private void emitRead(SetEvent event) {
+        dispatcher.emitRead(event);
     }
 
     private void beginMutation() {
