@@ -290,6 +290,31 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
         }
     }
 
+    private final class DescendingIterator implements Iterator<E> {
+        private SetNode<E> next = lastNode();
+        private SetNode<E> lastReturned;
+        private int expectedModCount = modCount;
+
+        @Override public boolean hasNext() { return next != null; }
+
+        @Override public E next() {
+            if (modCount != expectedModCount) throw new ConcurrentModificationException();
+            if (next == null) throw new NoSuchElementException();
+            lastReturned = next;
+            next = predecessor(next);
+            return lastReturned.element;
+        }
+
+        @Override public void remove() {
+            if (lastReturned == null) throw new IllegalStateException();
+            if (modCount != expectedModCount) throw new ConcurrentModificationException();
+            // Identity-preserving delete keeps `next` (the predecessor) live and positioned; no re-seat.
+            TeachingTreeSet.this.removeNode(lastReturned);
+            expectedModCount = modCount;
+            lastReturned = null;
+        }
+    }
+
     // --- snapshot + dispatch ----------------------------------------------------
 
     /** Immutable whole-set snapshot from the cached root (valid outside a fixup). */
@@ -384,8 +409,16 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
         return element;
     }
 
-    @Override public Iterator<E> descendingIterator() { throw new UnsupportedOperationException(); }
-    @Override public NavigableSet<E> descendingSet() { throw new UnsupportedOperationException(); }
+    @Override
+    public Iterator<E> descendingIterator() {
+        return new DescendingIterator();
+    }
+
+    @Override
+    public NavigableSet<E> descendingSet() {
+        return new DescendingSetView<>(this);
+    }
+
     @Override public NavigableSet<E> subSet(E from, boolean fromInc, E to, boolean toInc) { throw new UnsupportedOperationException(); }
     @Override public NavigableSet<E> headSet(E to, boolean inclusive) { throw new UnsupportedOperationException(); }
     @Override public NavigableSet<E> tailSet(E from, boolean inclusive) { throw new UnsupportedOperationException(); }
