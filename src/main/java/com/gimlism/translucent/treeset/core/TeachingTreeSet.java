@@ -419,10 +419,38 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
         return new DescendingSetView<>(this);
     }
 
-    @Override public NavigableSet<E> subSet(E from, boolean fromInc, E to, boolean toInc) { throw new UnsupportedOperationException(); }
-    @Override public NavigableSet<E> headSet(E to, boolean inclusive) { throw new UnsupportedOperationException(); }
-    @Override public NavigableSet<E> tailSet(E from, boolean inclusive) { throw new UnsupportedOperationException(); }
-    @Override public SortedSet<E> subSet(E from, E to) { throw new UnsupportedOperationException(); }
-    @Override public SortedSet<E> headSet(E to) { throw new UnsupportedOperationException(); }
-    @Override public SortedSet<E> tailSet(E from) { throw new UnsupportedOperationException(); }
+    @Override
+    public NavigableSet<E> subSet(E from, boolean fromInc, E to, boolean toInc) {
+        return new RangeSetView<>(this, from, true, fromInc, to, true, toInc);
+    }
+
+    @Override
+    public NavigableSet<E> headSet(E to, boolean inclusive) {
+        return new RangeSetView<>(this, null, false, false, to, true, inclusive);
+    }
+
+    @Override
+    public NavigableSet<E> tailSet(E from, boolean inclusive) {
+        return new RangeSetView<>(this, from, true, inclusive, null, false, false);
+    }
+
+    @Override
+    public SortedSet<E> subSet(E from, E to) {
+        return subSet(from, true, to, false);
+    }
+
+    @Override
+    public SortedSet<E> headSet(E to) {
+        return headSet(to, false);
+    }
+
+    @Override
+    public SortedSet<E> tailSet(E from) {
+        return tailSet(from, true);
+    }
+
+    /** Ordering bridge for range views (uses this set's comparator or natural order). */
+    int compareElements(E a, E b) {
+        return compare(a, b);
+    }
 }
