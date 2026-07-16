@@ -9,6 +9,7 @@ import com.gimlism.translucent.substrate.rbtree.RedBlackTree;
 import com.gimlism.translucent.treeset.events.Add;
 import com.gimlism.translucent.treeset.events.Compare;
 import com.gimlism.translucent.treeset.events.Recolor;
+import com.gimlism.translucent.treeset.events.Remove;
 import com.gimlism.translucent.treeset.events.Rotation;
 import com.gimlism.translucent.treeset.events.SetEvent;
 import com.gimlism.translucent.treeset.events.SetNodeSnapshot;
@@ -130,6 +131,50 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
     }
 
     @Override
+    public boolean remove(Object o) {
+        beginMutation();
+        try {
+            @SuppressWarnings("unchecked")
+            E e = (E) o;
+            SetNode<E> node = root;
+            while (node != null) {
+                int c = compare(e, node.element);
+                if (c == 0) {
+                    emit(new Compare(node.element, null, true, snapshot()));
+                    break;
+                }
+                Direction went = c < 0 ? Direction.LEFT : Direction.RIGHT;
+                emit(new Compare(node.element, went, false, snapshot()));
+                node = c < 0 ? node.left : node.right;
+            }
+            if (node == null) return false;          // absent: the failed walk was narrated, no marker
+            unlink(node);
+            return true;
+        } finally {
+            dispatcher.endMutation();
+        }
+    }
+
+    /** Remove an already-located node: commit size first, rebalance, then mark. */
+    private void unlink(SetNode<E> node) {
+        Object element = node.element;
+        size--;
+        modCount++;
+        root = RedBlackTree.deleteFromTree(root, node, sink); // mid-fixup frames see final size
+        emit(new Remove(element, snapshot()));
+    }
+
+    /** Iterator entry point: delete an already-held node with full event + guard semantics. */
+    void removeNode(SetNode<E> node) {
+        beginMutation();
+        try {
+            unlink(node);
+        } finally {
+            dispatcher.endMutation();
+        }
+    }
+
+    @Override
     public void clear() {
         root = null;
         size = 0;
@@ -178,7 +223,15 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
         }
 
         @Override public void remove() {
-            throw new UnsupportedOperationException("Iterator.remove is added in a later task");
+            if (lastReturned == null) throw new IllegalStateException();
+            if (modCount != expectedModCount) throw new ConcurrentModificationException();
+            // The kernel's delete is pointer-based (identity-preserving): when `lastReturned`
+            // has two children its successor NODE is relocated into `lastReturned`'s slot and
+            // stays live, so `next` (= that successor) remains correctly positioned. No re-seat
+            // is needed — unlike JDK TreeMap, which copies the successor's value and would.
+            TeachingTreeSet.this.removeNode(lastReturned);
+            expectedModCount = modCount;
+            lastReturned = null;
         }
     }
 
