@@ -1,0 +1,243 @@
+package com.gimlism.translucent.treeset.core;
+
+import com.gimlism.translucent.substrate.events.EventDispatcher;
+import com.gimlism.translucent.substrate.events.StructureEventListener;
+import com.gimlism.translucent.substrate.rbtree.Color;
+import com.gimlism.translucent.substrate.rbtree.Direction;
+import com.gimlism.translucent.substrate.rbtree.RbEventSink;
+import com.gimlism.translucent.substrate.rbtree.RedBlackTree;
+import com.gimlism.translucent.treeset.events.Add;
+import com.gimlism.translucent.treeset.events.Compare;
+import com.gimlism.translucent.treeset.events.Recolor;
+import com.gimlism.translucent.treeset.events.Rotation;
+import com.gimlism.translucent.treeset.events.SetEvent;
+import com.gimlism.translucent.treeset.events.SetNodeSnapshot;
+import com.gimlism.translucent.treeset.events.SetSnapshot;
+import java.util.AbstractSet;
+import java.util.Comparator;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+import java.util.NavigableSet;
+import java.util.NoSuchElementException;
+import java.util.SortedSet;
+
+/**
+ * A teaching {@link NavigableSet} backed by a red-black tree, ordered by natural
+ * ordering or a supplied {@link Comparator}. Every mutation and every comparison is
+ * observable through an immutable {@link SetEvent} stream. Rebalancing is delegated to
+ * the shared {@link RedBlackTree} kernel; this class owns ordering, the comparison
+ * walk, node identity, and event translation.
+ */
+public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E> {
+
+    private SetNode<E> root;
+    private int size;
+    int modCount;
+    private final Comparator<? super E> comparator;
+
+    private final EventDispatcher<SetEvent> dispatcher = new EventDispatcher<>("set");
+
+    /** Translates the kernel's neutral rotate/recolor callbacks into SetEvents, snapshotting the live tree. */
+    private final RbEventSink<SetNode<E>> sink = new RbEventSink<>() {
+        @Override public void rotated(Direction dir, SetNode<E> pivot) {
+            emit(new Rotation(dir, pivot.element, snapshotFrom(pivot)));
+        }
+        @Override public void recolored(SetNode<E> node, Color oldColor, Color newColor) {
+            emit(new Recolor(node.element, oldColor, newColor, snapshotFrom(node)));
+        }
+    };
+
+    public TeachingTreeSet() {
+        this.comparator = null;
+    }
+
+    public TeachingTreeSet(Comparator<? super E> comparator) {
+        this.comparator = comparator;
+    }
+
+    @SuppressWarnings("unchecked")
+    private int compare(E a, E b) {
+        return comparator != null ? comparator.compare(a, b) : ((Comparable<? super E>) a).compareTo(b);
+    }
+
+    @Override
+    public Comparator<? super E> comparator() {
+        return comparator;
+    }
+
+    @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
+    public boolean contains(Object o) {
+        @SuppressWarnings("unchecked")
+        E e = (E) o;
+        SetNode<E> node = root;
+        while (node != null) {
+            int c = compare(e, node.element);
+            if (c == 0) {
+                emit(new Compare(node.element, null, true, snapshot()));
+                return true;
+            }
+            Direction went = c < 0 ? Direction.LEFT : Direction.RIGHT;
+            emit(new Compare(node.element, went, false, snapshot()));
+            node = c < 0 ? node.left : node.right;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean add(E e) {
+        beginMutation();
+        try {
+            if (root == null) {
+                root = new SetNode<>(e);
+                root.red = false;      // black root, committed before the frame
+                size++;
+                modCount++;
+                emit(new Add(e, snapshot()));
+                return true;
+            }
+            SetNode<E> node = root;
+            SetNode<E> parent = null;
+            int dir = 0;
+            while (node != null) {
+                int c = compare(e, node.element);
+                if (c == 0) {
+                    emit(new Compare(node.element, null, true, snapshot()));
+                    return false;      // already present -> no Add
+                }
+                Direction went = c < 0 ? Direction.LEFT : Direction.RIGHT;
+                emit(new Compare(node.element, went, false, snapshot()));
+                parent = node;
+                dir = c;
+                node = c < 0 ? node.left : node.right;
+            }
+            SetNode<E> x = new SetNode<>(e);
+            x.parent = parent;
+            x.red = true;
+            if (dir < 0) parent.left = x; else parent.right = x;
+            size++;
+            modCount++;
+            emit(new Add(e, snapshot()));          // committed link + size before the frame
+            root = RedBlackTree.insertFixup(root, x, sink);
+            return true;
+        } finally {
+            dispatcher.endMutation();
+        }
+    }
+
+    @Override
+    public void clear() {
+        root = null;
+        size = 0;
+        modCount++;
+    }
+
+    @Override
+    public Iterator<E> iterator() {
+        return new AscendingIterator();
+    }
+
+    /** Leftmost (minimum) node, or null when empty. */
+    private SetNode<E> firstNode() {
+        SetNode<E> n = root;
+        if (n == null) return null;
+        while (n.left != null) n = n.left;
+        return n;
+    }
+
+    /** In-order successor of {@code n}. */
+    private SetNode<E> successor(SetNode<E> n) {
+        if (n.right != null) {
+            SetNode<E> s = n.right;
+            while (s.left != null) s = s.left;
+            return s;
+        }
+        SetNode<E> p = n.parent;
+        SetNode<E> c = n;
+        while (p != null && c == p.right) { c = p; p = p.parent; }
+        return p;
+    }
+
+    private final class AscendingIterator implements Iterator<E> {
+        private SetNode<E> next = firstNode();
+        private SetNode<E> lastReturned;
+        private int expectedModCount = modCount;
+
+        @Override public boolean hasNext() { return next != null; }
+
+        @Override public E next() {
+            if (modCount != expectedModCount) throw new ConcurrentModificationException();
+            if (next == null) throw new NoSuchElementException();
+            lastReturned = next;
+            next = successor(next);
+            return lastReturned.element;
+        }
+
+        @Override public void remove() {
+            throw new UnsupportedOperationException("Iterator.remove is added in a later task");
+        }
+    }
+
+    // --- snapshot + dispatch ----------------------------------------------------
+
+    /** Immutable whole-set snapshot from the cached root (valid outside a fixup). */
+    SetSnapshot snapshot() {
+        return new SetSnapshot(snap(root), size);
+    }
+
+    /** Snapshot built by climbing to the true root from {@code anyNode} (valid mid-fixup). */
+    private SetSnapshot snapshotFrom(SetNode<E> anyNode) {
+        SetNode<E> r = anyNode;
+        while (r.parent != null) r = r.parent;
+        return new SetSnapshot(snap(r), size);
+    }
+
+    private SetNodeSnapshot snap(SetNode<E> n) {
+        if (n == null) return null;
+        return new SetNodeSnapshot(n.element, n.red, snap(n.left), snap(n.right));
+    }
+
+    public void addListener(StructureEventListener<SetEvent> listener) {
+        dispatcher.addListener(listener);
+    }
+
+    public void removeListener(StructureEventListener<SetEvent> listener) {
+        dispatcher.removeListener(listener);
+    }
+
+    private void emit(SetEvent event) {
+        dispatcher.emit(event);
+    }
+
+    private void beginMutation() {
+        dispatcher.beginMutation();
+    }
+
+    /** Test hook: the tree root (package-visible for invariant checkers). */
+    SetNode<E> rootForTest() {
+        return root;
+    }
+
+    // --- NavigableSet methods filled in by later tasks --------------------------
+
+    @Override public E first() { throw new UnsupportedOperationException(); }
+    @Override public E last() { throw new UnsupportedOperationException(); }
+    @Override public E lower(E e) { throw new UnsupportedOperationException(); }
+    @Override public E floor(E e) { throw new UnsupportedOperationException(); }
+    @Override public E ceiling(E e) { throw new UnsupportedOperationException(); }
+    @Override public E higher(E e) { throw new UnsupportedOperationException(); }
+    @Override public E pollFirst() { throw new UnsupportedOperationException(); }
+    @Override public E pollLast() { throw new UnsupportedOperationException(); }
+    @Override public Iterator<E> descendingIterator() { throw new UnsupportedOperationException(); }
+    @Override public NavigableSet<E> descendingSet() { throw new UnsupportedOperationException(); }
+    @Override public NavigableSet<E> subSet(E from, boolean fromInc, E to, boolean toInc) { throw new UnsupportedOperationException(); }
+    @Override public NavigableSet<E> headSet(E to, boolean inclusive) { throw new UnsupportedOperationException(); }
+    @Override public NavigableSet<E> tailSet(E from, boolean inclusive) { throw new UnsupportedOperationException(); }
+    @Override public SortedSet<E> subSet(E from, E to) { throw new UnsupportedOperationException(); }
+    @Override public SortedSet<E> headSet(E to) { throw new UnsupportedOperationException(); }
+    @Override public SortedSet<E> tailSet(E from) { throw new UnsupportedOperationException(); }
+}
