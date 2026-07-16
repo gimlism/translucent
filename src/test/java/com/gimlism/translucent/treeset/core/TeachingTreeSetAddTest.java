@@ -3,6 +3,7 @@ package com.gimlism.translucent.treeset.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.treeset.events.Add;
@@ -11,6 +12,7 @@ import com.gimlism.translucent.treeset.events.SetEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
@@ -149,5 +151,13 @@ class TeachingTreeSetAddTest {
         assertEquals(0, set.size());
         assertTrue(set.isEmpty());
         assertFalse(set.iterator().hasNext());
+    }
+
+    @Test
+    void clearFromWithinAListenerIsRejected() {
+        TeachingTreeSet<Integer> set = new TeachingTreeSet<>();
+        set.add(1); // seed so the next add emits a Compare mid-operation
+        set.addListener(e -> set.clear()); // a listener that illegally mutates during dispatch
+        assertThrows(ConcurrentModificationException.class, () -> set.add(2));
     }
 }
