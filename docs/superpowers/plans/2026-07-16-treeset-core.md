@@ -992,12 +992,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /** Test-only red-black + BST-ordering checker over a TeachingTreeSet's tree. */
 final class SetInvariants {
     private SetInvariants() { }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     static void assertValid(TeachingTreeSet<?> set) {
         SetNode<?> root = set.rootForTest();
         if (root == null) return;
@@ -1005,10 +1007,14 @@ final class SetInvariants {
         blackHeight(root);
         List<Object> keys = new ArrayList<>();
         inorder(root, keys);
+        // The ordering invariant is "ascending by the SET'S order", not natural order:
+        // use the set's comparator when present, else fall back to natural Comparable.
+        Comparator cmp = set.comparator();
         for (int i = 1; i < keys.size(); i++) {
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            int c = ((Comparable) keys.get(i - 1)).compareTo(keys.get(i));
-            assertFalse(c >= 0, "in-order keys must strictly ascend: " + keys);
+            int c = cmp != null
+                    ? cmp.compare(keys.get(i - 1), keys.get(i))
+                    : ((Comparable) keys.get(i - 1)).compareTo(keys.get(i));
+            assertFalse(c >= 0, "in-order keys must strictly ascend by the set's order: " + keys);
         }
     }
 
