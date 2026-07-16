@@ -1357,11 +1357,21 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
         }
     }
 
+    /**
+     * Reset to empty in O(1). Guarded like every other mutator (a listener may not
+     * clear the set mid-dispatch). Emits no event by design — the vocabulary has no
+     * bulk-clear event; a visualizer sees the next frame as the empty tree.
+     */
     @Override
     public void clear() {
-        root = null;
-        size = 0;
-        modCount++;
+        beginMutation();
+        try {
+            root = null;
+            size = 0;
+            modCount++;
+        } finally {
+            dispatcher.endMutation();
+        }
     }
 
     @Override
@@ -2523,7 +2533,6 @@ git commit -m "feat(treeset): write-through range views (subSet/headSet/tailSet)
 ```java
 package com.gimlism.translucent.treeset.consumer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
