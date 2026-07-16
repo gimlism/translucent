@@ -207,6 +207,61 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
         return p;
     }
 
+    /** Rightmost (maximum) node, or null when empty. */
+    private SetNode<E> lastNode() {
+        SetNode<E> n = root;
+        if (n == null) return null;
+        while (n.right != null) n = n.right;
+        return n;
+    }
+
+    private E elementOrNull(SetNode<E> n) {
+        return n == null ? null : n.element;
+    }
+
+    /**
+     * Narrated comparison walk for the relative navigators. Returns the node that is
+     * the ceiling ({@code up=true}) or the floor ({@code up=false}) of {@code e};
+     * {@code inclusive} decides whether an exact match qualifies. Emits a Compare at
+     * each visited node.
+     */
+    private SetNode<E> bound(E e, boolean up, boolean inclusive) {
+        SetNode<E> node = root;
+        SetNode<E> best = null;
+        while (node != null) {
+            int c = compare(e, node.element);
+            if (c == 0) {
+                emit(new Compare(node.element, null, true, snapshot()));
+                if (inclusive) return node;
+                // exclusive: step to the neighbour on the requested side
+                return up ? successor(node) : predecessor(node);
+            }
+            Direction went = c < 0 ? Direction.LEFT : Direction.RIGHT;
+            emit(new Compare(node.element, went, false, snapshot()));
+            if (up) {                       // ceiling/higher: smallest element > (or >=) e
+                if (c < 0) { best = node; node = node.left; }
+                else { node = node.right; }
+            } else {                        // floor/lower: largest element < (or <=) e
+                if (c > 0) { best = node; node = node.right; }
+                else { node = node.left; }
+            }
+        }
+        return best;
+    }
+
+    /** In-order predecessor of {@code n}. */
+    private SetNode<E> predecessor(SetNode<E> n) {
+        if (n.left != null) {
+            SetNode<E> p = n.left;
+            while (p.right != null) p = p.right;
+            return p;
+        }
+        SetNode<E> p = n.parent;
+        SetNode<E> c = n;
+        while (p != null && c == p.left) { c = p; p = p.parent; }
+        return p;
+    }
+
     private final class AscendingIterator implements Iterator<E> {
         private SetNode<E> next = firstNode();
         private SetNode<E> lastReturned;
@@ -277,14 +332,58 @@ public class TeachingTreeSet<E> extends AbstractSet<E> implements NavigableSet<E
 
     // --- NavigableSet methods filled in by later tasks --------------------------
 
-    @Override public E first() { throw new UnsupportedOperationException(); }
-    @Override public E last() { throw new UnsupportedOperationException(); }
-    @Override public E lower(E e) { throw new UnsupportedOperationException(); }
-    @Override public E floor(E e) { throw new UnsupportedOperationException(); }
-    @Override public E ceiling(E e) { throw new UnsupportedOperationException(); }
-    @Override public E higher(E e) { throw new UnsupportedOperationException(); }
-    @Override public E pollFirst() { throw new UnsupportedOperationException(); }
-    @Override public E pollLast() { throw new UnsupportedOperationException(); }
+    @Override
+    public E first() {
+        SetNode<E> n = firstNode();
+        if (n == null) throw new NoSuchElementException();
+        return n.element;
+    }
+
+    @Override
+    public E last() {
+        SetNode<E> n = lastNode();
+        if (n == null) throw new NoSuchElementException();
+        return n.element;
+    }
+
+    @Override
+    public E lower(E e) {
+        return elementOrNull(bound(e, false, false));
+    }
+
+    @Override
+    public E floor(E e) {
+        return elementOrNull(bound(e, false, true));
+    }
+
+    @Override
+    public E ceiling(E e) {
+        return elementOrNull(bound(e, true, true));
+    }
+
+    @Override
+    public E higher(E e) {
+        return elementOrNull(bound(e, true, false));
+    }
+
+    @Override
+    public E pollFirst() {
+        SetNode<E> n = firstNode();
+        if (n == null) return null;
+        E element = n.element;
+        removeNode(n);
+        return element;
+    }
+
+    @Override
+    public E pollLast() {
+        SetNode<E> n = lastNode();
+        if (n == null) return null;
+        E element = n.element;
+        removeNode(n);
+        return element;
+    }
+
     @Override public Iterator<E> descendingIterator() { throw new UnsupportedOperationException(); }
     @Override public NavigableSet<E> descendingSet() { throw new UnsupportedOperationException(); }
     @Override public NavigableSet<E> subSet(E from, boolean fromInc, E to, boolean toInc) { throw new UnsupportedOperationException(); }
