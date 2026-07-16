@@ -75,4 +75,17 @@ class TeachingTreeSetRangeTest {
         assertEquals(3, s.subSet(3, true, 6, true).first());
         assertEquals(6, s.subSet(3, true, 6, true).last());
     }
+
+    @Test
+    void invertedSubSetBoundsThrowLikeJdk() {
+        TeachingTreeSet<Integer> s = setOf(1, 2, 3, 4, 5);
+        // fromElement > toElement is rejected, as java.util.TreeSet does.
+        assertThrows(IllegalArgumentException.class, () -> s.subSet(6, 3));
+        assertThrows(IllegalArgumentException.class, () -> s.subSet(6, true, 3, true));
+        // Equal bounds are legal (empty half-open view), matching the JDK.
+        assertTrue(s.subSet(3, 3).isEmpty());
+        // A nested subSet with inverted bounds is rejected too.
+        NavigableSet<Integer> mid = s.subSet(1, true, 5, true);
+        assertThrows(IllegalArgumentException.class, () -> mid.subSet(4, true, 2, true));
+    }
 }

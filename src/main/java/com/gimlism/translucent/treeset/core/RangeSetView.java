@@ -165,6 +165,9 @@ final class RangeSetView<E> extends AbstractSet<E> implements NavigableSet<E> {
     }
 
     @Override public NavigableSet<E> subSet(E from, boolean fromInc, E to, boolean toInc) {
+        if (base.compareElements(from, to) > 0) {
+            throw new IllegalArgumentException("fromElement (" + from + ") > toElement (" + to + ")");
+        }
         requireInRange(from);
         requireInRange(to);
         return new RangeSetView<>(base, from, true, fromInc, to, true, toInc);
