@@ -175,3 +175,10 @@ The RB-tree lesson is complete at step 2.
 - **All visualization** — ASCII, and the 4-slice web arc (static → live SSE → REPL
   → browser controls). This spec is core only.
 - **`Comparator` in web/REPL front-ends** (a viz-slice concern).
+- **Strict fidelity of *compound* range views.** `NavigableSet` compliance is full for
+  the common single-level cases (a plain `subSet`/`headSet`/`tailSet` is live and
+  write-through; `descendingSet()` on the base set is write-through). Three *compound*
+  behaviours are deliberate teaching simplifications: a range view's `iterator()` is
+  not fail-fast, and `descendingSet()` of a range view (and a range view of a
+  `descendingSet`) is a detached copy rather than write-through. Full write-through of
+  arbitrarily-nested views is a clean future refinement, not part of the RB-tree lesson.

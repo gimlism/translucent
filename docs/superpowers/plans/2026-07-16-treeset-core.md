@@ -902,7 +902,17 @@ package com.gimlism.translucent.treeset.events;
 
 import com.gimlism.translucent.substrate.events.StructureEventListener;
 
-/** Synchronous consumer of a {@code TeachingTreeSet}'s event stream. */
+/**
+ * Synchronous consumer of a {@code TeachingTreeSet}'s event stream.
+ *
+ * <p><b>Reads narrate.</b> Unlike the other structures, a TreeSet emits
+ * {@link Compare} frames during read operations ({@code contains}, the relative
+ * navigators). The no-mutation-during-dispatch rule therefore applies to
+ * read-narration events too: a listener must not mutate the set from within
+ * {@code onEvent}, even one fired by a read — doing so would corrupt the in-progress
+ * comparison walk (reads are not wrapped in the re-entrancy guard, so it would not be
+ * caught). Read, record, or render — do not mutate, and do not throw.
+ */
 public interface SetEventListener extends StructureEventListener<SetEvent> {}
 ```
 
@@ -2144,6 +2154,7 @@ git commit -m "feat(treeset): descendingIterator + write-through descendingSet v
 **Interfaces:**
 - Consumes: `compare`, `contains`, `add`, `remove`, `firstNode`, `successor`, navigation methods (Tasks 5–7).
 - Produces: `NavigableSet<E>` range views bounded by optional lower/upper bounds with inclusivity flags. Reads filter the backing iteration to the range; writes delegate through, rejecting out-of-range `add` with `IllegalArgumentException` (JDK semantics).
+- **Known teaching simplifications (deliberate, documented):** three *compound*-view behaviours diverge from strict JDK fidelity, none exercised by tests: (a) `RangeSetView.iterator()` snapshots to a list, so it is **not fail-fast** (JDK range iterators check `modCount`); (b) `RangeSetView.descendingSet()` materializes a detached copy, so it is **not write-through** (unlike `descendingSet()` on the base set, which is); (c) `DescendingSetView`'s range views inherit (b) via delegation. The single-level views (a plain `subSet`/`headSet`/`tailSet`, and `descendingSet()` on the base) *are* live and write-through — the common teaching cases. These simplifications are called out in the spec's out-of-scope so "full NavigableSet" is honest about its edges.
 
 - [ ] **Step 1: Write the failing test**
 
