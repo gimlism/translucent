@@ -100,4 +100,124 @@ public final class RedBlackTree {
         if (root.red) setColor(root, false, sink);
         return root;
     }
+
+    /**
+     * Remove {@code z} from the tree (pointer-based), restoring invariants. Returns
+     * the new root, or null if the tree becomes empty. Touches only tree links.
+     */
+    public static <N extends RbNode<N>> N deleteFromTree(N root, N z, RbEventSink<N> sink) {
+        N y = z;
+        boolean yWasBlack = !y.red;
+        N x;
+        N xParent;
+
+        if (z.left == null) {
+            x = z.right;
+            xParent = z.parent;
+            root = transplant(root, z, z.right);
+        } else if (z.right == null) {
+            x = z.left;
+            xParent = z.parent;
+            root = transplant(root, z, z.left);
+        } else {
+            y = minimum(z.right);
+            yWasBlack = !y.red;
+            x = y.right;
+            if (y.parent == z) {
+                xParent = y;
+            } else {
+                xParent = y.parent;
+                root = transplant(root, y, y.right);
+                y.right = z.right;
+                y.right.parent = y;
+            }
+            root = transplant(root, z, y);
+            y.left = z.left;
+            y.left.parent = y;
+            setColor(y, z.red, sink);
+        }
+
+        if (yWasBlack) {
+            root = deleteFixup(root, x, xParent, sink);
+        }
+        z.parent = null;
+        z.left = null;
+        z.right = null;
+        return root;
+    }
+
+    private static <N extends RbNode<N>> N transplant(N root, N u, N v) {
+        if (u.parent == null) root = v;
+        else if (u == u.parent.left) u.parent.left = v;
+        else u.parent.right = v;
+        if (v != null) v.parent = u.parent;
+        return root;
+    }
+
+    private static <N extends RbNode<N>> N minimum(N n) {
+        while (n.left != null) n = n.left;
+        return n;
+    }
+
+    private static <N extends RbNode<N>> N deleteFixup(N root, N x, N xParent, RbEventSink<N> sink) {
+        while (x != root && (x == null || !x.red)) {
+            if (x == xParent.left) {
+                N w = xParent.right;
+                if (w != null && w.red) {
+                    setColor(w, false, sink);
+                    setColor(xParent, true, sink);
+                    root = rotateLeft(root, xParent, sink);
+                    w = xParent.right;
+                }
+                if (w == null
+                        || ((w.left == null || !w.left.red) && (w.right == null || !w.right.red))) {
+                    if (w != null) setColor(w, true, sink);
+                    x = xParent;
+                    xParent = x.parent;
+                } else {
+                    if (w.right == null || !w.right.red) {
+                        if (w.left != null) setColor(w.left, false, sink);
+                        setColor(w, true, sink);
+                        root = rotateRight(root, w, sink);
+                        w = xParent.right;
+                    }
+                    setColor(w, xParent.red, sink);
+                    setColor(xParent, false, sink);
+                    if (w.right != null) setColor(w.right, false, sink);
+                    root = rotateLeft(root, xParent, sink);
+                    x = root;
+                    xParent = null;
+                }
+            } else {
+                N w = xParent.left;
+                if (w != null && w.red) {
+                    setColor(w, false, sink);
+                    setColor(xParent, true, sink);
+                    root = rotateRight(root, xParent, sink);
+                    w = xParent.left;
+                }
+                if (w == null
+                        || ((w.right == null || !w.right.red) && (w.left == null || !w.left.red))) {
+                    if (w != null) setColor(w, true, sink);
+                    x = xParent;
+                    xParent = x.parent;
+                } else {
+                    if (w.left == null || !w.left.red) {
+                        if (w.right != null) setColor(w.right, false, sink);
+                        setColor(w, true, sink);
+                        root = rotateLeft(root, w, sink);
+                        w = xParent.left;
+                    }
+                    setColor(w, xParent.red, sink);
+                    setColor(xParent, false, sink);
+                    if (w.left != null) setColor(w.left, false, sink);
+                    root = rotateRight(root, xParent, sink);
+                    x = root;
+                    xParent = null;
+                }
+            }
+        }
+        if (x != null) setColor(x, false, sink);
+        return root;
+    }
 }
