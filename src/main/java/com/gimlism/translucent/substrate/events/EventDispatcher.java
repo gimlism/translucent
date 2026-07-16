@@ -22,6 +22,7 @@ public final class EventDispatcher<E extends StructureEvent> {
     private final List<StructureEventListener<E>> listeners = new ArrayList<>();
     private final String structureNoun;
     private boolean mutating;
+    private boolean dispatchingRead;
 
     /** @param structureNoun the structure's name for the re-entrancy message ("map", "list", "trie"). */
     public EventDispatcher(String structureNoun) {
@@ -41,9 +42,30 @@ public final class EventDispatcher<E extends StructureEvent> {
         for (StructureEventListener<E> listener : List.copyOf(listeners)) listener.onEvent(event);
     }
 
-    /** Begin a structural mutation, rejecting a re-entrant one triggered from within a listener. */
+    /**
+     * Dispatch a <em>read-narration</em> event — one emitted during a query walk rather than a mutation
+     * (e.g. a comparison-ordered set narrating its search descent). Marks a read dispatch in progress for
+     * the callback's duration so {@link #beginMutation} rejects a listener that tries to mutate mid-walk
+     * (which would corrupt the traversal), while still permitting nested reads. Save/restore keeps nested
+     * read dispatch reentrant. A structure that never narrates reads never calls this, so the read-dispatch
+     * flag stays {@code false} for it and {@link #beginMutation}'s behaviour is unchanged.
+     */
+    public void emitRead(E event) {
+        boolean prev = dispatchingRead;
+        dispatchingRead = true;
+        try {
+            for (StructureEventListener<E> listener : List.copyOf(listeners)) listener.onEvent(event);
+        } finally {
+            dispatchingRead = prev;
+        }
+    }
+
+    /**
+     * Begin a structural mutation, rejecting a re-entrant one triggered from within a listener — whether
+     * that listener was fired by another mutation or by a {@linkplain #emitRead read-narration} event.
+     */
     public void beginMutation() {
-        if (mutating) {
+        if (mutating || dispatchingRead) {
             throw new ConcurrentModificationException(
                 structureNoun + " mutated from within an event listener; listeners may read the "
                 + structureNoun + " but must not mutate it during event dispatch");
