@@ -2078,6 +2078,7 @@ Add the descending iterator inner class (next to `AscendingIterator`):
 package com.gimlism.translucent.treeset.core;
 
 import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NavigableSet;
@@ -2117,8 +2118,10 @@ final class DescendingSetView<E> extends AbstractSet<E> implements NavigableSet<
     @Override public E pollLast() { return base.pollFirst(); }
 
     @Override public Comparator<? super E> comparator() {
-        Comparator<? super E> c = base.comparator();
-        return c != null ? c.reversed() : Comparator.reverseOrder();
+        // Collections.reverseOrder(cmp) reverses cmp, or reverses natural ordering when
+        // cmp is null — matching java.util.TreeMap.descendingMap().comparator(). (A bare
+        // Comparator.reverseOrder() would not type-check against the unbounded E.)
+        return Collections.reverseOrder(base.comparator());
     }
 
     @Override public NavigableSet<E> subSet(E from, boolean fromInc, E to, boolean toInc) {
