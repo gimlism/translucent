@@ -692,7 +692,7 @@ class TreeSetVizDemoTest {
         assertTrue(out.contains("add 10"), out);
         assertTrue(out.contains("rotate "), out);     // rebalancing visible
         assertTrue(out.contains("recolor "), out);
-        assertTrue(out.contains("compare 25"), out);   // read narration (a miss walk)
+        assertTrue(out.contains("compare 40 -> found"), out);   // read narration: Compare carries the VISITED node (contains(40) hit), never the search key
         assertTrue(out.contains("remove 30"), out);
         assertTrue(out.contains("set: size="), out);   // trees rendered
         assertTrue(out.contains("> "), out);           // highlight present
