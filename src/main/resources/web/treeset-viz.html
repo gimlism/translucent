@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeachingTreeSet — replay</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1b1b1d; --muted:#777; --card:#fff;
+          --edge:#8a8a8a; --cell:#eceef2; --cellb:#c8ccd4; --red:#d64545; --black:#333; --hl:#f5a623; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16171a; --fg:#e8e8ea; --muted:#999; --card:#1f2126; --edge:#8a8a8a;
+            --cell:#2a2d33; --cellb:#41454d; --red:#e05a5a; --black:#c9ccd2; --hl:#f5a623; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px system-ui,sans-serif; }
+  #app { max-width: 960px; margin: 0 auto; padding: 18px; }
+  h1 { font-size: 16px; font-weight:600; margin: 0 0 12px; }
+  #bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+  button { font:inherit; padding:6px 12px; border:1px solid var(--cellb); border-radius:8px;
+           background:var(--card); color:var(--fg); cursor:pointer; }
+  button:disabled { opacity:.4; cursor:default; }
+  #counter { color:var(--muted); font-variant-numeric: tabular-nums; }
+  #caption { font-weight:600; min-height:1.4em; margin-bottom:8px; }
+  #stage { background:var(--card); border:1px solid var(--cellb); border-radius:12px; padding:10px;
+           transition: opacity .18s ease; overflow:auto; }
+  svg text { fill: var(--fg); font: 13px system-ui, sans-serif; }
+  .edge { stroke: var(--edge); stroke-width: 2; }
+  .node circle { stroke: #0006; stroke-width: 1.5; }
+  .node.red circle { fill: var(--red); }
+  .node.black circle { fill: var(--black); }
+  .node.hl circle { stroke: var(--hl); stroke-width: 3.5; }
+  .node text { fill: #fff; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>TeachingTreeSet — web replay</h1>
+  <div id="caption"></div>
+  <div id="bar">
+    <button id="prev">◀ prev</button>
+    <button id="play">▶ play</button>
+    <button id="next">next ▶</button>
+    <span id="counter"></span>
+  </div>
+  <div id="stage"><svg id="svg"></svg></div>
+</div>
+<script>
+"use strict";
+const DATA = /*__FRAMES__*/;
+const LIVE = /*__LIVE__*/;         // Slice A: baked false; SSE branch arrives in Slice B
+const CONTROLS = /*__CONTROLS__*/; // Slice A: baked false; command box arrives in Slice D
+const frames = (DATA && DATA.frames) || [];
+const svg = document.getElementById("svg");
+const stage = document.getElementById("stage");
+const caption = document.getElementById("caption");
+const counter = document.getElementById("counter");
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
+const playBtn = document.getElementById("play");
+
+const PAD = 28, V_GAP = 72, H_GAP = 54, R = 16;
+let idx = 0, timer = null;
+
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+
+// In-order slot (x) + depth (y) per node: left subtree always renders left, right always right
+// (BST-faithful — a single child sits on its correct side). Mirrors the map's tree-bin layout.
+function buildTree(root) {
+  const nodes = [], edges = [], pos = new Map();
+  let slot = 0, maxDepth = 0;
+  (function assign(n, depth) {
+    if (!n) return;
+    assign(n.left, depth + 1);
+    const rec = { element: n.element, red: n.red, hl: n.hl, s: slot++, depth };
+    maxDepth = Math.max(maxDepth, depth);
+    nodes.push(rec); pos.set(n, rec);
+    assign(n.right, depth + 1);
+  })(root, 0);
+  (function link(n) {
+    if (!n) return;
+    const p = pos.get(n);
+    if (n.left)  { edges.push([p, pos.get(n.left)]);  link(n.left); }
+    if (n.right) { edges.push([p, pos.get(n.right)]); link(n.right); }
+  })(root);
+  return { nodes, edges, slots: Math.max(1, slot), depth: maxDepth };
+}
+
+function renderFrame(f) {
+  const root = f.set.root;
+  if (!root) {
+    svg.innerHTML = "";
+    svg.setAttribute("viewBox", "0 0 320 80");
+    svg.setAttribute("width", 320);
+    svg.setAttribute("height", 80);
+    return;
+  }
+  const t = buildTree(root);
+  const cx = s => PAD + s * H_GAP + R;
+  const cy = d => PAD + d * V_GAP + R;
+  let body = "";
+  t.edges.forEach(([p, c]) => {
+    body += `<line class="edge" x1="${cx(p.s)}" y1="${cy(p.depth)}" x2="${cx(c.s)}" y2="${cy(c.depth)}"/>`;
+  });
+  t.nodes.forEach(n => {
+    const cls = "node " + (n.red ? "red" : "black") + (n.hl ? " hl" : "");
+    body += `<g class="${cls}"><circle cx="${cx(n.s)}" cy="${cy(n.depth)}" r="${R}"/>`
+          + `<text x="${cx(n.s)}" y="${cy(n.depth) + 4}" text-anchor="middle">${esc(n.element)}</text></g>`;
+  });
+  const width = Math.max(320, PAD * 2 + t.slots * H_GAP);
+  const height = PAD * 2 + (t.depth + 1) * V_GAP;
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.innerHTML = body;
+}
+
+function refreshMeta() {
+  counter.textContent = frames.length ? `frame ${idx + 1} / ${frames.length}` : "";
+  prevBtn.disabled = idx <= 0;
+  nextBtn.disabled = idx >= frames.length - 1;
+}
+
+function render() {
+  const f = frames[idx];
+  caption.textContent = f ? f.event.label : (LIVE ? "(waiting for live events…)" : "(no events to replay)");
+  if (f) renderFrame(f); else svg.innerHTML = "";
+  stage.style.opacity = "0";
+  requestAnimationFrame(() => requestAnimationFrame(() => { stage.style.opacity = "1"; }));
+  refreshMeta();
+}
+
+function go(n) { idx = Math.max(0, Math.min(frames.length - 1, n)); render(); }
+function stop() { if (timer) { clearInterval(timer); timer = null; playBtn.textContent = "▶ play"; } }
+prevBtn.onclick = () => { stop(); go(idx - 1); };
+nextBtn.onclick = () => { stop(); go(idx + 1); };
+playBtn.onclick = () => {
+  if (timer) { stop(); return; }
+  if (idx >= frames.length - 1) idx = 0;
+  playBtn.textContent = "⏸ pause";
+  timer = setInterval(() => { if (idx >= frames.length - 1) stop(); else go(idx + 1); }, 900);
+};
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { stop(); go(idx + 1); }
+  else if (e.key === "ArrowLeft") { stop(); go(idx - 1); }
+});
+render();
+</script>
+</body>
+</html>
