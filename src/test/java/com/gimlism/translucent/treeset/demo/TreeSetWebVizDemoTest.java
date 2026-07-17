@@ -14,6 +14,7 @@ class TreeSetWebVizDemoTest {
         assertTrue(html.contains("</html>"), html);
         assertTrue(html.contains("const LIVE = false;"), "static replay");
         assertTrue(html.contains("\"type\":\"Add\""), "baked frames present");
+        assertTrue(html.contains("\"type\":\"Rotation\""), "the story rebalances — rotation frames must be present");
         assertTrue(html.contains("\"element\":\"50\""), "the story's elements are serialized");
         assertTrue(html.contains("\"label\":\"remove 30\""), "the removal is in the story");
         assertFalse(html.contains("/*__FRAMES__*/"), "no unsubstituted token");
