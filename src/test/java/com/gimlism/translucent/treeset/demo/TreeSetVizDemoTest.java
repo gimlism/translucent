@@ -1,5 +1,6 @@
 package com.gimlism.translucent.treeset.demo;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -19,6 +20,7 @@ class TreeSetVizDemoTest {
         assertTrue(out.contains("compare 40 -> found"), out);   // read narration (a hit: visited node 40)
         assertTrue(out.contains("remove 30"), out);
         assertTrue(out.contains("set: size="), out);   // trees rendered
-        assertTrue(out.contains("> "), out);           // highlight present
+        assertTrue(out.contains("\n> "), out);   // a real highlight gutter starts a line; the "-> " in Compare captions does not
+        assertFalse(out.contains("compare 25"), out);   // Compare carries the VISITED node, never the search key: a miss on absent 25 never emits "compare 25"
     }
 }

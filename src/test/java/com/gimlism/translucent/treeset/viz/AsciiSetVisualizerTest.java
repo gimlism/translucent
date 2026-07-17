@@ -25,6 +25,6 @@ class AsciiSetVisualizerTest {
         assertTrue(out.contains("recolor "), out);
         assertTrue(out.contains("remove 30"), out);
         assertTrue(out.contains("set: size="), out); // trees rendered
-        assertTrue(out.contains("> "), out);         // highlight present on some frame
+        assertTrue(out.contains("\n> "), out);   // a real highlight gutter starts a line; the "-> " in Compare captions does not
     }
 }
