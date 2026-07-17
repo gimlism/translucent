@@ -3,6 +3,7 @@ package com.gimlism.translucent.hashmap.viz;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.hashmap.core.TeachingHashMap;
+import com.gimlism.translucent.substrate.viz.ColorMode;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -14,7 +15,7 @@ class AsciiMapVisualizerTest {
         var buffer = new ByteArrayOutputStream();
         var out = new PrintStream(buffer, true, StandardCharsets.UTF_8);
         var map = new TeachingHashMap<Integer, String>();
-        map.addListener(new AsciiMapVisualizer(out, new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN))));
+        map.addListener(new AsciiMapVisualizer(out, new AsciiMapRenderer(new Palette(ColorMode.PLAIN))));
 
         map.put(0, "zero");
         map.put(8, "eight"); // collision in bucket 0

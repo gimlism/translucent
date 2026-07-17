@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
 import com.gimlism.translucent.hashmap.core.TeachingHashMap;
+import com.gimlism.translucent.substrate.viz.ColorMode;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -25,7 +26,7 @@ class AsciiMapReplayerTest {
     @Test
     void steppingForwardBackAndQuitWalksFrames() {
         var rec = recordThreePuts(); // 3 events
-        var replayer = new AsciiMapReplayer(rec.events(), new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN)));
+        var replayer = new AsciiMapReplayer(rec.events(), new AsciiMapRenderer(new Palette(ColorMode.PLAIN)));
         var buffer = new ByteArrayOutputStream();
         // next (0->1), back (1->0), quit
         var in = new ByteArrayInputStream("\nb\nq\n".getBytes(StandardCharsets.UTF_8));
@@ -41,7 +42,7 @@ class AsciiMapReplayerTest {
     @Test
     void autoPlayRendersEveryFrameInOrder() {
         var rec = recordThreePuts();
-        var replayer = new AsciiMapReplayer(rec.events(), new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN)));
+        var replayer = new AsciiMapReplayer(rec.events(), new AsciiMapRenderer(new Palette(ColorMode.PLAIN)));
         var buffer = new ByteArrayOutputStream();
         replayer.autoPlay(new PrintStream(buffer, true, StandardCharsets.UTF_8), 0);
         String out = buffer.toString(StandardCharsets.UTF_8);

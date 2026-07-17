@@ -11,6 +11,7 @@ import com.gimlism.translucent.hashmap.viz.AsciiMapRenderer;
 import com.gimlism.translucent.hashmap.viz.Palette;
 import com.gimlism.translucent.substrate.events.RecordingListener;
 import com.gimlism.translucent.substrate.events.StructureEvent;
+import com.gimlism.translucent.substrate.viz.ColorMode;
 import com.gimlism.translucent.substrate.viz.EventRenderer;
 import com.gimlism.translucent.substrate.viz.Replayer;
 import java.io.ByteArrayOutputStream;
@@ -40,7 +41,7 @@ class SubstrateReuseTest {
         list.add("z");
 
         // same renderAll<E>, two different structures
-        assertTrue(renderAll(mapRec.events(), new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN)))
+        assertTrue(renderAll(mapRec.events(), new AsciiMapRenderer(new Palette(ColorMode.PLAIN)))
             .contains("PUT 1=a"));
         assertTrue(renderAll(listRec.events(), new AsciiListRenderer())
             .contains("APPEND z @ 0"));

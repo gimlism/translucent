@@ -10,11 +10,12 @@ import com.gimlism.translucent.hashmap.events.EntrySnapshot;
 import com.gimlism.translucent.hashmap.events.MapSnapshot;
 import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
 import com.gimlism.translucent.hashmap.events.TreeSnapshot;
+import com.gimlism.translucent.substrate.viz.ColorMode;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class AsciiMapRenderTest {
-    private final AsciiMapRenderer r = new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN));
+    private final AsciiMapRenderer r = new AsciiMapRenderer(new Palette(ColorMode.PLAIN));
 
     @Test
     void rendersHeaderEmptyAndChainWithHighlight() {
