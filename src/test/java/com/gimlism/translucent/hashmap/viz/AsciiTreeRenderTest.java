@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.gimlism.translucent.hashmap.events.Color;
 import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
+import com.gimlism.translucent.substrate.viz.ColorMode;
 import org.junit.jupiter.api.Test;
 
 class AsciiTreeRenderTest {
@@ -17,7 +18,7 @@ class AsciiTreeRenderTest {
         TreeNodeSnapshot tree = new TreeNodeSnapshot(16, "v16", Color.BLACK,
             new TreeNodeSnapshot(8, "v8", Color.BLACK, leaf(4, Color.RED), leaf(12, Color.RED)),
             leaf(24, Color.BLACK));
-        var r = new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN));
+        var r = new AsciiMapRenderer(new Palette(ColorMode.PLAIN));
         String expected = String.join("\n",
             "    ┌─ 24(B)",
             "16(B)",
@@ -29,7 +30,7 @@ class AsciiTreeRenderTest {
 
     @Test
     void singleNodeRendersJustTheRoot() {
-        var r = new AsciiMapRenderer(new Palette(Palette.Mode.PLAIN));
+        var r = new AsciiMapRenderer(new Palette(ColorMode.PLAIN));
         assertEquals("42(B)", r.renderTree(leaf(42, Color.BLACK)));
     }
 }
