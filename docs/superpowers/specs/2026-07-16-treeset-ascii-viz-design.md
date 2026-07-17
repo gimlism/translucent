@@ -48,7 +48,8 @@ change is the colour-detection promotion.
 | `treeset/viz/AsciiSetVisualizer.java` | new | `extends Visualizer<SetEvent>` — trivial substrate subclass, mirrors `AsciiTrieVisualizer` (incl. a convenience ctor that builds a default renderer). |
 | `treeset/demo/TreeSetVizDemo.java` | new | First `treeset/demo/` file (core shipped none). Records a scripted insert/remove story, replays it through `AsciiSetReplayer`. |
 | `substrate/viz/ColorMode.java` | new | Promoted colour-mode detection: `enum {PLAIN, ANSI}` + `detect()` (was `Palette.auto`'s core) + `decideMode(noColorEnv, consolePresent, terminal)` + `isTerminal(console)`. Structure-agnostic; the subtle NO_COLOR + JDK-22-reflection logic from PR #7 lives here once. |
-| `hashmap/viz/Palette.java` | edit | Retrofit: `auto()` delegates to `ColorMode.detect()`; `decideMode`/`isTerminal`/the `Mode` enum move out to `ColorMode`. Its `node(key, Color)` formatting stays local. Behaviour unchanged. |
+| `hashmap/viz/Palette.java` | edit | Retrofit: `auto()` delegates to `ColorMode.detect()`; `decideMode`/`isTerminal`/the `Mode` enum move out to `ColorMode`; the ctor now takes a `ColorMode`. Its `node(key, Color)` formatting stays local. Behaviour unchanged. |
+| ~8 hashmap/substrate test files | edit | Mechanical `Palette.Mode.PLAIN` → `ColorMode.PLAIN` rename (shared-enum decision): `AsciiEventRenderTest`, `AsciiMapRenderTest`, `AsciiMapReplayerTest`, `AsciiMapVisualizerTest`, `AsciiTreeRenderTest`, `PaletteTest`, `substrate/SubstrateReuseTest`, `substrate/viz/GenericDriversTest`. The 416-test suite guards the rename. |
 
 **Colour representation:** the renderer speaks the `boolean red` its `SetNodeSnapshot` already
 carries — no new colour type is invented. `ColorMode` is only about *where output goes* (tty vs
