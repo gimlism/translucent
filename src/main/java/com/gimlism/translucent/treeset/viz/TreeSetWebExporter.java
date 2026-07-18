@@ -25,6 +25,11 @@ public final class TreeSetWebExporter {
         return WebVizTemplate.inject(TEMPLATE_RESOURCE, framesJson, "false", "false");
     }
 
+    /** Live mode (SSE), no browser controls: {@code DATA = null}, live ON, controls OFF. */
+    public static String liveHtml() {
+        return WebVizTemplate.inject(TEMPLATE_RESOURCE, "null", "true", "false");
+    }
+
     /** Write {@link #toHtml(String)} to {@code out} (UTF-8). */
     public static void writeHtml(String framesJson, Path out) throws IOException {
         Files.writeString(out, toHtml(framesJson));
