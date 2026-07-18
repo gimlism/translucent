@@ -48,7 +48,7 @@
 <script>
 "use strict";
 const DATA = /*__FRAMES__*/;
-const LIVE = /*__LIVE__*/;         // Slice A: baked false; SSE branch arrives in Slice B
+const LIVE = /*__LIVE__*/;         // ON in the SSE mirror (this slice); baked false for the static export
 const CONTROLS = /*__CONTROLS__*/; // Slice A: baked false; command box arrives in Slice D
 const frames = (DATA && DATA.frames) || [];
 const svg = document.getElementById("svg");
