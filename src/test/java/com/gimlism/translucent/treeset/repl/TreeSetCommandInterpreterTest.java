@@ -1,6 +1,7 @@
 package com.gimlism.translucent.treeset.repl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.substrate.repl.CommandResult;
@@ -165,6 +166,15 @@ class TreeSetCommandInterpreterTest {
     void trailingExtraTokenIsRejected() {
         assertEquals("usage: add <int>", run("add 3 4", setOf()));   // element is one token
         assertEquals("usage: first", run("first now", setOf()));      // no-arg verb rejects args
+        assertEquals("usage: help", run("help me", setOf()));
+    }
+
+    @Test
+    void quitWithTrailingTokenIsRejectedAndDoesNotTerminate() {
+        CommandResult q = interp.execute("quit now", setOf());
+        assertEquals("usage: quit", q.message());
+        assertFalse(q.quit(), "a stray token must not trigger an accidental quit");
+        assertFalse(interp.execute("exit please", setOf()).quit(), "exit also rejects extras");
     }
 
     @Test

@@ -90,9 +90,15 @@ public final class TreeSetCommandInterpreter {
                 }
                 return CommandResult.of("size = " + set.size());
             case "help":
+                if (!rest.isEmpty()) {
+                    return CommandResult.of("usage: help");
+                }
                 return CommandResult.of(helpText());
             case "quit":
             case "exit":
+                if (!rest.isEmpty()) {
+                    return CommandResult.of("usage: quit");
+                }
                 return CommandResult.quitting("bye");
             default:
                 return CommandResult.of("unknown command: '" + cmd + "' (type 'help')");
