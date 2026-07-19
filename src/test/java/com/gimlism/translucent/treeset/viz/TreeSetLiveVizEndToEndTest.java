@@ -53,8 +53,8 @@ class TreeSetLiveVizEndToEndTest {
                 }
             });
         } finally {
-            client.close();
-            server.stop();
+            server.stop();  // close any still-open SSE stream first (e.g. if a timeout abandoned the reader mid-read)...
+            client.close(); // ...so this graceful close has no in-flight /events request to await (matches LiveServerTest)
         }
     }
 }
