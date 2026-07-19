@@ -41,13 +41,14 @@
     <button id="play">▶ play</button>
     <button id="next">next ▶</button>
     <span id="counter"></span>
+    <button id="live" hidden></button>
   </div>
   <div id="stage"><svg id="svg"></svg></div>
 </div>
 <script>
 "use strict";
 const DATA = /*__FRAMES__*/;
-const LIVE = /*__LIVE__*/;         // Slice A: baked false; SSE branch arrives in Slice B
+const LIVE = /*__LIVE__*/;         // ON in the SSE mirror (this slice); baked false for the static export
 const CONTROLS = /*__CONTROLS__*/; // Slice A: baked false; command box arrives in Slice D
 const frames = (DATA && DATA.frames) || [];
 const svg = document.getElementById("svg");
@@ -57,9 +58,10 @@ const counter = document.getElementById("counter");
 const prevBtn = document.getElementById("prev");
 const nextBtn = document.getElementById("next");
 const playBtn = document.getElementById("play");
+const liveBtn = document.getElementById("live");
 
 const PAD = 28, V_GAP = 72, H_GAP = 54, R = 16;
-let idx = 0, timer = null;
+let idx = 0, timer = null, followTail = true;
 
 function esc(s) { return String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
 
@@ -118,6 +120,9 @@ function refreshMeta() {
   counter.textContent = frames.length ? `frame ${idx + 1} / ${frames.length}` : "";
   prevBtn.disabled = idx <= 0;
   nextBtn.disabled = idx >= frames.length - 1;
+  const behind = Math.max(0, frames.length - 1 - idx);
+  liveBtn.hidden = !(LIVE && behind > 0);
+  liveBtn.textContent = `⏭ ${behind} new — jump to live`;
 }
 
 function render() {
@@ -129,7 +134,7 @@ function render() {
   refreshMeta();
 }
 
-function go(n) { idx = Math.max(0, Math.min(frames.length - 1, n)); render(); }
+function go(n) { idx = Math.max(0, Math.min(frames.length - 1, n)); followTail = idx >= frames.length - 1; render(); }
 function stop() { if (timer) { clearInterval(timer); timer = null; playBtn.textContent = "▶ play"; } }
 prevBtn.onclick = () => { stop(); go(idx - 1); };
 nextBtn.onclick = () => { stop(); go(idx + 1); };
@@ -143,6 +148,18 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") { stop(); go(idx + 1); }
   else if (e.key === "ArrowLeft") { stop(); go(idx - 1); }
 });
+liveBtn.onclick = () => { stop(); go(frames.length - 1); };
+
+if (LIVE) {
+  const es = new EventSource("/events");
+  es.onmessage = ev => {
+    let f;
+    try { f = JSON.parse(ev.data); } catch (_) { return; }
+    frames.push(f);
+    if (followTail) go(frames.length - 1);   // full render + cross-fade
+    else refreshMeta();                        // studying an older frame: badge only
+  };
+}
 render();
 </script>
 </body>
