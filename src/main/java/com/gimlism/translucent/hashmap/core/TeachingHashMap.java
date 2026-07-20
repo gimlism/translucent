@@ -20,6 +20,7 @@ import com.gimlism.translucent.hashmap.events.TreeSnapshot;
 import com.gimlism.translucent.hashmap.events.Untreeify;
 import com.gimlism.translucent.substrate.events.EventDispatcher;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
+import com.gimlism.translucent.substrate.rbtree.RbEventSink;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -138,15 +139,28 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     }
 
     /** A sink that turns tree structural changes into events for bucket {@code i}. */
-    private TreeEventSink sinkFor(int i) {
-        return new TreeEventSink() {
-            @Override public void rotated(Direction dir, Object pivotKey) {
-                emit(new Rotation(i, dir, pivotKey, snapshot()));
+    private RbEventSink<TreeNode<K, V>> sinkFor(int i) {
+        return new RbEventSink<>() {
+            @Override public void rotated(
+                    com.gimlism.translucent.substrate.rbtree.Direction dir, TreeNode<K, V> pivot) {
+                emit(new Rotation(i, bridge(dir), pivot.getKey(), snapshot()));
             }
-            @Override public void recolored(Object nodeKey, Color oldColor, Color newColor) {
-                emit(new Recolor(i, nodeKey, oldColor, newColor, snapshot()));
+            @Override public void recolored(TreeNode<K, V> node,
+                    com.gimlism.translucent.substrate.rbtree.Color oldColor,
+                    com.gimlism.translucent.substrate.rbtree.Color newColor) {
+                emit(new Recolor(i, node.getKey(), bridge(oldColor), bridge(newColor), snapshot()));
             }
         };
+    }
+
+    private static Direction bridge(com.gimlism.translucent.substrate.rbtree.Direction d) {
+        return d == com.gimlism.translucent.substrate.rbtree.Direction.LEFT
+                ? Direction.LEFT : Direction.RIGHT;
+    }
+
+    private static Color bridge(com.gimlism.translucent.substrate.rbtree.Color c) {
+        return c == com.gimlism.translucent.substrate.rbtree.Color.RED
+                ? Color.RED : Color.BLACK;
     }
 
     public void addListener(StructureEventListener<MapEvent> listener) {
@@ -196,15 +210,15 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             } else {
                 Node<K, V> e = head;
                 while (e != null) {
-                    Node<K, V> next = e.next;
-                    int idx = indexFor(e.hash, newCap);
-                    e.next = null;
+                    Node<K, V> next = e.next();
+                    int idx = indexFor(e.hash(), newCap);
+                    e.setNext(null);
                     if (newTab[idx] == null) {
                         newTab[idx] = e;
                     } else {
                         Node<K, V> tail = newTab[idx];
-                        while (tail.next != null) tail = tail.next;
-                        tail.next = e;
+                        while (tail.next() != null) tail = tail.next();
+                        tail.setNext(e);
                     }
                     e = next;
                 }
@@ -220,7 +234,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
      * Split a tree bin during resize: partition its nodes (walked in insertion
      * order via next) into the low bucket {@code j} and high bucket
      * {@code j + oldCap}, then rebuild each non-empty half's red-black tree.
-     * Rebuild is silent (TreeEventSink.NONE) because the table is mid-swap here;
+     * Rebuild is silent (RbEventSink.none()) because the table is mid-swap here;
      * the Resize before/after snapshots convey the change. A half with
      * {@code <= untreeifyThreshold} nodes is untreeified into a plain chain;
      * larger halves are rebuilt as trees.
@@ -230,7 +244,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         for (Node<K, V> e = head; e != null; ) {
             @SuppressWarnings("unchecked")
             TreeNode<K, V> t = (TreeNode<K, V>) e;
-            Node<K, V> next = e.next;
+            Node<K, V> next = e.next();
             t.parent = null;
             t.left = null;
             t.right = null;
@@ -249,7 +263,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             if (countAtMost(loHead, untreeifyThreshold)) {
                 newTab[j] = untreeify(loHead);
             } else {
-                TreeNode.build(loHead, TreeEventSink.NONE);
+                TreeNode.build(loHead, RbEventSink.none());
                 newTab[j] = loHead;
             }
         }
@@ -257,7 +271,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             if (countAtMost(hiHead, untreeifyThreshold)) {
                 newTab[j + oldCap] = untreeify(hiHead);
             } else {
-                TreeNode.build(hiHead, TreeEventSink.NONE);
+                TreeNode.build(hiHead, RbEventSink.none());
                 newTab[j + oldCap] = hiHead;
             }
         }
@@ -266,7 +280,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     @Override
     public V get(Object key) {
         Node<K, V> e = findNode(key);
-        return e == null ? null : e.value;
+        return e == null ? null : e.getValue();
     }
 
     @Override
@@ -283,8 +297,8 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             TreeNode<K, V> t = (TreeNode<K, V>) head;
             return TreeNode.find(t.root(), h, key);
         }
-        for (Node<K, V> e = head; e != null; e = e.next) {
-            if (e.hash == h && Objects.equals(e.key, key)) return e;
+        for (Node<K, V> e = head; e != null; e = e.next()) {
+            if (e.hash() == h && Objects.equals(e.getKey(), key)) return e;
         }
         return null;
     }
@@ -330,23 +344,23 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         }
 
         // --- chain bin (Slice 1 behaviour) ---
-        for (Node<K, V> e = head; e != null; e = e.next) {
-            if (e.hash == h && Objects.equals(e.key, key)) {
-                V old = e.value;
-                e.value = value;
+        for (Node<K, V> e = head; e != null; e = e.next()) {
+            if (e.hash() == h && Objects.equals(e.getKey(), key)) {
+                V old = e.getValue();
+                e.setValue(value);
                 emit(new Put(key, value, old, i, false, snapshot()));
                 return old;
             }
         }
         int chainBefore = 0;
-        Node<K, V> created = new Node<>(h, key, value, null);
+        Node<K, V> created = new ChainNode<>(h, key, value, null);
         if (head == null) {
             table[i] = created;
         } else {
             Node<K, V> tail = head;
             chainBefore = 1;
-            while (tail.next != null) { tail = tail.next; chainBefore++; }
-            tail.next = created;
+            while (tail.next() != null) { tail = tail.next(); chainBefore++; }
+            tail.setNext(created);
         }
         size++;
         modCount++;
@@ -371,8 +385,8 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         // convert chain Nodes to TreeNodes, preserving order via the next thread
         TreeNode<K, V> first = null;
         TreeNode<K, V> prev = null;
-        for (Node<K, V> e = table[i]; e != null; e = e.next) {
-            TreeNode<K, V> t = new TreeNode<>(e.hash, e.key, e.value, null, nextSeq++);
+        for (Node<K, V> e = table[i]; e != null; e = e.next()) {
+            TreeNode<K, V> t = new TreeNode<>(e.hash(), e.getKey(), e.getValue(), null, nextSeq++);
             t.prev = prev;
             if (prev == null) first = t; else prev.next = t;
             prev = t;
@@ -384,7 +398,7 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     /** True if the chain/list from {@code head} has at most {@code max} nodes. */
     private boolean countAtMost(Node<K, V> head, int max) {
         int c = 0;
-        for (Node<K, V> e = head; e != null; e = e.next) {
+        for (Node<K, V> e = head; e != null; e = e.next()) {
             if (++c > max) return false;
         }
         return true;
@@ -396,8 +410,8 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
         for (TreeNode<K, V> t = first; t != null; ) {
             @SuppressWarnings("unchecked")
             TreeNode<K, V> next = (TreeNode<K, V>) t.next;
-            Node<K, V> plain = new Node<>(t.hash, t.key, t.value, null);
-            if (tail == null) head = plain; else tail.next = plain;
+            Node<K, V> plain = new ChainNode<>(t.hash, t.key, t.value, null);
+            if (tail == null) head = plain; else tail.setNext(plain);
             tail = plain;
             t = next;
         }
@@ -448,13 +462,13 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             return old;
         }
         Node<K, V> prev = null;
-        for (Node<K, V> e = head; e != null; prev = e, e = e.next) {
-            if (e.hash == h && Objects.equals(e.key, key)) {
-                if (prev == null) table[i] = e.next;
-                else prev.next = e.next;
+        for (Node<K, V> e = head; e != null; prev = e, e = e.next()) {
+            if (e.hash() == h && Objects.equals(e.getKey(), key)) {
+                if (prev == null) table[i] = e.next();
+                else prev.setNext(e.next());
                 size--;
                 modCount++;
-                V old = e.value;
+                V old = e.getValue();
                 emit(new Remove(key, old, i, snapshot()));
                 return old;
             }
@@ -479,8 +493,8 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             if (live == null) {
                 throw new IllegalStateException("entry no longer in map");
             }
-            V old = live.value;
-            live.value = newValue;
+            V old = live.getValue();
+            live.setValue(newValue);
             int i = indexFor(hash(key), table.length);
             emit(new Put(key, newValue, old, i, false, snapshot()));
             return old;
@@ -507,8 +521,8 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
                 buckets.add(new TreeSnapshot(treeSnapshot(t.root())));
             } else {
                 List<EntrySnapshot> entries = new ArrayList<>();
-                for (Node<K, V> e = head; e != null; e = e.next) {
-                    entries.add(new EntrySnapshot(e.key, e.value, e.hash));
+                for (Node<K, V> e = head; e != null; e = e.next()) {
+                    entries.add(new EntrySnapshot(e.getKey(), e.getValue(), e.hash()));
                 }
                 buckets.add(new ChainSnapshot(entries));
             }
@@ -558,20 +572,20 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
             if (modCount != expectedModCount) throw new ConcurrentModificationException();
             if (nextNode == null) throw new NoSuchElementException();
             lastReturned = nextNode;
-            if (nextNode.next != null) {
-                nextNode = nextNode.next;
+            if (nextNode.next() != null) {
+                nextNode = nextNode.next();
             } else {
                 slot++;
                 nextNode = advanceToFirst();
             }
-            return new LiveEntry(lastReturned.key, lastReturned.value);
+            return new LiveEntry(lastReturned.getKey(), lastReturned.getValue());
         }
 
         @Override
         public void remove() {
             if (lastReturned == null) throw new IllegalStateException();
             if (modCount != expectedModCount) throw new ConcurrentModificationException();
-            TeachingHashMap.this.remove(lastReturned.key);
+            TeachingHashMap.this.remove(lastReturned.getKey());
             expectedModCount = modCount;
             lastReturned = null;
         }

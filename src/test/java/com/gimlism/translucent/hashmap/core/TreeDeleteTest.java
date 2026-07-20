@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.gimlism.translucent.substrate.rbtree.RbEventSink;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,7 @@ class TreeDeleteTest {
     private static TreeNode<Integer, String> build(int[] keys) {
         TreeNode<Integer, String> root = null;
         for (int i = 0; i < keys.length; i++) {
-            root = TreeNode.insert(root, new TreeNode<>(keys[i], keys[i], "v" + keys[i], null, i), TreeEventSink.NONE);
+            root = TreeNode.insert(root, new TreeNode<>(keys[i], keys[i], "v" + keys[i], null, i), RbEventSink.none());
         }
         return root;
     }
@@ -31,7 +32,7 @@ class TreeDeleteTest {
         for (int k : deleteOrder) {
             TreeNode<Integer, String> victim = TreeNode.find(root, k, k);
             assertNotNull(victim, "key " + k + " should be present before delete");
-            root = TreeNode.deleteFromTree(root, victim, TreeEventSink.NONE);
+            root = TreeNode.deleteFromTree(root, victim, RbEventSink.none());
             remaining.remove((Integer) k);
             RedBlackInvariants.assertValid(root);
             List<Object> expected = new ArrayList<>(remaining);
@@ -68,7 +69,7 @@ class TreeDeleteTest {
 
     @Test
     void deleteEmitsBalancingEventsOnAtLeastOneDelete() {
-        var rec = new TreeRotationTest.Rec();
+        var rec = new TreeInsertTest.Rec();
         TreeNode<Integer, String> root = build(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
         // delete a handful; a red-black delete from a tree this size forces fixups
         for (int k : new int[]{1, 10, 5, 3, 8}) {
@@ -84,7 +85,7 @@ class TreeDeleteTest {
     @Test
     void deleteSingleNodeEmptiesTree() {
         TreeNode<Integer, String> root = build(new int[]{42});
-        root = TreeNode.deleteFromTree(root, root, TreeEventSink.NONE);
+        root = TreeNode.deleteFromTree(root, root, RbEventSink.none());
         assertNull(root);
     }
 }

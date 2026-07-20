@@ -3,13 +3,14 @@ package com.gimlism.translucent.hashmap.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.gimlism.translucent.substrate.rbtree.RbEventSink;
 import org.junit.jupiter.api.Test;
 
 class TreeFindTest {
     private static TreeNode<Integer, String> tree(int... keys) {
         TreeNode<Integer, String> root = null;
         for (int k : keys) {
-            root = TreeNode.insert(root, new TreeNode<>(k, k, "v" + k, null, k), TreeEventSink.NONE);
+            root = TreeNode.insert(root, new TreeNode<>(k, k, "v" + k, null, k), RbEventSink.none());
         }
         return root;
     }
@@ -34,7 +35,7 @@ class TreeFindTest {
         TreeNode<String, String> root = null;
         String[] keys = {"a", "b", "c", "d"};
         for (int i = 0; i < keys.length; i++) {
-            root = TreeNode.insert(root, new TreeNode<>(7, keys[i], "V" + keys[i], null, i), TreeEventSink.NONE);
+            root = TreeNode.insert(root, new TreeNode<>(7, keys[i], "V" + keys[i], null, i), RbEventSink.none());
         }
         for (String k : keys) {
             assertEquals("V" + k, TreeNode.find(root, 7, k).value);
