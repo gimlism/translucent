@@ -2,6 +2,7 @@ package com.gimlism.translucent.hashmap.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.gimlism.translucent.substrate.rbtree.RbEventSink;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ class TreeBuildTest {
             prev = t;
         }
 
-        TreeNode<Integer, String> root = TreeNode.build(first, TreeEventSink.NONE);
+        TreeNode<Integer, String> root = TreeNode.build(first, RbEventSink.none());
 
         RedBlackInvariants.assertValid(root);
         // tree holds all keys, in-order == sorted by hash
@@ -27,7 +28,7 @@ class TreeBuildTest {
         assertEquals(List.of(1, 2, 3, 4, 5), inOrder);
         // next thread still in original insertion order
         List<Object> threaded = new ArrayList<>();
-        for (Node<Integer, String> e = first; e != null; e = e.next) threaded.add(e.key);
+        for (Node<Integer, String> e = first; e != null; e = e.next()) threaded.add(e.getKey());
         assertEquals(List.of(4, 2, 5, 1, 3), threaded);
     }
 }
