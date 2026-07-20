@@ -58,7 +58,8 @@ class TreeSetLiveControlsEndToEndTest {
                     // The reader connected BEFORE the POST, so it sees frames incrementally. The
                     // TreeSet has NO CreateNode — add IS the creation — so the Add frame appears
                     // directly (unlike the trie, which reads past a leading CreateNode to find Put).
-                    // A root-blacken Recolor may follow; scan until the Add frame itself shows up.
+                    // add 30 is a root insert (root == null branch), which emits ONLY Add — no
+                    // fixup, so no Recolor either; scan until the Add frame shows up.
                     String line;
                     while ((line = r.readLine()) != null) {
                         if (line.startsWith("data: ")) {
@@ -97,8 +98,9 @@ class TreeSetLiveControlsEndToEndTest {
                 try (var r = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8))) {
                     while (server.openConnections() < 1) Thread.sleep(10);
 
-                    // add 30 is a root insert that emits Add + a root-blacken Recolor but NO Compare.
-                    // Thus, the only Compare frame in the stream is the one the read emits as it searches.
+                    // add 30 is a root insert (root == null branch) that emits ONLY Add — no fixup,
+                    // so no Recolor and NO Compare. Thus the only Compare frame in the stream is the
+                    // one the read emits as it searches.
                     // If reads were silent, no Compare frame would surface and this test would time out.
                     client.send(HttpRequest.newBuilder(URI.create(base + "/command"))
                                     .POST(BodyPublishers.ofString("add 30", StandardCharsets.UTF_8)).build(),

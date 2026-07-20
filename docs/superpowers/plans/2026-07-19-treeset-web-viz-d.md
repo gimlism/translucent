@@ -327,20 +327,23 @@ class TreeSetLiveControlsEndToEndTest {
                 try (var r = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8))) {
                     while (server.openConnections() < 1) Thread.sleep(10);
 
-                    // Build a small tree via POSTs, then POST a comparison read. contains() walks the
-                    // red-black tree emitting Compare events — the browser-typed reads-narrate path.
-                    for (String cmd : new String[] {"add 30", "add 10", "add 50"}) {
-                        client.send(HttpRequest.newBuilder(URI.create(base + "/command"))
-                                        .POST(BodyPublishers.ofString(cmd, StandardCharsets.UTF_8)).build(),
-                                BodyHandlers.ofString());
-                    }
+                    // add 30 is a ROOT insert (root == null branch) — it emits ONLY Add (no fixup,
+                    // so no Recolor and NO Compare). So after it, the ONLY Compare frame the stream
+                    // can carry is the one contains() emits as it reads — a NON-VACUOUS pin: if the
+                    // read path were silent, no Compare frame would ever surface and this test would
+                    // time out. (A multi-add tree is WRONG here: a non-root add also emits Compare on
+                    // its BST descent — same event class, no marker — so the reader would match an
+                    // add's Compare before the read's and pass even if reads were silent.)
+                    client.send(HttpRequest.newBuilder(URI.create(base + "/command"))
+                                    .POST(BodyPublishers.ofString("add 30", StandardCharsets.UTF_8)).build(),
+                            BodyHandlers.ofString());
                     var resp = client.send(HttpRequest.newBuilder(URI.create(base + "/command"))
                                     .POST(BodyPublishers.ofString("contains 30", StandardCharsets.UTF_8)).build(),
                             BodyHandlers.ofString());
                     assertEquals("contains 30 → true", resp.body());
 
-                    // Scan past the Add/Recolor/Rotation frames from the three adds until the read's
-                    // Compare frame surfaces — proof that a typed comparison read animates live.
+                    // Scan until the read's Compare frame surfaces — proof that a typed comparison
+                    // read animates live.
                     String line;
                     while ((line = r.readLine()) != null) {
                         if (line.startsWith("data: ")) {
