@@ -20,6 +20,9 @@
            background:var(--card); color:var(--fg); cursor:pointer; }
   button:disabled { opacity:.4; cursor:default; }
   #counter { color:var(--muted); font-variant-numeric: tabular-nums; }
+  #cmd { font:inherit; padding:6px 10px; border:1px solid var(--cellb); border-radius:8px;
+         background:var(--card); color:var(--fg); min-width:220px; }
+  #cmdout { color:var(--muted); font-variant-numeric: tabular-nums; }
   #caption { font-weight:600; min-height:1.4em; margin-bottom:8px; }
   #stage { background:var(--card); border:1px solid var(--cellb); border-radius:12px; padding:10px;
            transition: opacity .18s ease; overflow:auto; }
@@ -42,6 +45,9 @@
     <button id="next">next ▶</button>
     <span id="counter"></span>
     <button id="live" hidden></button>
+    <input id="cmd" type="text" placeholder="add 30 · contains 30 · floor 25 · pollFirst · help" autocomplete="off" hidden>
+    <button id="run" hidden>Run</button>
+    <span id="cmdout"></span>
   </div>
   <div id="stage"><svg id="svg"></svg></div>
 </div>
@@ -59,6 +65,9 @@ const prevBtn = document.getElementById("prev");
 const nextBtn = document.getElementById("next");
 const playBtn = document.getElementById("play");
 const liveBtn = document.getElementById("live");
+const cmdInput = document.getElementById("cmd");
+const runBtn = document.getElementById("run");
+const cmdOut = document.getElementById("cmdout");
 
 const PAD = 28, V_GAP = 72, H_GAP = 54, R = 16;
 let idx = 0, timer = null, followTail = true;
@@ -159,6 +168,21 @@ if (LIVE) {
     if (followTail) go(frames.length - 1);   // full render + cross-fade
     else refreshMeta();                        // studying an older frame: badge only
   };
+  if (CONTROLS) {
+    cmdInput.hidden = false;
+    runBtn.hidden = false;
+    const submit = () => {
+      const line = cmdInput.value;
+      if (!line.trim()) return;
+      cmdInput.value = "";
+      fetch("/command", { method: "POST", body: line })
+        .then(r => r.text())
+        .then(msg => { cmdOut.textContent = msg; })
+        .catch(() => { cmdOut.textContent = "(command failed to reach the server)"; });
+    };
+    runBtn.onclick = submit;
+    cmdInput.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+  }
 }
 render();
 </script>

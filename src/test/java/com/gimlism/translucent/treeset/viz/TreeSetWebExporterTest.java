@@ -25,8 +25,6 @@ class TreeSetWebExporterTest {
         assertFalse(html.contains("/*__FRAMES__*/"), "FRAMES token not substituted");
         assertFalse(html.contains("/*__LIVE__*/"), "LIVE token not substituted");
         assertFalse(html.contains("/*__CONTROLS__*/"), "CONTROLS token not substituted");
-        // Slice D not yet implemented: no command box in the baked page
-        assertFalse(html.contains("/command"), "no command box in Slice B");
     }
 
     @Test

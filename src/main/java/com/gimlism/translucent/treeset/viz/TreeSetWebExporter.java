@@ -11,8 +11,8 @@ import java.nio.file.Path;
  * {@link TreeSetJsonSerializer}) plus the {@code LIVE} and {@code CONTROLS} mode flags — both {@code
  * false} for a static replay. The template carries the whole vanilla-JS/SVG renderer; this class only
  * chooses the three replacement values. Fourth consumer of {@link WebVizTemplate}, alongside the map,
- * list, and trie exporters. Slice A exposes only the static {@code toHtml}; {@code liveHtml}/{@code
- * controlsHtml} arrive with Slices B/D.
+ * list, and trie exporters. Slice A exposes only the static {@code toHtml}; {@code controlsHtml}
+ * enables the browser command box (Slice D).
  */
 public final class TreeSetWebExporter {
 
@@ -28,6 +28,11 @@ public final class TreeSetWebExporter {
     /** Live mode (SSE), no browser controls: {@code DATA = null}, live ON, controls OFF. */
     public static String liveHtml() {
         return WebVizTemplate.inject(TEMPLATE_RESOURCE, "null", "true", "false");
+    }
+
+    /** Live mode with browser command controls: {@code DATA = null}, live ON, controls ON. */
+    public static String controlsHtml() {
+        return WebVizTemplate.inject(TEMPLATE_RESOURCE, "null", "true", "true");
     }
 
     /** Write {@link #toHtml(String)} to {@code out} (UTF-8). */
