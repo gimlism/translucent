@@ -69,7 +69,7 @@ class TreeDeleteTest {
 
     @Test
     void deleteEmitsBalancingEventsOnAtLeastOneDelete() {
-        var rec = new TreeInsertTest.Rec();
+        var rec = new RecordingRbSink();
         TreeNode<Integer, String> root = build(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
         // delete a handful; a red-black delete from a tree this size forces fixups
         for (int k : new int[]{1, 10, 5, 3, 8}) {
