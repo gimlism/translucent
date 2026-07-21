@@ -7,12 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.hashmap.consumer.MapRecordingListener;
-import com.gimlism.translucent.hashmap.events.Color;
 import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.hashmap.events.Recolor;
 import com.gimlism.translucent.hashmap.events.Rotation;
 import com.gimlism.translucent.hashmap.events.Treeify;
 import com.gimlism.translucent.hashmap.events.TreeSnapshot;
+import com.gimlism.translucent.substrate.rbtree.Color;
 import org.junit.jupiter.api.Test;
 
 class TreeifyTest {

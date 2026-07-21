@@ -3,8 +3,6 @@ package com.gimlism.translucent.hashmap.core;
 import com.gimlism.translucent.hashmap.events.BucketSnapshot;
 import com.gimlism.translucent.hashmap.events.ChainSnapshot;
 import com.gimlism.translucent.hashmap.events.Collision;
-import com.gimlism.translucent.hashmap.events.Color;
-import com.gimlism.translucent.hashmap.events.Direction;
 import com.gimlism.translucent.hashmap.events.EmptyBucket;
 import com.gimlism.translucent.hashmap.events.EntrySnapshot;
 import com.gimlism.translucent.hashmap.events.MapEvent;
@@ -20,6 +18,8 @@ import com.gimlism.translucent.hashmap.events.TreeSnapshot;
 import com.gimlism.translucent.hashmap.events.Untreeify;
 import com.gimlism.translucent.substrate.events.EventDispatcher;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
+import com.gimlism.translucent.substrate.rbtree.Color;
+import com.gimlism.translucent.substrate.rbtree.Direction;
 import com.gimlism.translucent.substrate.rbtree.RbEventSink;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
@@ -141,26 +141,13 @@ public class TeachingHashMap<K, V> extends AbstractMap<K, V> {
     /** A sink that turns tree structural changes into events for bucket {@code i}. */
     private RbEventSink<TreeNode<K, V>> sinkFor(int i) {
         return new RbEventSink<>() {
-            @Override public void rotated(
-                    com.gimlism.translucent.substrate.rbtree.Direction dir, TreeNode<K, V> pivot) {
-                emit(new Rotation(i, bridge(dir), pivot.getKey(), snapshot()));
+            @Override public void rotated(Direction dir, TreeNode<K, V> pivot) {
+                emit(new Rotation(i, dir, pivot.getKey(), snapshot()));
             }
-            @Override public void recolored(TreeNode<K, V> node,
-                    com.gimlism.translucent.substrate.rbtree.Color oldColor,
-                    com.gimlism.translucent.substrate.rbtree.Color newColor) {
-                emit(new Recolor(i, node.getKey(), bridge(oldColor), bridge(newColor), snapshot()));
+            @Override public void recolored(TreeNode<K, V> node, Color oldColor, Color newColor) {
+                emit(new Recolor(i, node.getKey(), oldColor, newColor, snapshot()));
             }
         };
-    }
-
-    private static Direction bridge(com.gimlism.translucent.substrate.rbtree.Direction d) {
-        return d == com.gimlism.translucent.substrate.rbtree.Direction.LEFT
-                ? Direction.LEFT : Direction.RIGHT;
-    }
-
-    private static Color bridge(com.gimlism.translucent.substrate.rbtree.Color c) {
-        return c == com.gimlism.translucent.substrate.rbtree.Color.RED
-                ? Color.RED : Color.BLACK;
     }
 
     public void addListener(StructureEventListener<MapEvent> listener) {
