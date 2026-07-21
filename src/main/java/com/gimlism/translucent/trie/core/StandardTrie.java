@@ -4,7 +4,9 @@ import com.gimlism.translucent.substrate.events.EventDispatcher;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
 import com.gimlism.translucent.trie.events.CreateNode;
 import com.gimlism.translucent.trie.events.Descend;
+import com.gimlism.translucent.trie.events.Prune;
 import com.gimlism.translucent.trie.events.Put;
+import com.gimlism.translucent.trie.events.Remove;
 import com.gimlism.translucent.trie.events.TrieEdge;
 import com.gimlism.translucent.trie.events.TrieEvent;
 import com.gimlism.translucent.trie.events.TrieNodeSnapshot;
@@ -107,6 +109,51 @@ public class StandardTrie<V> extends AbstractMap<String, V> {
                 modCount++;
             }
             emit(new Put(key, value, old, newKey, key, snapshot()));
+            return old;
+        } finally {
+            dispatcher.endMutation();
+        }
+    }
+
+    @Override
+    public V remove(Object key) {
+        if (!(key instanceof String k)) return null;
+        beginMutation();
+        try {
+            record Step(String label, String path) {}
+            List<StandardTrieNode<V>> chain = new ArrayList<>();
+            chain.add(root);                              // chain[i] is the node reached after i chars
+            List<Step> walk = new ArrayList<>();
+            StandardTrieNode<V> node = root;
+            String path = "";
+            for (int i = 0; i < k.length(); i++) {
+                char c = k.charAt(i);
+                StandardTrieNode<V> child = node.children.get(c);
+                if (child == null) return null;          // path breaks -> silent no-op
+                node = child;
+                path += c;
+                chain.add(node);
+                walk.add(new Step(String.valueOf(c), path)); // buffered; narrated only if remove proceeds
+            }
+            if (!node.isKey) return null;                // node exists but isn't a key -> silent no-op
+            TrieSnapshot walked = snapshot();
+            for (Step step : walk) emit(new Descend(step.label(), step.path(), walked));
+            V old = node.value;
+            node.isKey = false;
+            node.value = null;
+            size--;
+            modCount++;
+            emit(new Remove(k, old, k, snapshot()));
+            // Prune cascade: from the removed node upward, while it is childless, non-key, and not the root.
+            String prunePath = k;                         // path to chain[idx]
+            for (int idx = chain.size() - 1; idx >= 1; idx--) {
+                StandardTrieNode<V> cur = chain.get(idx);
+                if (cur.isKey || !cur.children.isEmpty()) break;
+                char c = k.charAt(idx - 1);               // the edge char into cur
+                chain.get(idx - 1).children.remove(c);
+                emit(new Prune(String.valueOf(c), prunePath, snapshot()));
+                prunePath = prunePath.substring(0, prunePath.length() - 1);
+            }
             return old;
         } finally {
             dispatcher.endMutation();
