@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Pins the substrate-kernel migration: TreeNode inherits its RB structure from the
- * shared kernel, and rotation/recolor events surface as map events with correctly
- * bridged Direction/Color enums.
+ * shared kernel, and rotation/recolor events surface as map events carrying the
+ * substrate Direction/Color enums.
  */
 class TreeKernelMigrationTest {
 
@@ -46,7 +46,7 @@ class TreeKernelMigrationTest {
     // TreeNode.cmp), so the two callback streams MUST line up element-for-element.
     // Comparing by enum .name() means a sinkFor that swaps a direction, swaps
     // oldColor/newColor, or drops an event flips or shortens the map stream but not the
-    // raw one, breaking the match. There is no longer any bridge() to swap -- the map
+    // raw one, breaking the match. The map
     // emits the substrate enums straight through -- so this pins that sinkFor's wiring
     // stays faithful. A same-cardinality check like "direction == LEFT || direction ==
     // RIGHT" is vacuously true for a 2-value enum and can't catch that -- do not reduce
@@ -68,7 +68,7 @@ class TreeKernelMigrationTest {
         for (int i = 0; i < n; i++) {
             map.put(new CollidingKey(i), "v" + i);
         }
-        List<String> bridged = events.stream()
+        List<String> mapStream = events.stream()
                 .filter(e -> e instanceof Rotation || e instanceof Recolor)
                 .map(e -> e instanceof Rotation r
                         ? "ROT:" + r.direction().name()
@@ -76,7 +76,7 @@ class TreeKernelMigrationTest {
                 .toList();
 
         // Independent raw replay of the identical node sequence, recording the
-        // substrate (pre-bridge) enums.
+        // substrate enums.
         List<String> raw = new ArrayList<>();
         RbEventSink<TreeNode<CollidingKey, String>> rawSink = new RbEventSink<>() {
             @Override public void rotated(
@@ -104,11 +104,11 @@ class TreeKernelMigrationTest {
         assertTrue(raw.stream().anyMatch(s -> s.startsWith("ROT:")), "expected at least one rotation");
         assertTrue(raw.stream().anyMatch(s -> s.startsWith("COL:")), "expected at least one recolor");
 
-        // The pin: element-wise equality means a swapped bridge() (which flips a
-        // Direction/Color .name() in `bridged` but not in `raw`) fails this assertion.
-        assertEquals(raw, bridged,
-                "bridged map event stream must match the raw substrate stream element-wise "
-                        + "-- a swapped bridge() would flip a Direction/Color .name() here");
+        // The pin: element-wise equality means a swapped sinkFor (which flips a
+        // Direction/Color .name() in `mapStream` but not in `raw`) fails this assertion.
+        assertEquals(raw, mapStream,
+                "map event stream must match the raw substrate stream element-wise "
+                        + "-- a swapped sinkFor would flip a Direction/Color .name() here");
     }
 
     // A key whose hashCode collides for every instance, so all entries land in one
