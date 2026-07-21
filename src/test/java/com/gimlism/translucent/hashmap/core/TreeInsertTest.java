@@ -9,21 +9,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class TreeInsertTest {
-    /** Records rotations/recolours reported by the shared RB kernel, for event-emission assertions. */
-    static final class Rec implements RbEventSink<TreeNode<Integer, String>> {
-        final List<String> log = new ArrayList<>();
-        @Override
-        public void rotated(com.gimlism.translucent.substrate.rbtree.Direction d, TreeNode<Integer, String> p) {
-            log.add("ROT " + d + " " + p.getKey());
-        }
-        @Override
-        public void recolored(TreeNode<Integer, String> n,
-                com.gimlism.translucent.substrate.rbtree.Color o,
-                com.gimlism.translucent.substrate.rbtree.Color newColor) {
-            log.add("COL " + n.getKey() + " " + o + "->" + newColor);
-        }
-    }
-
     @Test
     void insertingAscendingKeysStaysBalancedAndComplete() {
         TreeNode<Integer, String> root = null;
@@ -41,7 +26,7 @@ class TreeInsertTest {
 
     @Test
     void insertEmitsBalancingEvents() {
-        var rec = new Rec();
+        var rec = new RecordingRbSink();
         TreeNode<Integer, String> root = null;
         for (int k = 1; k <= 5; k++) {
             root = TreeNode.insert(root, new TreeNode<>(k, k, "v" + k, null, k), rec);
