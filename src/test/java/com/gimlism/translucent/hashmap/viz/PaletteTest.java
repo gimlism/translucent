@@ -3,7 +3,7 @@ package com.gimlism.translucent.hashmap.viz;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.gimlism.translucent.hashmap.events.Color;
+import com.gimlism.translucent.substrate.rbtree.Color;
 import com.gimlism.translucent.substrate.viz.ColorMode;
 import org.junit.jupiter.api.Test;
 

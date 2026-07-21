@@ -1,6 +1,6 @@
 package com.gimlism.translucent.hashmap.viz;
 
-import com.gimlism.translucent.hashmap.events.Color;
+import com.gimlism.translucent.substrate.rbtree.Color;
 import com.gimlism.translucent.substrate.viz.ColorMode;
 
 /** Renders a tree node's key with its red-black colour, in ANSI colour or plain text. */

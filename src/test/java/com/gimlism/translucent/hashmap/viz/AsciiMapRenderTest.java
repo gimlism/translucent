@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.gimlism.translucent.hashmap.events.BucketSnapshot;
 import com.gimlism.translucent.hashmap.events.ChainSnapshot;
-import com.gimlism.translucent.hashmap.events.Color;
 import com.gimlism.translucent.hashmap.events.EmptyBucket;
+import com.gimlism.translucent.substrate.rbtree.Color;
 import com.gimlism.translucent.hashmap.events.EntrySnapshot;
 import com.gimlism.translucent.hashmap.events.MapSnapshot;
 import com.gimlism.translucent.hashmap.events.TreeNodeSnapshot;
