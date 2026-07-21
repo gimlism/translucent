@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.gimlism.translucent.substrate.rbtree.Direction;
 import com.gimlism.translucent.treeset.events.Add;
 import com.gimlism.translucent.treeset.events.Compare;
 import com.gimlism.translucent.treeset.events.SetEvent;
@@ -89,6 +90,54 @@ class TeachingTreeSetAddTest {
         assertTrue(set.contains(15));
         assertTrue(log.stream().allMatch(e -> e instanceof Compare), "reads emit only Compare frames");
         assertTrue(log.stream().anyMatch(e -> e instanceof Compare c && c.found()));
+    }
+
+    // Regression pin for the core walk semantics: each Compare frame carries the element of the
+    // node the walk is STANDING ON (the visited node), never the search key. A past core inversion
+    // (node.element -> e) emitted the search key instead and survived every narration test — those
+    // assert the frame TYPE and found() but never the element VALUE. These pin the value against the
+    // real descent. Tree {10,5,15} is a fixed RB shape (root 10 black, 5 left, 15 right, no
+    // rotations), so searching the absent 7 visits 10 then 5 — both distinct from the query.
+    @Test
+    void containsCompareCarriesVisitedNodeNotSearchKey() {
+        TeachingTreeSet<Integer> set = new TeachingTreeSet<>();
+        for (int k : new int[]{10, 5, 15}) set.add(k);
+        List<SetEvent> log = record(set);
+        assertFalse(set.contains(7));
+        List<Compare> walk = compares(log);
+        assertEquals(List.of(10, 5), walk.stream().map(Compare::element).toList(),
+                "Compare carries the visited node (10, then 5) — never the absent search key 7");
+        assertEquals(List.of(Direction.LEFT, Direction.RIGHT),
+                walk.stream().map(Compare::went).toList(), "branch taken at each visited node");
+        assertTrue(walk.stream().noneMatch(Compare::found), "no visited node equals the absent key");
+
+        // Found key: the intermediate frame still visits a node (10) distinct from the key (15).
+        TeachingTreeSet<Integer> found = new TeachingTreeSet<>();
+        for (int k : new int[]{10, 5, 15}) found.add(k);
+        List<SetEvent> foundLog = record(found);
+        assertTrue(found.contains(15));
+        List<Compare> foundWalk = compares(foundLog);
+        assertEquals(List.of(10, 15), foundWalk.stream().map(Compare::element).toList(),
+                "visited 10 (intermediate, != key) then landed on 15");
+        Compare terminal = foundWalk.get(foundWalk.size() - 1);
+        assertTrue(terminal.found() && terminal.went() == null, "terminal compare is the equal hit");
+    }
+
+    @Test
+    void addDescentCompareCarriesVisitedNodeNotNewElement() {
+        TeachingTreeSet<Integer> set = new TeachingTreeSet<>();
+        for (int k : new int[]{10, 5, 15}) set.add(k);
+        List<SetEvent> log = record(set);
+        assertTrue(set.add(7));   // absent -> descends past 10, 5 then links
+        List<Compare> walk = compares(log);
+        assertEquals(List.of(10, 5), walk.stream().map(Compare::element).toList(),
+                "the add-descent's Compare frames carry the visited nodes, not the new element 7");
+        assertEquals(List.of(Direction.LEFT, Direction.RIGHT),
+                walk.stream().map(Compare::went).toList(), "branch taken at each visited node");
+    }
+
+    private static List<Compare> compares(List<SetEvent> log) {
+        return log.stream().filter(Compare.class::isInstance).map(Compare.class::cast).toList();
     }
 
     @Test

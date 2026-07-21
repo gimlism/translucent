@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.gimlism.translucent.substrate.rbtree.Direction;
 import com.gimlism.translucent.treeset.events.Compare;
 import com.gimlism.translucent.treeset.events.Remove;
 import com.gimlism.translucent.treeset.events.SetEvent;
@@ -57,6 +58,24 @@ class TeachingTreeSetNavigationTest {
         s.ceiling(12);
         assertTrue(log.stream().allMatch(e -> e instanceof Compare), "ceiling narrates only Compare frames");
         assertTrue(log.size() > 0, "at least one comparison happened");
+    }
+
+    @Test
+    void navigationCompareCarriesVisitedNodeNotQuery() {
+        // Pin for the relative-navigator walk (sibling of the add/contains pins in AddTest):
+        // each Compare carries the visited node, never the query. ceiling(7) on {10,5,15} visits
+        // 10 then 5 — both distinct from 7 — so an inversion (node.element -> e) would collapse
+        // the path to [7,7] and fail here.
+        TeachingTreeSet<Integer> s = setOf(10, 5, 15);
+        List<SetEvent> log = new ArrayList<>();
+        s.addListener(log::add);
+        assertEquals(10, s.ceiling(7));
+        List<Compare> walk = log.stream()
+                .filter(Compare.class::isInstance).map(Compare.class::cast).toList();
+        assertEquals(List.of(10, 5), walk.stream().map(Compare::element).toList(),
+                "Compare carries the visited node (10, then 5) — never the query 7");
+        assertEquals(List.of(Direction.LEFT, Direction.RIGHT),
+                walk.stream().map(Compare::went).toList(), "branch taken at each visited node");
     }
 
     @Test
