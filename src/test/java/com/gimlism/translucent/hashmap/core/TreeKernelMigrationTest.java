@@ -36,23 +36,23 @@ class TreeKernelMigrationTest {
         assertTrue(n.red);
     }
 
-    // Bridge pin (replay-and-compare): a single deterministic treeify build is driven
-    // TWICE over the identical (hash, seq) node sequence -- once through the map,
-    // whose Rotation/Recolor events carry the BRIDGED hashmap.events enums (via the
-    // two private bridge() ternaries in TeachingHashMap.sinkFor), and once directly
-    // through the raw substrate kernel (TreeNode.build with a recording
-    // RbEventSink<TreeNode<...>> that captures the substrate enums BEFORE any bridging).
+    // Faithfulness pin (replay-and-compare): a single deterministic treeify build is
+    // driven TWICE over the identical (hash, seq) node sequence -- once through the map's
+    // put() path, whose sinkFor turns each kernel callback into a Rotation/Recolor map
+    // event, and once directly through the raw substrate kernel (TreeNode.build with a
+    // recording RbEventSink<TreeNode<...>> capturing the kernel's own enums).
     //
-    // Both builds insert nodes with the same hash and the same seq 0..n-1 in the same
-    // order, so red-black insertion (ordered purely by (hash, seq), see TreeNode.cmp)
-    // takes the identical structural path in both -- the two callback streams MUST
-    // line up element-for-element. Comparing by enum .name() means a swapped bridge()
-    // (LEFT<->RIGHT or RED<->BLACK) flips a name in the bridged stream but not the raw
-    // one, breaking the match. A same-cardinality check like "direction == LEFT ||
-    // direction == RIGHT" is vacuously true for any 2-value enum and can't catch that
-    // swap -- do not reduce this back to that shape.
+    // Both drive the same red-black insertion (ordered purely by (hash, seq), see
+    // TreeNode.cmp), so the two callback streams MUST line up element-for-element.
+    // Comparing by enum .name() means a sinkFor that swaps a direction, swaps
+    // oldColor/newColor, or drops an event flips or shortens the map stream but not the
+    // raw one, breaking the match. There is no longer any bridge() to swap -- the map
+    // emits the substrate enums straight through -- so this pins that sinkFor's wiring
+    // stays faithful. A same-cardinality check like "direction == LEFT || direction ==
+    // RIGHT" is vacuously true for a 2-value enum and can't catch that -- do not reduce
+    // this back to that shape.
     @Test
-    void rotationAndRecolorSurfaceAsBridgedMapEvents() {
+    void mapEventStreamFaithfullyMirrorsKernelStream() {
         // n == treeifyThreshold below: the n-th put's chain length hits the
         // threshold, triggering exactly one treeifyBin build of n nodes (seq 0..n-1)
         // and no further individual tree inserts.
