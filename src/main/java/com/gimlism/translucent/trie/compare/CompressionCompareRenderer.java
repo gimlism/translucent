@@ -12,6 +12,8 @@ import java.util.List;
  * {@link AsciiTrieRenderer} verbatim (its API is not widened); a per-tree panel is that renderer's
  * output with its {@code "trie: size=N"} header line swapped for a {@code standard (N)} / {@code radix (N)}
  * label. Columns when they fit within {@code maxWidth}; stacked otherwise.
+ * Column widths are measured in {@code char} count, so the {@code ●} key-marker may render double-width
+ * in some terminals and shift marked rows by one cell.
  */
 public final class CompressionCompareRenderer {
     private static final int DEFAULT_MAX_WIDTH = 100;
