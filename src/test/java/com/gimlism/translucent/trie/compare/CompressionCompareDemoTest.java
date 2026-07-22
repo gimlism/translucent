@@ -41,4 +41,13 @@ class CompressionCompareDemoTest {
         assertEquals(10, c.standardNodes());
         assertEquals(6, c.radixNodes());
     }
+
+    @Test
+    void emptyKeySetYieldsRootOnlyCountsWithNoException() {
+        // No keys -> both tries are just the root; nodeCount is root-included, so 1 each, 0 saved.
+        var c = CompressionCompareDemo.compare(List.of());
+        assertEquals(1, c.standardNodes());
+        assertEquals(1, c.radixNodes());
+        assertEquals(0, c.saved());
+    }
 }

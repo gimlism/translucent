@@ -3,6 +3,7 @@ package com.gimlism.translucent.trie.compare;
 import com.gimlism.translucent.trie.consumer.TrieRecordingListener;
 import com.gimlism.translucent.trie.core.RadixTrie;
 import com.gimlism.translucent.trie.core.StandardTrie;
+import com.gimlism.translucent.trie.events.TrieNodeSnapshot;
 import com.gimlism.translucent.trie.events.TrieSnapshot;
 import java.util.List;
 
@@ -29,6 +30,13 @@ public final class CompressionCompareDemo {
 
     /** Insert {@code keys} (values {@code 0..n-1}) into both tries and count their nodes. */
     public static Comparison compare(List<String> keys) {
+        if (keys.isEmpty()) {
+            // No keys inserted -> both tries hold only the root (no events to read a snapshot from).
+            // Count it through the same root-included metric so this stays consistent with the
+            // non-empty path rather than hardcoding the root's contribution.
+            int rootOnly = TrieMetrics.nodeCount(new TrieSnapshot(new TrieNodeSnapshot(false, null, List.of()), 0));
+            return new Comparison(rootOnly, rootOnly, keys);
+        }
         var standard = new StandardTrie<Integer>();
         var radix = new RadixTrie<Integer>();
         var standardRec = new TrieRecordingListener();
