@@ -1,10 +1,12 @@
 package com.gimlism.translucent.trie.compare;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.trie.core.RadixTrie;
 import com.gimlism.translucent.trie.core.StandardTrie;
+import com.gimlism.translucent.trie.events.TrieSnapshot;
 import java.util.List;
 import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
@@ -49,5 +51,17 @@ class CompressionCompareDemoTest {
         assertEquals(1, c.standardNodes());
         assertEquals(1, c.radixNodes());
         assertEquals(0, c.saved());
+    }
+
+    @Test
+    void comparisonCarriesEachTriesFinalSnapshot() {
+        var c = CompressionCompareDemo.compare(CANON);
+        TrieSnapshot std = c.standardSnapshot();
+        TrieSnapshot rad = c.radixSnapshot();
+        assertNotNull(std);
+        assertNotNull(rad);
+        // The carried snapshots are the very ones the counts were derived from.
+        assertEquals(c.standardNodes(), TrieMetrics.nodeCount(std));
+        assertEquals(c.radixNodes(), TrieMetrics.nodeCount(rad));
     }
 }

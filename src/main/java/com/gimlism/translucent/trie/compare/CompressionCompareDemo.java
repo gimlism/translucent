@@ -17,7 +17,8 @@ public final class CompressionCompareDemo {
     private CompressionCompareDemo() {}
 
     /** Result of comparing the two tries on one key set. */
-    public record Comparison(int standardNodes, int radixNodes, List<String> keys) {
+    public record Comparison(int standardNodes, int radixNodes, List<String> keys,
+                             TrieSnapshot standardSnapshot, TrieSnapshot radixSnapshot) {
         public Comparison {
             keys = List.copyOf(keys);
         }
@@ -34,8 +35,9 @@ public final class CompressionCompareDemo {
             // No keys inserted -> both tries hold only the root (no events to read a snapshot from).
             // Count it through the same root-included metric so this stays consistent with the
             // non-empty path rather than hardcoding the root's contribution.
-            int rootOnly = TrieMetrics.nodeCount(new TrieSnapshot(new TrieNodeSnapshot(false, null, List.of()), 0));
-            return new Comparison(rootOnly, rootOnly, keys);
+            var rootOnly = new TrieSnapshot(new TrieNodeSnapshot(false, null, List.of()), 0);
+            int rootCount = TrieMetrics.nodeCount(rootOnly);
+            return new Comparison(rootCount, rootCount, keys, rootOnly, rootOnly);
         }
         var standard = new StandardTrie<Integer>();
         var radix = new RadixTrie<Integer>();
@@ -47,10 +49,12 @@ public final class CompressionCompareDemo {
             standard.put(keys.get(i), i);
             radix.put(keys.get(i), i);
         }
+        var standardSnap = lastSnapshot(standardRec);
+        var radixSnap = lastSnapshot(radixRec);
         return new Comparison(
-            TrieMetrics.nodeCount(lastSnapshot(standardRec)),
-            TrieMetrics.nodeCount(lastSnapshot(radixRec)),
-            keys);
+            TrieMetrics.nodeCount(standardSnap),
+            TrieMetrics.nodeCount(radixSnap),
+            keys, standardSnap, radixSnap);
     }
 
     /** The whole-trie snapshot carried by the most recent event (the final Put's {@code after()}). */
