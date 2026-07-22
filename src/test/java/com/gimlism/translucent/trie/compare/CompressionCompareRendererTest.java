@@ -82,4 +82,20 @@ class CompressionCompareRendererTest {
         }).count();
         assertEquals(2, roots, "expected exactly two roots:\n" + out);
     }
+
+    @Test
+    void narrowMaxWidthFallsBackToStacked() {
+        // Canonical columns need gutter(22)+widestRight(16)=38; a 20-col cap forces stacked.
+        String out = renderer.render(CompressionCompareDemo.compare(CANON), 20);
+        // Stacked headers carry a trailing colon and sit on their own lines.
+        assertTrue(out.contains("standard (10):"), "expected stacked standard header:\n" + out);
+        assertTrue(out.contains("radix (6):"), "expected stacked radix header:\n" + out);
+        // No physical line mixes both panels (that would be columns).
+        assertTrue(out.lines().noneMatch(l -> l.contains("standard (10)") && l.contains("radix (6)")),
+            "panels must not share a line when stacked:\n" + out);
+        // The radix panel starts strictly after the standard tree: standard's unique "r" node
+        // (radix has "ore", never a lone "r") precedes the radix header.
+        assertTrue(out.indexOf("\"r\"") < out.indexOf("radix (6):"),
+            "radix panel must follow the whole standard tree:\n" + out);
+    }
 }
