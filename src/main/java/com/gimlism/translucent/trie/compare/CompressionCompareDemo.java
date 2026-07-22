@@ -64,9 +64,7 @@ public final class CompressionCompareDemo {
     }
 
     public static void main(String[] args) {
-        Comparison c = compare(List.of("she", "shell", "shore", "shy"));
-        System.out.printf("keys %s%n  standard = %d nodes%n  radix    = %d nodes%n  saved    = %d (%.0f%%)%n",
-            c.keys(), c.standardNodes(), c.radixNodes(), c.saved(),
-            100.0 * c.saved() / c.standardNodes());
+        System.out.println(new CompressionCompareRenderer().render(
+            compare(List.of("she", "shell", "shore", "shy"))));
     }
 }
