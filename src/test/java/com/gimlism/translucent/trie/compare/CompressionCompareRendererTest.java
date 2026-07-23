@@ -117,11 +117,19 @@ class CompressionCompareRendererTest {
         // space, so it is excluded). The count of marked lines is exactly the nodes radix saves.
         long marked = out.lines().filter(l -> l.startsWith("·")).count();
         assertEquals(c.saved(), marked, "marked-node count must equal saved():\n" + out);
+
+        // A second, independent shape: "abc" -> root,a,b,c (standard 4) vs root,"abc" (radix 2);
+        // "a" and "b" are non-key single-child, so 2 marked == saved 2.
+        var single = CompressionCompareDemo.compare(List.of("abc"));
+        String singleOut = renderer.render(single);
+        assertEquals(single.saved(), singleOut.lines().filter(l -> l.startsWith("·")).count(),
+            "marked-node count must equal saved() for {abc}:\n" + singleOut);
     }
 
     @Test
     void radixPanelIsNeverMarked() {
-        String out = renderer.render(CompressionCompareDemo.compare(CANON));
+        var c = CompressionCompareDemo.compare(CANON);
+        String out = renderer.render(c);
         List<String> lines = out.lines().toList();
         int headerIdx = -1;
         for (int i = 0; i < lines.size(); i++) {
@@ -130,7 +138,7 @@ class CompressionCompareRendererTest {
         assertTrue(headerIdx >= 0, "no columns header found:\n" + out);
         int gutter = lines.get(headerIdx).indexOf("radix (6)");
         // Slice the radix column (header down) at the gutter: it must carry no marker.
-        boolean rightHasMarker = lines.subList(headerIdx, headerIdx + 7).stream()
+        boolean rightHasMarker = lines.subList(headerIdx, headerIdx + c.radixNodes() + 1).stream()
             .anyMatch(l -> l.substring(gutter).contains("·"));
         assertTrue(!rightHasMarker, "radix panel must not be marked:\n" + out);
     }
