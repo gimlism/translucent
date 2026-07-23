@@ -20,7 +20,8 @@ class CompressionCompareRendererTest {
         String out = renderer.render(CompressionCompareDemo.compare(CANON));
         assertTrue(out.startsWith(
             "compression compare: {she, shell, shore, shy}\n"
-            + "  standard = 10   radix = 6   saved = 4 (40%)\n"),
+            + "  standard = 10   radix = 6   saved = 4 (40%)\n"
+            + "  · = collapsed by radix (4 nodes)\n"),
             "banner mismatch, got:\n" + out);
     }
 
@@ -30,16 +31,17 @@ class CompressionCompareRendererTest {
         assertEquals(String.join("\n",
             "compression compare: {she, shell, shore, shy}",
             "standard = 10 radix = 6 saved = 4 (40%)",
+            "· = collapsed by radix (4 nodes)",
             "",
             "standard (10) radix (6)",
             "(root) (root)",
-            "\"s\" \"sh\"",
+            "· \"s\" \"sh\"",
             "\"h\" \"e\" ●=0",
             "\"e\" ●=0 \"ll\" ●=1",
-            "\"l\" \"ore\" ●=2",
+            "· \"l\" \"ore\" ●=2",
             "\"l\" ●=1 \"y\" ●=3",
-            "\"o\"",
-            "\"r\"",
+            "· \"o\"",
+            "· \"r\"",
             "\"e\" ●=2",
             "\"y\" ●=3"),
             normalize(out));
