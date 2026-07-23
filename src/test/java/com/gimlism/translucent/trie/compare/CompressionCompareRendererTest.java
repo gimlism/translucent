@@ -15,6 +15,10 @@ class CompressionCompareRendererTest {
         return s.lines().map(l -> l.replaceAll(" +", " ").strip()).collect(Collectors.joining("\n"));
     }
 
+    private static String firstLineWith(String out, String token) {
+        return out.lines().filter(l -> l.contains(token)).findFirst().orElseThrow();
+    }
+
     @Test
     void bannerLeadsWithKeysCountsAndSavings() {
         String out = renderer.render(CompressionCompareDemo.compare(CANON));
@@ -77,6 +81,10 @@ class CompressionCompareRendererTest {
     void emptyKeySetRendersTwoRootOnlyPanels() {
         String out = renderer.render(CompressionCompareDemo.compare(List.of()));
         assertTrue(out.contains("saved = 0 (0%)"), "expected zero-savings banner:\n" + out);
+        assertTrue(out.contains("· = collapsed by radix (0 nodes)"), "expected empty legend:\n" + out);
+        // The root is never absorbed, so no root line is marked.
+        assertTrue(out.lines().filter(l -> l.contains("(root)")).noneMatch(l -> l.startsWith("·")),
+            "root must not be marked:\n" + out);
         // Both root-only panels appear (two "(root)" occurrences, on the single interleaved roots row).
         long roots = out.lines().flatMap(l -> {
             int c = (l.length() - l.replace("(root)", "").length()) / "(root)".length();
@@ -99,5 +107,46 @@ class CompressionCompareRendererTest {
         // (radix has "ore", never a lone "r") precedes the radix header.
         assertTrue(out.indexOf("\"r\"") < out.indexOf("radix (6):"),
             "radix panel must follow the whole standard tree:\n" + out);
+    }
+
+    @Test
+    void markedCountEqualsSaved() {
+        var c = CompressionCompareDemo.compare(CANON);
+        String out = renderer.render(c);
+        // Every absorbed node's line begins with the marker at column 0 (the legend line begins with a
+        // space, so it is excluded). The count of marked lines is exactly the nodes radix saves.
+        long marked = out.lines().filter(l -> l.startsWith("·")).count();
+        assertEquals(c.saved(), marked, "marked-node count must equal saved():\n" + out);
+    }
+
+    @Test
+    void radixPanelIsNeverMarked() {
+        String out = renderer.render(CompressionCompareDemo.compare(CANON));
+        List<String> lines = out.lines().toList();
+        int headerIdx = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).contains("radix (6)")) { headerIdx = i; break; }
+        }
+        assertTrue(headerIdx >= 0, "no columns header found:\n" + out);
+        int gutter = lines.get(headerIdx).indexOf("radix (6)");
+        // Slice the radix column (header down) at the gutter: it must carry no marker.
+        boolean rightHasMarker = lines.subList(headerIdx, headerIdx + 7).stream()
+            .anyMatch(l -> l.substring(gutter).contains("·"));
+        assertTrue(!rightHasMarker, "radix panel must not be marked:\n" + out);
+    }
+
+    @Test
+    void marksTheAbsorbedNodesNotTheKeptOnes() {
+        // Stacked layout isolates the standard panel (it precedes the radix panel), so firstLineWith
+        // finds the standard node line for each token.
+        String out = renderer.render(CompressionCompareDemo.compare(CANON), 20);
+        // Absorbed (non-key, single-child): "s", the inner "l", "o", "r" are marked.
+        assertTrue(firstLineWith(out, "\"s\"").startsWith("·"), "\"s\" should be marked:\n" + out);
+        assertTrue(firstLineWith(out, "\"o\"").startsWith("·"), "\"o\" should be marked:\n" + out);
+        assertTrue(firstLineWith(out, "\"r\"").startsWith("·"), "\"r\" should be marked:\n" + out);
+        // Kept nodes: root, the branch "h" (3 children), and the key "she" ("e" ●=0) are NOT marked.
+        assertTrue(!firstLineWith(out, "(root)").startsWith("·"), "root should not be marked:\n" + out);
+        assertTrue(!firstLineWith(out, "\"h\"").startsWith("·"), "branch \"h\" should not be marked:\n" + out);
+        assertTrue(!firstLineWith(out, "\"e\" ●=0").startsWith("·"), "key \"she\" should not be marked:\n" + out);
     }
 }
