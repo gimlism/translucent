@@ -15,7 +15,7 @@ import java.util.List;
  * output with its {@code "trie: size=N"} header line swapped for a {@code standard (N)} / {@code radix (N)}
  * label. Columns when they fit within {@code maxWidth}; stacked otherwise.
  * Column widths are measured in {@code char} count, so the {@code ●} key-marker may render double-width
- * in some terminals and shift marked rows by one cell.
+ * in some terminals and shift the rows that carry it (the key rows) by one cell.
  * Nodes the radix trie absorbs (non-root, non-key, single-child) are marked in the standard panel
  * with a {@code ·} gutter glyph and counted in a legend line; that count equals {@code saved()}.
  */
