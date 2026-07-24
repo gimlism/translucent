@@ -1,5 +1,7 @@
 package com.gimlism.translucent.trie.compare;
 
+import com.gimlism.translucent.trie.events.TrieEdge;
+import com.gimlism.translucent.trie.events.TrieNodeSnapshot;
 import com.gimlism.translucent.trie.events.TrieSnapshot;
 import com.gimlism.translucent.trie.viz.AsciiTrieRenderer;
 import java.util.ArrayList;
@@ -13,7 +15,9 @@ import java.util.List;
  * output with its {@code "trie: size=N"} header line swapped for a {@code standard (N)} / {@code radix (N)}
  * label. Columns when they fit within {@code maxWidth}; stacked otherwise.
  * Column widths are measured in {@code char} count, so the {@code ●} key-marker may render double-width
- * in some terminals and shift marked rows by one cell.
+ * in some terminals and shift the rows that carry it (the key rows) by one cell.
+ * Nodes the radix trie absorbs (non-root, non-key, single-child) are marked in the standard panel
+ * with a {@code ·} gutter glyph and counted in a legend line; that count equals {@code saved()}.
  */
 public final class CompressionCompareRenderer {
     private static final int DEFAULT_MAX_WIDTH = 100;
@@ -27,18 +31,21 @@ public final class CompressionCompareRenderer {
 
     /** Render, falling back from columns to stacked when the two panels would exceed {@code maxWidth}. */
     public String render(CompressionCompareDemo.Comparison c, int maxWidth) {
+        List<Boolean> absorbed = absorbedFlags(c.standardSnapshot());
         List<String> left = panel("standard (" + c.standardNodes() + ")", c.standardSnapshot());
+        markAbsorbed(left, absorbed);
         List<String> right = panel("radix (" + c.radixNodes() + ")", c.radixSnapshot());
         String body = gutter(left) + width(right) <= maxWidth ? columns(left, right) : stacked(left, right);
-        return banner(c) + "\n\n" + body;
+        return banner(c, countTrue(absorbed)) + "\n\n" + body;
     }
 
-    private String banner(CompressionCompareDemo.Comparison c) {
+    private String banner(CompressionCompareDemo.Comparison c, int absorbedCount) {
         long pct = Math.round(100.0 * c.saved() / c.standardNodes());
         return "compression compare: {" + String.join(", ", c.keys()) + "}\n"
             + "  standard = " + c.standardNodes()
             + "   radix = " + c.radixNodes()
-            + "   saved = " + c.saved() + " (" + pct + "%)";
+            + "   saved = " + c.saved() + " (" + pct + "%)\n"
+            + "  · = collapsed by radix (" + absorbedCount + " nodes)";
     }
 
     /** A header label followed by the tree body, i.e. {@code renderTrie} minus its "trie: size=" line. */
@@ -51,6 +58,41 @@ public final class CompressionCompareRenderer {
             lines.add(line);
         }
         return lines;
+    }
+
+    /**
+     * One flag per node in the standard trie, in the same pre-order {@code renderTrie} emits its lines
+     * (root first, then children in {@code children()} order): {@code true} for a node radix absorbs —
+     * a non-root, non-key node with exactly one child (part of a collapsible chain).
+     */
+    private List<Boolean> absorbedFlags(TrieSnapshot snap) {
+        List<Boolean> flags = new ArrayList<>();
+        collectAbsorbed(snap.root(), true, flags);
+        return flags;
+    }
+
+    private void collectAbsorbed(TrieNodeSnapshot node, boolean root, List<Boolean> flags) {
+        flags.add(!root && !node.key() && node.children().size() == 1);
+        for (TrieEdge e : node.children()) collectAbsorbed(e.target(), false, flags);
+    }
+
+    /**
+     * Swap the {@code "  "} gutter of each absorbed node's line for {@code "· "} (width unchanged, so
+     * layout is unaffected). {@code panel.get(0)} is the header; tree line {@code i} is {@code panel.get(i+1)}
+     * and maps to {@code flags.get(i)} because {@code renderTrie} emits one line per node in walk order.
+     */
+    private void markAbsorbed(List<String> panel, List<Boolean> flags) {
+        for (int i = 0; i < flags.size(); i++) {
+            if (flags.get(i)) {
+                panel.set(i + 1, "· " + panel.get(i + 1).substring(2));
+            }
+        }
+    }
+
+    private int countTrue(List<Boolean> flags) {
+        int n = 0;
+        for (boolean b : flags) if (b) n++;
+        return n;
     }
 
     private int gutter(List<String> left) {
