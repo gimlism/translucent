@@ -40,4 +40,19 @@ class WebVizTemplateTest {
         assertTrue(out.contains(frames), "user token literals survive intact");
         assertTrue(out.startsWith("LIVE=true CONTROLS=true "), "the real flag tokens are still replaced");
     }
+
+    @Test
+    void injectStaticSubstitutesTheDataToken() {
+        String out = WebVizTemplate.injectStatic("/web/webviztemplate-static.html", "{\"x\":1}");
+        assertTrue(out.contains("DATA={\"x\":1}"), out);
+        assertFalse(out.contains("/*__"), "no token left behind");
+    }
+
+    @Test
+    void injectStaticMissingDataTokenThrowsNamingIt() {
+        // webviztemplate-missing.html has no /*__DATA__*/ token.
+        var e = assertThrows(IllegalStateException.class,
+                () -> WebVizTemplate.injectStatic("/web/webviztemplate-missing.html", "x"));
+        assertTrue(e.getMessage().contains("/*__DATA__*/"), e.getMessage());
+    }
 }

@@ -20,6 +20,7 @@ public final class WebVizTemplate {
     private static final String FRAMES_TOKEN = "/*__FRAMES__*/";
     private static final String LIVE_TOKEN = "/*__LIVE__*/";
     private static final String CONTROLS_TOKEN = "/*__CONTROLS__*/";
+    private static final String DATA_TOKEN = "/*__DATA__*/";
 
     private WebVizTemplate() {}
 
@@ -39,6 +40,17 @@ public final class WebVizTemplate {
                 .replace(LIVE_TOKEN, liveReplacement)
                 .replace(CONTROLS_TOKEN, controlsReplacement)
                 .replace(FRAMES_TOKEN, framesReplacement); // user data LAST
+    }
+
+    /**
+     * Read {@code resource} and substitute the single {@code DATA} token with {@code data}, for a
+     * static page that carries one baked data blob and no frame-replay flags. The three-token
+     * {@link #inject} stays the right tool for live (FRAMES/LIVE/CONTROLS) pages.
+     */
+    public static String injectStatic(String resource, String data) {
+        String template = read(resource);
+        require(template, resource, DATA_TOKEN);
+        return template.replace(DATA_TOKEN, data);
     }
 
     private static void require(String template, String resource, String token) {
