@@ -40,11 +40,10 @@ public final class CompressionCompareRenderer {
     }
 
     private String banner(CompressionCompareDemo.Comparison c, int absorbedCount) {
-        long pct = Math.round(100.0 * c.saved() / c.standardNodes());
         return "compression compare: {" + String.join(", ", c.keys()) + "}\n"
             + "  standard = " + c.standardNodes()
             + "   radix = " + c.radixNodes()
-            + "   saved = " + c.saved() + " (" + pct + "%)\n"
+            + "   saved = " + c.saved() + " (" + c.savedPct() + "%)\n"
             + "  · = collapsed by radix (" + absorbedCount + " nodes)";
     }
 
@@ -72,7 +71,7 @@ public final class CompressionCompareRenderer {
     }
 
     private void collectAbsorbed(TrieNodeSnapshot node, boolean root, List<Boolean> flags) {
-        flags.add(!root && !node.key() && node.children().size() == 1);
+        flags.add(TrieMetrics.isAbsorbed(node, root));
         for (TrieEdge e : node.children()) collectAbsorbed(e.target(), false, flags);
     }
 

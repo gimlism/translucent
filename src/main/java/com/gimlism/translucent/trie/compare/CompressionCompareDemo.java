@@ -27,6 +27,11 @@ public final class CompressionCompareDemo {
         public int saved() {
             return standardNodes - radixNodes;
         }
+
+        /** Rounded percentage of standard nodes the radix compression saves. */
+        public long savedPct() {
+            return Math.round(100.0 * saved() / standardNodes);
+        }
     }
 
     /** Insert {@code keys} (values {@code 0..n-1}) into both tries and count their nodes. */

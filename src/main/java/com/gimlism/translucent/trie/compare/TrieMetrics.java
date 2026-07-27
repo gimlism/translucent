@@ -18,4 +18,14 @@ public final class TrieMetrics {
         for (TrieEdge e : n.children()) total += count(e.target());
         return total;
     }
+
+    /**
+     * Whether the radix trie absorbs this node: a non-root, non-key node with exactly one child
+     * (part of a single-child chain radix compresses into an edge label). The single shared
+     * definition used by both {@code CompressionCompareRenderer} (ASCII) and
+     * {@code CompressionCompareJsonSerializer} (web) so they can never disagree on what is marked.
+     */
+    public static boolean isAbsorbed(TrieNodeSnapshot node, boolean root) {
+        return !root && !node.key() && node.children().size() == 1;
+    }
 }
