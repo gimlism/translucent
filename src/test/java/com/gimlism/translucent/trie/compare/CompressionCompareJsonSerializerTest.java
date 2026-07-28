@@ -14,9 +14,13 @@ class CompressionCompareJsonSerializerTest {
         return Pattern.compile(Pattern.quote(literal)).matcher(s).results().count();
     }
 
-    /** Split the blob at the radix tree so absorbed flags can be attributed to a specific panel. */
-    private static String standardHalf(String json) { return json.substring(0, json.indexOf("\"radix\"")); }
-    private static String radixHalf(String json) { return json.substring(json.indexOf("\"radix\"")); }
+    /**
+     * Split the blob at the radix tree so absorbed flags can be attributed to a specific panel.
+     * Splits on the {@code "radix":{} object key (not the bare token) so a key literally named
+     * "radix" in the {@code keys} array can't mis-split the blob.
+     */
+    private static String standardHalf(String json) { return json.substring(0, json.indexOf("\"radix\":{")); }
+    private static String radixHalf(String json) { return json.substring(json.indexOf("\"radix\":{")); }
 
     @Test
     void emitsKeysCountsAndSavings() {
