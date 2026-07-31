@@ -11,11 +11,11 @@ import java.nio.file.Path;
 /**
  * Records the standard collide → treeify → resize → untreeify story and writes it out as a
  * self-contained HTML web replay. Run with:
- * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.hashmap.demo.WebVizDemo}
+ * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapWebVizDemo}
  * (optionally {@code -Dexec.args="path/to/out.html"}). The whole-document build is factored into
  * {@link #buildHtml()} so it can be unit-tested without touching the filesystem.
  */
-public class WebVizDemo {
+public class MapWebVizDemo {
 
     public static void main(String[] args) throws IOException {
         Path out = Path.of(args.length > 0 ? args[0] : "target/hashmap-web-viz.html");

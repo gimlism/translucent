@@ -17,10 +17,10 @@ import java.nio.charset.StandardCharsets;
  * Interactive terminal REPL for a live {@link TeachingHashMap}: type commands (see {@code help})
  * and watch each mutation render live in the browser — no recompile per change. Reuses Slice 1's
  * {@link LiveServer} for the SSE stream. Run with:
- * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.hashmap.demo.LiveReplDemo}
+ * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapLiveReplDemo}
  * The map starts empty; the server stops when you type {@code quit} or send EOF (Ctrl-D).
  */
-public class LiveReplDemo {
+public class MapLiveReplDemo {
 
     private static final int DEFAULT_PORT = 7070;
 

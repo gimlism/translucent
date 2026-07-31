@@ -24,12 +24,12 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 /** Proves Slice 3: a browser POST /command mutates the map and surfaces as a live SSE frame. */
-class LiveControlsEndToEndTest {
+class MapLiveControlsEndToEndTest {
 
     @Test
     void aPostedCommandMutatesTheMapAndSurfacesAsALiveFrame() throws IOException {
         var map = new TeachingHashMap<Integer, String>();
-        Function<String, String> handler = LiveControlsDemo.commandHandler(map, new MapCommandInterpreter());
+        Function<String, String> handler = MapLiveControlsDemo.commandHandler(map, new MapCommandInterpreter());
         LiveServer server = new LiveServer(MapWebExporter.controlsHtml(), "127.0.0.1", 0, handler);
         server.start();
         HttpClient client = HttpClient.newHttpClient();

@@ -13,11 +13,11 @@ import java.util.function.Function;
 /**
  * Browser-driven live demo: type commands into the page (a box wired to {@code POST /command}) and
  * watch each mutation render live. The map lives server-side; the browser is the REPL over HTTP,
- * running the SAME {@link MapCommandInterpreter} as {@link LiveReplDemo}. No stdin. Run with:
- * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.hashmap.demo.LiveControlsDemo}
+ * running the SAME {@link MapCommandInterpreter} as {@link MapLiveReplDemo}. No stdin. Run with:
+ * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapLiveControlsDemo}
  * The map starts empty; the server keeps running until Ctrl-C.
  */
-public class LiveControlsDemo {
+public class MapLiveControlsDemo {
 
     private static final int DEFAULT_PORT = 7070;
 

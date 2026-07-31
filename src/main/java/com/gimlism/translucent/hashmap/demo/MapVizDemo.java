@@ -5,11 +5,11 @@ import com.gimlism.translucent.hashmap.viz.AsciiMapVisualizer;
 import java.io.PrintStream;
 
 /**
- * Same scripted story as {@link Demo}, but rendered as live ASCII frames instead of a text log:
+ * Same scripted story as {@link MapDemo}, but rendered as live ASCII frames instead of a text log:
  * every mutation prints a highlighted whole-map diagram (sideways red-black trees once a bin
  * treeifies). The default {@code exec:java} entry point.
  */
-public class VizDemo {
+public class MapVizDemo {
     public static void main(String[] args) {
         run(System.out);
     }

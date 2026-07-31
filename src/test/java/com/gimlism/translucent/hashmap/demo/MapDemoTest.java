@@ -7,11 +7,11 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-class DemoTest {
+class MapDemoTest {
     @Test
     void runShowsCollisionTreeifyResizeRemoveAndUntreeify() {
         var buffer = new ByteArrayOutputStream();
-        Demo.run(new PrintStream(buffer, true, StandardCharsets.UTF_8));
+        MapDemo.run(new PrintStream(buffer, true, StandardCharsets.UTF_8));
         String out = buffer.toString(StandardCharsets.UTF_8);
         assertTrue(out.contains("COLLISION"), "expected collision, got:\n" + out);
         assertTrue(out.contains("TREEIFY"), "expected treeify, got:\n" + out);
