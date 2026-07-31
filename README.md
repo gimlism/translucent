@@ -1,2 +1,100 @@
 # translucent
-Simple runtime monitoring of internal object state to facilitate teaching sessions
+
+Simple runtime monitoring of internal object state to facilitate teaching sessions.
+
+Four data structures — **ArrayList**, **HashMap**, **TreeSet** and a radix **Trie** — implemented
+for teaching, each narrating what it does as it does it. The narration is emitted by the real
+`put()`/`add()`/`remove()` paths, so what you watch is the algorithm running, not an animation of
+it.
+
+## Quick start
+
+Requires **JDK 21** and **Maven**.
+
+```
+mvn exec:java
+```
+
+That opens the launcher: a numbered index of every demo below. Pick a number and it runs — and it
+prints the direct command first, so you can skip the menu next time.
+
+## Six ways to watch
+
+Each structure offers the same six modes.
+
+| mode | what you get |
+| --- | --- |
+| text log | one line per event, in the terminal |
+| ASCII replay | the structure redrawn in the terminal after every event |
+| web replay | a self-contained `.html` file you can step and play through |
+| live web | a browser view that follows the structure as the demo mutates it |
+| terminal REPL | you type commands; the browser redraws as you go |
+| browser REPL | the same, but you type into the page — no stdin |
+
+## Every demo
+
+Prefix each with `mvn exec:java `. For example:
+
+```
+mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo
+```
+
+### ArrayList — a growable array
+
+| # | mode | |
+| --- | --- | --- |
+| 1 | text log | `-Dexec.mainClass=com.gimlism.translucent.arraylist.demo.ListDemo` |
+| 2 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.arraylist.demo.ListVizDemo` |
+| 3 | web replay | `-Dexec.mainClass=com.gimlism.translucent.arraylist.demo.ListWebVizDemo` |
+| 4 | live web | `-Dexec.mainClass=com.gimlism.translucent.arraylist.demo.ListLiveWebVizDemo` |
+| 5 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.arraylist.demo.ListLiveReplDemo` |
+| 6 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.arraylist.demo.ListLiveControlsDemo` |
+
+### HashMap — buckets, chains, and a red-black tree when a chain gets long
+
+| # | mode | |
+| --- | --- | --- |
+| 7 | text log | `-Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapDemo` |
+| 8 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapVizDemo` |
+| 9 | web replay | `-Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapWebVizDemo` |
+| 10 | live web | `-Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapLiveWebVizDemo` |
+| 11 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapLiveReplDemo` |
+| 12 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapLiveControlsDemo` |
+
+### TreeSet — a red-black tree that rotates and recolours to stay balanced
+
+| # | mode | |
+| --- | --- | --- |
+| 13 | text log | `-Dexec.mainClass=com.gimlism.translucent.treeset.demo.TreeSetDemo` |
+| 14 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.treeset.demo.TreeSetVizDemo` |
+| 15 | web replay | `-Dexec.mainClass=com.gimlism.translucent.treeset.demo.TreeSetWebVizDemo` |
+| 16 | live web | `-Dexec.mainClass=com.gimlism.translucent.treeset.demo.TreeSetLiveWebVizDemo` |
+| 17 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.treeset.demo.TreeSetLiveReplDemo` |
+| 18 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.treeset.demo.TreeSetLiveControlsDemo` |
+
+### Trie — a radix trie whose edges split and merge as keys arrive and leave
+
+| # | mode | |
+| --- | --- | --- |
+| 19 | text log | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieDemo` |
+| 20 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo` |
+| 21 | web replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieWebVizDemo` |
+| 22 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveWebVizDemo` |
+| 23 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveReplDemo` |
+| 24 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveControlsDemo` |
+
+### Trie compression — how much a radix trie actually saves
+
+| # | mode | |
+| --- | --- | --- |
+| 25 | standard vs radix, side by side | `-Dexec.mainClass=com.gimlism.translucent.trie.compare.CompressionCompareDemo` |
+
+## Running the tests
+
+```
+mvn test
+```
+
+`LauncherCatalogTest` resolves every class named above, and `LauncherReadmeTest` checks this table
+lists them all — so a renamed or missing demo fails the build rather than silently sending you at a
+class that isn't there.
