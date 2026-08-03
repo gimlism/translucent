@@ -89,29 +89,36 @@ public final class Launcher {
      */
     static void run(BufferedReader in, PrintStream out, Consumer<Entry> runner) throws IOException {
         printMenu(out);
+        prompt(out);
         String line;
         while ((line = in.readLine()) != null) { // EOF (Ctrl-D) ends the loop
             String choice = line.strip();
-            if (choice.isEmpty()) {
-                continue; // blank line: silent no-op, matching the structure REPLs
-            }
             if (choice.equalsIgnoreCase("q") || choice.equalsIgnoreCase("quit")) {
                 return;
             }
-            Entry entry = select(choice);
-            if (entry == null) {
+            if (!choice.isEmpty()) { // blank line: no error, just draw the prompt again
+                Entry entry = select(choice);
+                if (entry != null) {
+                    // Print the direct command first: this menu is a shortcut, not a dependency,
+                    // and a student who reads the source should leave it behind after one session.
+                    out.println();
+                    out.println("→ " + commandFor(entry));
+                    out.println("  (run that next time to skip this menu)");
+                    out.println();
+                    runner.accept(entry);
+                    return;
+                }
                 out.println("not a choice: '" + choice + "' — enter 1-" + CATALOG.size() + ", or q to quit");
-                continue;
             }
-            // Print the direct command first: this menu is a shortcut, not a dependency, and a
-            // student who reads the source should be able to leave it behind after one session.
-            out.println();
-            out.println("→ " + commandFor(entry));
-            out.println("  (run that next time to skip this menu)");
-            out.println();
-            runner.accept(entry);
-            return;
+            // Every path that loops re-draws the prompt: without it the cursor sits on a bare line
+            // after the user's Enter and the launcher reads as hung.
+            prompt(out);
         }
+    }
+
+    /** The input prompt. Separate from {@link #printMenu} so every retry can re-draw just this. */
+    private static void prompt(PrintStream out) {
+        out.print("Pick a number (or q to quit): ");
     }
 
     /** The entry {@code choice} names, or {@code null} if it is not a number in range. */
@@ -140,7 +147,6 @@ public final class Launcher {
             out.printf("   %2d  %s%n", i + 1, entry.mode());
         }
         out.println();
-        out.print("Pick a number (or q to quit): ");
     }
 
     /** Invoke the chosen demo's {@code main} in this JVM. */

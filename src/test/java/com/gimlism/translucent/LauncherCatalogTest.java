@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -20,10 +22,19 @@ class LauncherCatalogTest {
         }
     }
 
+    /**
+     * Not just "a method called main": {@code Launcher} invokes it reflectively with a null
+     * receiver, so an instance {@code main} would resolve here and then blow up at runtime — the
+     * one failure this guard exists to make impossible.
+     */
     @Test
     void everyCatalogedClassHasARunnableMain() {
         for (Launcher.Entry e : Launcher.CATALOG) {
-            assertDoesNotThrow(() -> Class.forName(e.fqcn()).getMethod("main", String[].class), e.fqcn());
+            Method main = assertDoesNotThrow(
+                    () -> Class.forName(e.fqcn()).getMethod("main", String[].class), e.fqcn());
+            assertTrue(Modifier.isStatic(main.getModifiers()), e.fqcn() + ": main must be static");
+            assertTrue(Modifier.isPublic(main.getModifiers()), e.fqcn() + ": main must be public");
+            assertEquals(void.class, main.getReturnType(), e.fqcn() + ": main must return void");
         }
     }
 

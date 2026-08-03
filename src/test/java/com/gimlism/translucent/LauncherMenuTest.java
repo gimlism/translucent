@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -85,5 +86,60 @@ class LauncherMenuTest {
     void blankLinesAreIgnoredRatherThanTreatedAsErrors() throws IOException {
         Session s = drive("\n   \nq\n");
         assertFalse(s.out().contains("not a choice"), s.out());
+    }
+
+    /**
+     * A reader that snapshots whatever has actually reached the byte sink at the moment the
+     * launcher blocks for input. {@code PrintStream} auto-flushes on {@code println} but not on a
+     * newline-free {@code print}, so an unflushed prompt sits in the buffer and the terminal looks
+     * hung — invisible when stdin is piped, because JVM exit flushes it after the fact.
+     */
+    private static final class PeekingReader extends BufferedReader {
+        private final ByteArrayOutputStream sink;
+        private final List<String> visibleAtEachRead = new ArrayList<>();
+
+        PeekingReader(String input, ByteArrayOutputStream sink) {
+            super(new StringReader(input));
+            this.sink = sink;
+        }
+
+        @Override
+        public String readLine() throws IOException {
+            visibleAtEachRead.add(sink.toString(StandardCharsets.UTF_8));
+            return super.readLine();
+        }
+    }
+
+    private static PeekingReader driveBuffered(String input) throws IOException {
+        var sink = new ByteArrayOutputStream();
+        // Buffered exactly like System.out (8K, autoflush) so print-without-newline really is held.
+        var out = new PrintStream(new BufferedOutputStream(sink, 8192), true, StandardCharsets.UTF_8);
+        var in = new PeekingReader(input, sink);
+        Launcher.run(in, out, e -> { });
+        return in;
+    }
+
+    @Test
+    void thePromptIsFlushedBeforeTheLauncherBlocksForInput() throws IOException {
+        List<String> visible = driveBuffered("q\n").visibleAtEachRead;
+        assertTrue(visible.get(0).contains("Pick a number"),
+                "prompt was still sitting in the buffer when we blocked on stdin:\n" + visible.get(0));
+    }
+
+    @Test
+    void repromptsAfterAnInvalidChoice() throws IOException {
+        List<String> visible = driveBuffered("banana\nq\n").visibleAtEachRead;
+        assertTrue(visible.get(1).contains("not a choice"), visible.get(1));
+        assertTrue(visible.get(1).lastIndexOf("Pick a number") > visible.get(1).indexOf("not a choice"),
+                "the prompt should be re-shown after the error, not left off-screen:\n" + visible.get(1));
+    }
+
+    @Test
+    void repromptsAfterABlankLine() throws IOException {
+        List<String> visible = driveBuffered("\nq\n").visibleAtEachRead;
+        // Counted as occurrences, not lines: the prompt ends without a newline (the terminal's own
+        // echo of the user's Enter supplies it), so two prompts land on one captured line.
+        int prompts = visible.get(1).split("Pick a number", -1).length - 1;
+        assertTrue(prompts >= 2, "a bare Enter should redraw the prompt, not leave a blank terminal");
     }
 }
