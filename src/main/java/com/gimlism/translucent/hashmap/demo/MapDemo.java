@@ -5,7 +5,7 @@ import com.gimlism.translucent.hashmap.core.TeachingHashMap;
 import java.io.PrintStream;
 
 /** Scripted demonstration of the teaching HashMap event stream. */
-public class Demo {
+public class MapDemo {
     public static void main(String[] args) {
         run(System.out);
     }

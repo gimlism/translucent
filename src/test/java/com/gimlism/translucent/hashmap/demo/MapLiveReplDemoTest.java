@@ -14,11 +14,11 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-class LiveReplDemoTest {
+class MapLiveReplDemoTest {
 
     private String runOn(String input, TeachingHashMap<Integer, String> map) throws IOException {
         var out = new ByteArrayOutputStream();
-        LiveReplDemo.runRepl(new BufferedReader(new StringReader(input)),
+        MapLiveReplDemo.runRepl(new BufferedReader(new StringReader(input)),
                 new PrintStream(out, true, StandardCharsets.UTF_8),
                 map, new MapCommandInterpreter());
         return out.toString(StandardCharsets.UTF_8);

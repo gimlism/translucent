@@ -5,8 +5,8 @@ import com.gimlism.translucent.treeset.viz.AsciiSetVisualizer;
 import java.io.PrintStream;
 
 /**
- * A scripted red-black-tree story rendered as live ASCII trees: inserts that force
- * rotations and recolours, a couple of reads that narrate the comparison walk
+ * Same scripted story as {@link TreeSetDemo}, rendered as live ASCII trees instead of a text log:
+ * inserts that force rotations and recolours, a couple of reads that narrate the comparison walk
  * (a moving cursor, no structural change), and a removal (the removed element
  * simply leaves — nothing is highlighted).
  */

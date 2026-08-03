@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-class WebVizDemoTest {
+class MapWebVizDemoTest {
 
     @Test
     void buildsASelfContainedPageForTheStandardStory() {
-        String html = WebVizDemo.buildHtml();
+        String html = MapWebVizDemo.buildHtml();
         assertTrue(html.toLowerCase().contains("<!doctype html"), "full document");
         assertTrue(html.contains("</html>"), "full document");
         assertTrue(html.contains("\"frames\":["), "carries serialized frames");

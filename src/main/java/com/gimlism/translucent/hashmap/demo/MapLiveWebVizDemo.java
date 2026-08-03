@@ -11,11 +11,11 @@ import java.io.IOException;
 /**
  * The student sandbox: a running {@link TeachingHashMap} whose every mutation renders live in the
  * browser. Write your own {@code put}/{@code remove} calls in the marked block, then run:
- * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.hashmap.demo.LiveWebVizDemo}
+ * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapLiveWebVizDemo}
  * and watch the structure change as your code runs. The server keeps running after your code
  * finishes so the final state stays live and scrubbable — stop it with Ctrl-C.
  */
-public class LiveWebVizDemo {
+public class MapLiveWebVizDemo {
 
     private static final int DEFAULT_PORT = 7070;
 
