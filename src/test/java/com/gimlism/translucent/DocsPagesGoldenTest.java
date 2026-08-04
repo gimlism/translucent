@@ -20,6 +20,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 class DocsPagesGoldenTest {
 
     private static Stream<String> pageNames() {
+        // Deliberately NOT cached, though every invocation below rebuilds all five pages to read one.
+        // The committed bytes come from a first pages() call in RegenerateDocs.main's fresh JVM; these
+        // assertions run against later calls in this one. That gap is what catches a generator acquiring
+        // lazily-initialised static state — a memoised layout, an id counter — whose first call disagrees
+        // with its later ones. Caching to a single call would compare first-to-first and see nothing.
+        // The whole class costs ~30ms, so the coverage is far cheaper than the drift it guards against.
         return RegenerateDocs.pages().keySet().stream();
     }
 
