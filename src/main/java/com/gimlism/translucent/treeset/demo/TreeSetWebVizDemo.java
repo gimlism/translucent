@@ -26,8 +26,12 @@ public class TreeSetWebVizDemo {
         System.out.println("Wrote " + out.toAbsolutePath());
     }
 
-    /** The self-contained HTML replay for the standard story (package-private test seam — no filesystem). */
-    static String buildHtml() {
+    /**
+     * The self-contained HTML replay for the standard story, built without touching the filesystem.
+     * Public because {@code RegenerateDocs} bakes it into {@code docs/viz/} and {@code DocsPagesGoldenTest}
+     * pins the committed bytes to it — the seam has a production consumer now, not just a test.
+     */
+    public static String buildHtml() {
         var set = new TeachingTreeSet<Integer>();
         var rec = new SetRecordingListener();
         set.addListener(rec);

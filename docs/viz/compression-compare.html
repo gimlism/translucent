@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>compression compare — StandardTrie vs RadixTrie</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1b1b1d; --muted:#777; --card:#fff;
+          --node:#eceef2; --nodeb:#c8ccd4; --key:#cfe3ff; --keyb:#5b8def; --hl:#f5a623;
+          --edge:#8a8a8a; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16171a; --fg:#e8e8ea; --muted:#999; --card:#1f2126;
+            --node:#2a2d33; --nodeb:#41454d; --key:#24405f; --keyb:#5b8def; --hl:#f5a623;
+            --edge:#8a8a8a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px system-ui,sans-serif; }
+  #app { max-width: 1100px; margin: 0 auto; padding: 18px; }
+  h1 { font-size: 16px; font-weight:600; margin: 0 0 10px; }
+  #banner { margin-bottom: 14px; }
+  #banner .metrics { font-variant-numeric: tabular-nums; margin-top: 2px; }
+  #legend { color: var(--muted); margin-top: 2px; }
+  #panels { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
+  .panel { flex: 1 1 360px; min-width: 0; }
+  .panel h2 { font-size: 14px; font-weight:600; margin: 0 0 6px; }
+  .stage { background:var(--card); border:1px solid var(--nodeb); border-radius:12px; padding:10px;
+           overflow:auto; }
+  svg text { fill: var(--fg); font: 13px system-ui, sans-serif; }
+  .edge { stroke: var(--edge); stroke-width: 1.5; }
+  .elabel { fill: var(--fg); font-weight:600; }
+  .root { fill: var(--muted); font-weight:600; font-size:12px; }
+  .val { fill: var(--fg); font-variant-numeric: tabular-nums; }
+  .node { fill: var(--node); stroke: var(--nodeb); stroke-width: 1.5; }
+  .node.key { fill: var(--key); stroke: var(--keyb); }
+  .node.ghost { opacity: .4; stroke-dasharray: 4 3; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>compression compare — StandardTrie vs RadixTrie</h1>
+  <div id="banner"></div>
+  <div id="panels">
+    <div class="panel"><h2 id="hstd"></h2><div class="stage"><svg id="svgStd"></svg></div></div>
+    <div class="panel"><h2 id="hrdx"></h2><div class="stage"><svg id="svgRdx"></svg></div></div>
+  </div>
+</div>
+<script>
+"use strict";
+const DATA = {"keys":["she","shell","shore","shy"],"standard":{"nodes":10,"root":{"key":false,"value":null,"absorbed":false,"children":[{"label":"s","target":{"key":false,"value":null,"absorbed":true,"children":[{"label":"h","target":{"key":false,"value":null,"absorbed":false,"children":[{"label":"e","target":{"key":true,"value":"0","absorbed":false,"children":[{"label":"l","target":{"key":false,"value":null,"absorbed":true,"children":[{"label":"l","target":{"key":true,"value":"1","absorbed":false,"children":[]}}]}}]}},{"label":"o","target":{"key":false,"value":null,"absorbed":true,"children":[{"label":"r","target":{"key":false,"value":null,"absorbed":true,"children":[{"label":"e","target":{"key":true,"value":"2","absorbed":false,"children":[]}}]}}]}},{"label":"y","target":{"key":true,"value":"3","absorbed":false,"children":[]}}]}}]}}]}},"radix":{"nodes":6,"root":{"key":false,"value":null,"absorbed":false,"children":[{"label":"sh","target":{"key":false,"value":null,"absorbed":false,"children":[{"label":"e","target":{"key":true,"value":"0","absorbed":false,"children":[{"label":"ll","target":{"key":true,"value":"1","absorbed":false,"children":[]}}]}},{"label":"ore","target":{"key":true,"value":"2","absorbed":false,"children":[]}},{"label":"y","target":{"key":true,"value":"3","absorbed":false,"children":[]}}]}}]}},"saved":4,"pct":40};
+const PAD = 28, ROW_H = 80, X_GAP = 76, R = 13;
+
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+function txt(s) { return s === null ? "∅" : String(s); }
+
+// Two-pass tidy layout (adapted from trie-viz.html): each leaf takes the next x-slot, an internal
+// node centers over its children, y is depth. Static — no highlight/frame concept.
+function layout(root) {
+  const pos = new Map();
+  let leafX = 0, maxDepth = 0;
+  (function place(node, depth) {
+    maxDepth = Math.max(maxDepth, depth);
+    const kids = node.children || [];
+    let x;
+    if (kids.length === 0) { x = leafX++; }
+    else { const xs = kids.map(e => place(e.target, depth + 1)); x = (xs[0] + xs[xs.length - 1]) / 2; }
+    pos.set(node, { x, depth });
+    return x;
+  })(root, 0);
+  return { pos, maxDepth, leaves: Math.max(1, leafX) };
+}
+
+function renderTree(root, svgEl) {
+  const { pos, maxDepth, leaves } = layout(root);
+  const sx = x => PAD + x * X_GAP, sy = d => PAD + d * ROW_H;
+  let body = "";
+  (function edges(node) {
+    const p = pos.get(node);
+    for (const e of (node.children || [])) {
+      const c = pos.get(e.target);
+      body += `<line class="edge" x1="${sx(p.x)}" y1="${sy(p.depth)}" x2="${sx(c.x)}" y2="${sy(c.depth)}"/>`;
+      const mx = (sx(p.x) + sx(c.x)) / 2, my = (sy(p.depth) + sy(c.depth)) / 2;
+      body += `<text class="elabel" x="${mx}" y="${my - 3}" text-anchor="middle">${esc(e.label)}</text>`;
+      edges(e.target);
+    }
+  })(root);
+  for (const [node, p] of pos) {
+    const cls = "node" + (node.key ? " key" : "") + (node.absorbed ? " ghost" : "");
+    body += `<circle class="${cls}" cx="${sx(p.x)}" cy="${sy(p.depth)}" r="${R}"/>`;
+    if (p.depth === 0) {
+      body += `<text class="root" x="${sx(p.x)}" y="${sy(p.depth) - R - 6}" text-anchor="middle">(root)</text>`;
+    }
+    if (node.key) {
+      body += `<text class="val" x="${sx(p.x) + R + 5}" y="${sy(p.depth) + 4}">=${esc(txt(node.value))}</text>`;
+    }
+  }
+  const width = Math.max(320, PAD * 2 + leaves * X_GAP);
+  const height = PAD * 2 + (maxDepth + 1) * ROW_H;
+  svgEl.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svgEl.setAttribute("width", width);
+  svgEl.setAttribute("height", height);
+  svgEl.innerHTML = body;
+}
+
+function render() {
+  if (!DATA) return;
+  document.getElementById("banner").innerHTML =
+    `<div>compression compare: {${esc(DATA.keys.join(", "))}}</div>`
+    + `<div class="metrics">standard = ${DATA.standard.nodes}`
+    + `&nbsp;&nbsp;&nbsp;radix = ${DATA.radix.nodes}`
+    + `&nbsp;&nbsp;&nbsp;saved = ${DATA.saved} (${DATA.pct}%)</div>`
+    + `<div id="legend">dashed / faded = collapsed by radix (${DATA.saved} nodes)</div>`;
+  document.getElementById("hstd").textContent = `standard (${DATA.standard.nodes})`;
+  document.getElementById("hrdx").textContent = `radix (${DATA.radix.nodes})`;
+  renderTree(DATA.standard.root, document.getElementById("svgStd"));
+  renderTree(DATA.radix.root, document.getElementById("svgRdx"));
+}
+render();
+</script>
+</body>
+</html>

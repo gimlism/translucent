@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RadixTrie — replay</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1b1b1d; --muted:#777; --card:#fff;
+          --node:#eceef2; --nodeb:#c8ccd4; --key:#cfe3ff; --keyb:#5b8def; --hl:#f5a623;
+          --edge:#8a8a8a; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16171a; --fg:#e8e8ea; --muted:#999; --card:#1f2126;
+            --node:#2a2d33; --nodeb:#41454d; --key:#24405f; --keyb:#5b8def; --hl:#f5a623;
+            --edge:#8a8a8a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px system-ui,sans-serif; }
+  #app { max-width: 960px; margin: 0 auto; padding: 18px; }
+  h1 { font-size: 16px; font-weight:600; margin: 0 0 12px; }
+  #bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+  button { font:inherit; padding:6px 12px; border:1px solid var(--nodeb); border-radius:8px;
+           background:var(--card); color:var(--fg); cursor:pointer; }
+  button:disabled { opacity:.4; cursor:default; }
+  #counter { color:var(--muted); font-variant-numeric: tabular-nums; }
+  #cmd { font:inherit; padding:6px 10px; border:1px solid var(--nodeb); border-radius:8px;
+         background:var(--card); color:var(--fg); min-width:220px; }
+  #cmdout { color:var(--muted); font-variant-numeric: tabular-nums; }
+  #caption { font-weight:600; min-height:1.4em; margin-bottom:8px; }
+  #stage { background:var(--card); border:1px solid var(--nodeb); border-radius:12px; padding:10px;
+           transition: opacity .18s ease; overflow:auto; }
+  svg text { fill: var(--fg); font: 13px system-ui, sans-serif; }
+  .edge { stroke: var(--edge); stroke-width: 1.5; }
+  .elabel { fill: var(--fg); font-weight:600; }
+  .root { fill: var(--muted); font-weight:600; font-size:12px; }
+  .val { fill: var(--fg); font-variant-numeric: tabular-nums; }
+  .node { fill: var(--node); stroke: var(--nodeb); stroke-width: 1.5; }
+  .node.key { fill: var(--key); stroke: var(--keyb); }
+  .node.hl { stroke: var(--hl); stroke-width: 3.5; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>RadixTrie — web replay</h1>
+  <div id="caption"></div>
+  <div id="bar">
+    <button id="prev">◀ prev</button>
+    <button id="play">▶ play</button>
+    <button id="next">next ▶</button>
+    <span id="counter"></span>
+    <button id="live" hidden></button>
+    <input id="cmd" type="text" placeholder="put shore 1 · get shore · keysWithPrefix sh · help" autocomplete="off" hidden>
+    <button id="run" hidden>Run</button>
+    <span id="cmdout"></span>
+  </div>
+  <div id="stage"><svg id="svg"></svg></div>
+</div>
+<script>
+"use strict";
+const DATA = {"frames":[{"event":{"type":"CreateNode","label":"CREATE \"shore\" -> \"shore\"","highlightPath":"shore"},"trie":{"size":0,"root":{"key":false,"value":null,"children":[{"label":"shore","target":{"key":false,"value":null,"children":[]}}]}}},{"event":{"type":"Put","label":"PUT \"shore\"=1 (new)","highlightPath":"shore"},"trie":{"size":1,"root":{"key":false,"value":null,"children":[{"label":"shore","target":{"key":true,"value":"1","children":[]}}]}}},{"event":{"type":"SplitEdge","label":"SPLIT \"shore\" @ \"sh\" -> \"sh\"","highlightPath":"sh"},"trie":{"size":1,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"CreateNode","label":"CREATE \"e\" -> \"she\"","highlightPath":"she"},"trie":{"size":1,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":false,"value":null,"children":[]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Put","label":"PUT \"she\"=2 (new)","highlightPath":"she"},"trie":{"size":2,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Descend","label":"DESCEND \"sh\" -> \"sh\"","highlightPath":"sh"},"trie":{"size":2,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Descend","label":"DESCEND \"e\" -> \"she\"","highlightPath":"she"},"trie":{"size":2,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"CreateNode","label":"CREATE \"ll\" -> \"shell\"","highlightPath":"shell"},"trie":{"size":2,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[{"label":"ll","target":{"key":false,"value":null,"children":[]}}]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Put","label":"PUT \"shell\"=3 (new)","highlightPath":"shell"},"trie":{"size":3,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[{"label":"ll","target":{"key":true,"value":"3","children":[]}}]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Descend","label":"DESCEND \"sh\" -> \"sh\"","highlightPath":"sh"},"trie":{"size":3,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[{"label":"ll","target":{"key":true,"value":"3","children":[]}}]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Descend","label":"DESCEND \"e\" -> \"she\"","highlightPath":"she"},"trie":{"size":3,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[{"label":"ll","target":{"key":true,"value":"3","children":[]}}]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Descend","label":"DESCEND \"ll\" -> \"shell\"","highlightPath":"shell"},"trie":{"size":3,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[{"label":"ll","target":{"key":true,"value":"3","children":[]}}]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Remove","label":"REMOVE \"shell\" (was 3)","highlightPath":"shell"},"trie":{"size":2,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[{"label":"ll","target":{"key":false,"value":null,"children":[]}}]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Prune","label":"PRUNE \"ll\" \u003c- \"shell\"","highlightPath":"she"},"trie":{"size":2,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Descend","label":"DESCEND \"sh\" -> \"sh\"","highlightPath":"sh"},"trie":{"size":2,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Descend","label":"DESCEND \"e\" -> \"she\"","highlightPath":"she"},"trie":{"size":2,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":true,"value":"2","children":[]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Remove","label":"REMOVE \"she\" (was 2)","highlightPath":"she"},"trie":{"size":1,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"e","target":{"key":false,"value":null,"children":[]}},{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"Prune","label":"PRUNE \"e\" \u003c- \"she\"","highlightPath":"sh"},"trie":{"size":1,"root":{"key":false,"value":null,"children":[{"label":"sh","target":{"key":false,"value":null,"children":[{"label":"ore","target":{"key":true,"value":"1","children":[]}}]}}]}}},{"event":{"type":"MergeEdge","label":"MERGE \"shore\" -> \"shore\"","highlightPath":"shore"},"trie":{"size":1,"root":{"key":false,"value":null,"children":[{"label":"shore","target":{"key":true,"value":"1","children":[]}}]}}}]};
+const LIVE = false;         // Slice A: baked false; SSE branch arrives in Slice B
+const CONTROLS = false; // Slice A: baked false; command box arrives in Slice D
+const frames = (DATA && DATA.frames) || [];
+const svg = document.getElementById("svg");
+const stage = document.getElementById("stage");
+const caption = document.getElementById("caption");
+const counter = document.getElementById("counter");
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
+const playBtn = document.getElementById("play");
+const liveBtn = document.getElementById("live");
+const cmdInput = document.getElementById("cmd");
+const runBtn = document.getElementById("run");
+const cmdOut = document.getElementById("cmdout");
+
+const PAD = 28, ROW_H = 80, X_GAP = 76, R = 13;
+let idx = 0, timer = null, followTail = true;
+
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+function txt(s) { return s === null ? "∅" : String(s); }
+
+// Two-pass tidy layout: each leaf takes the next x-slot, an internal node centers over its children;
+// y is depth. Returns node -> {x, depth, path} plus tree extent. `path` is the root-to-node label
+// concatenation, matched against event.highlightPath (mirrors AsciiTrieRenderer's highlight).
+function layout(root) {
+  const pos = new Map();
+  let leafX = 0, maxDepth = 0;
+  function place(node, depth, path) {
+    maxDepth = Math.max(maxDepth, depth);
+    const kids = node.children || [];
+    let x;
+    if (kids.length === 0) {
+      x = leafX++;
+    } else {
+      const xs = kids.map(e => place(e.target, depth + 1, path + e.label));
+      x = (xs[0] + xs[xs.length - 1]) / 2;
+    }
+    pos.set(node, { x, depth, path });
+    return x;
+  }
+  place(root, 0, "");
+  return { pos, maxDepth, leaves: Math.max(1, leafX) };
+}
+
+function renderFrame(f) {
+  const trie = f.trie, ev = f.event;
+  const { pos, maxDepth, leaves } = layout(trie.root);
+  const sx = x => PAD + x * X_GAP;
+  const sy = d => PAD + d * ROW_H;
+
+  let body = "";
+  // edges + edge labels first, so nodes draw on top of them
+  (function edges(node) {
+    const p = pos.get(node);
+    for (const e of (node.children || [])) {
+      const c = pos.get(e.target);
+      body += `<line class="edge" x1="${sx(p.x)}" y1="${sy(p.depth)}" x2="${sx(c.x)}" y2="${sy(c.depth)}"/>`;
+      const mx = (sx(p.x) + sx(c.x)) / 2, my = (sy(p.depth) + sy(c.depth)) / 2;
+      body += `<text class="elabel" x="${mx}" y="${my - 3}" text-anchor="middle">${esc(e.label)}</text>`;
+      edges(e.target);
+    }
+  })(trie.root);
+
+  // nodes
+  for (const [node, p] of pos) {
+    const hl = ev.highlightPath != null && p.path === ev.highlightPath;
+    const cls = "node" + (node.key ? " key" : "") + (hl ? " hl" : "");
+    body += `<circle class="${cls}" cx="${sx(p.x)}" cy="${sy(p.depth)}" r="${R}"/>`;
+    if (p.depth === 0) {
+      body += `<text class="root" x="${sx(p.x)}" y="${sy(p.depth) - R - 6}" text-anchor="middle">(root)</text>`;
+    }
+    if (node.key) {
+      body += `<text class="val" x="${sx(p.x) + R + 5}" y="${sy(p.depth) + 4}">=${esc(txt(node.value))}</text>`;
+    }
+  }
+
+  const width = Math.max(320, PAD * 2 + leaves * X_GAP);
+  const height = PAD * 2 + (maxDepth + 1) * ROW_H;
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.innerHTML = body;
+}
+
+function refreshMeta() {
+  counter.textContent = frames.length ? `frame ${idx + 1} / ${frames.length}` : "";
+  prevBtn.disabled = idx <= 0;
+  nextBtn.disabled = idx >= frames.length - 1;
+  const behind = Math.max(0, frames.length - 1 - idx);
+  liveBtn.hidden = !(LIVE && behind > 0);
+  liveBtn.textContent = `⏭ ${behind} new — jump to live`;
+}
+
+function render() {
+  const f = frames[idx];
+  caption.textContent = f ? f.event.label : (LIVE ? "(waiting for live events…)" : "(no events to replay)");
+  if (f) renderFrame(f); else svg.innerHTML = "";
+  stage.style.opacity = "0";
+  requestAnimationFrame(() => requestAnimationFrame(() => { stage.style.opacity = "1"; }));
+  refreshMeta();
+}
+
+function go(n) { idx = Math.max(0, Math.min(frames.length - 1, n)); followTail = idx >= frames.length - 1; render(); }
+function stop() { if (timer) { clearInterval(timer); timer = null; playBtn.textContent = "▶ play"; } }
+prevBtn.onclick = () => { stop(); go(idx - 1); };
+nextBtn.onclick = () => { stop(); go(idx + 1); };
+playBtn.onclick = () => {
+  if (timer) { stop(); return; }
+  if (idx >= frames.length - 1) idx = 0;
+  playBtn.textContent = "⏸ pause";
+  timer = setInterval(() => { if (idx >= frames.length - 1) stop(); else go(idx + 1); }, 900);
+};
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { stop(); go(idx + 1); }
+  else if (e.key === "ArrowLeft") { stop(); go(idx - 1); }
+});
+liveBtn.onclick = () => { stop(); go(frames.length - 1); };
+
+if (LIVE) {
+  const es = new EventSource("/events");
+  es.onmessage = ev => {
+    let f;
+    try { f = JSON.parse(ev.data); } catch (_) { return; }
+    frames.push(f);
+    if (followTail) go(frames.length - 1);   // full render + cross-fade
+    else refreshMeta();                        // studying an older frame: badge only
+  };
+  if (CONTROLS) {
+    cmdInput.hidden = false;
+    runBtn.hidden = false;
+    const submit = () => {
+      const line = cmdInput.value;
+      if (!line.trim()) return;
+      cmdInput.value = "";
+      fetch("/command", { method: "POST", body: line })
+        .then(r => r.text())
+        .then(msg => { cmdOut.textContent = msg; })
+        .catch(() => { cmdOut.textContent = "(command failed to reach the server)"; });
+    };
+    runBtn.onclick = submit;
+    cmdInput.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+  }
+}
+render();
+</script>
+</body>
+</html>
