@@ -3,6 +3,7 @@ package com.gimlism.translucent.hashmap.core;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Locale;
 import com.gimlism.translucent.hashmap.viz.MapWebExporter;
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +12,7 @@ class MapWebExporterTest {
     @Test
     void injectsJsonIntoASelfContainedDocument() {
         String html = MapWebExporter.toHtml("{\"frames\":[]}");
-        assertTrue(html.toLowerCase().contains("<!doctype html"), "must be a full document");
+        assertTrue(html.toLowerCase(Locale.ROOT).contains("<!doctype html"), "must be a full document");
         assertTrue(html.contains("</html>"), "must be a full document");
         assertTrue(html.contains("{\"frames\":[]}"), "must contain the injected JSON");
     }

@@ -3,6 +3,7 @@ package com.gimlism.translucent.arraylist.viz;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 
 class ListWebExporterLiveTest {
@@ -10,7 +11,7 @@ class ListWebExporterLiveTest {
     @Test
     void liveHtmlHasNoBakedFramesAndOpensAnEventSource() {
         String html = ListWebExporter.liveHtml();
-        assertTrue(html.toLowerCase().contains("<!doctype html"), "full document");
+        assertTrue(html.toLowerCase(Locale.ROOT).contains("<!doctype html"), "full document");
         assertFalse(html.contains("/*__FRAMES__*/"), "frames token replaced");
         assertFalse(html.contains("/*__LIVE__*/"), "live token replaced");
         assertTrue(html.contains("const DATA = null;"), "no baked frames in live mode");
