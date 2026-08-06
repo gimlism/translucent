@@ -27,6 +27,7 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -145,6 +146,7 @@ class GuideEventMapTest {
         runner.call("add/1", () -> list.add(2));
         runner.call("add/1", () -> list.add(3));      // capacity 2 exceeded — expect a Grow here
         runner.call("add/2", () -> list.add(0, 9));
+        runner.call("add/2", () -> list.add(list.size(), 7)); // index == size -> delegates to append
         runner.call("set/2", () -> list.set(0, 8));
         runner.call("remove/1", () -> list.remove(0));
         runner.call("get/1", () -> list.get(0));
@@ -207,11 +209,13 @@ class GuideEventMapTest {
         for (int value : new int[] {10, 20, 30, 40, 50}) {
             runner.call("add/1", () -> set.add(value));
         }
+        runner.call("add/1", () -> set.add(20));   // already present -> Compare only, no Add
         runner.call("contains/1", () -> set.contains(20));
         runner.call("floor/1", () -> set.floor(35));
         // remove(30) turns out to be quiet on this tree (no fixup needed); remove(10) is the
         // deletion that forces a rebalance, so it is the one that exercises Rotation/Recolor.
         runner.call("remove/1", () -> set.remove(10));
+        runner.call("remove/1", () -> set.remove(99)); // absent -> narrated Compares, no Remove
         return runner;
     }
 
@@ -244,5 +248,22 @@ class GuideEventMapTest {
     @Test
     void trieGuideMatchesWhatTheTrieEmits() throws IOException {
         assertGuideMatches(GUIDE_DIR.resolve("trie.md"), RadixTrie.class, trieScenario().emitted());
+    }
+
+    // The four tests above each hard-code one filename under GUIDE_DIR. Nothing forces that list to
+    // stay exhaustive if a fifth guide is added later, so enumerate the directory here and pin its
+    // contents directly — a new guide with no scenario would otherwise ship untested.
+    @Test
+    void guideDirHasExactlyOneFileForEachDocumentedStructure() throws IOException {
+        Set<String> names = new TreeSet<>();
+        try (Stream<Path> files = Files.list(GUIDE_DIR)) {
+            files.map(p -> p.getFileName().toString())
+                    .filter(n -> n.endsWith(".md"))
+                    .forEach(names::add);
+        }
+        assertEquals(Set.of("list.md", "map.md", "treeset.md", "trie.md"), names,
+                GUIDE_DIR + " contains a different set of guide files than this test expects — "
+                        + "add a *GuideMatchesWhatTheXEmits test (and scenario) for any new guide, "
+                        + "then update this test's expected set");
     }
 }

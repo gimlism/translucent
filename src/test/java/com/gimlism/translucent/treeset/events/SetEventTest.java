@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.gimlism.translucent.substrate.events.StructureEvent;
 import com.gimlism.translucent.substrate.rbtree.Color;
 import com.gimlism.translucent.substrate.rbtree.Direction;
-import com.gimlism.translucent.substrate.events.StructureEvent;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
 

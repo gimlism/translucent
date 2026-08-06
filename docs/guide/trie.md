@@ -24,10 +24,10 @@ appears, always comes before `CreateNode`, never after.
 `RadixTrie.remove` buffers the walk's edges and narrates them as `Descend` only once it knows the
 remove will actually happen, then emits `Remove` before touching the tree's shape — so `Remove`
 always precedes whatever tidying follows, never the reverse. What tidying happens depends on what's
-left where the key used to be, and there are two distinct, mutually exclusive shapes: if the
-now-non-key node still has exactly one child, `remove`'s own "absorb" branch calls the shared
-`mergeWithChild` helper directly and returns — `MergeEdge` fires with **no** `Prune` at all. Otherwise
-the removed node was a leaf, so it gets unhooked from its parent first (`Prune`) — and only that can
+left where the key used to be, and where any happens it takes one of two mutually exclusive shapes:
+if the now-non-key node still has exactly one child, `remove`'s own "absorb" branch calls the shared
+`mergeWithChild` helper directly and returns — `MergeEdge` fires with **no** `Prune` at all. Otherwise,
+if it is now a leaf, it gets unhooked from its parent first (`Prune`) — and only that can
 leave the parent non-key with exactly one child of its own, which is what then makes the parent call
 `mergeWithChild` on itself (`MergeEdge`). So whenever `MergeEdge` follows a `Prune` in the same
 `remove`, it does so *because* that `Prune` just created the one-child shape it depends on — it is

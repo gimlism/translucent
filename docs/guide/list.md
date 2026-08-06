@@ -7,7 +7,7 @@ A growable array: an object array plus a size, copied into a bigger array when i
 | you call | you see, in order |
 | --- | --- |
 | `add(element)` | `Grow`? → `Append` |
-| `add(index, element)` | `Grow`? → `Shift`×n → `Insert` |
+| `add(index, element)` | `Grow`? → (`Shift`×n → `Insert`, or `Append` when `index == size`) |
 | `set(index, element)` | `Set` |
 | `remove(index)` | `Shift`×n → `RemoveAt` |
 | `get(index)` | nothing — reads are silent |
