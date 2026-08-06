@@ -13,6 +13,8 @@ import com.gimlism.translucent.substrate.events.StructureEvent;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
 import com.gimlism.translucent.treeset.core.TeachingTreeSet;
 import com.gimlism.translucent.treeset.events.SetEvent;
+import com.gimlism.translucent.trie.core.RadixTrie;
+import com.gimlism.translucent.trie.events.TrieEvent;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -217,5 +219,30 @@ class GuideEventMapTest {
     void treeSetGuideMatchesWhatTheSetEmits() throws IOException {
         assertGuideMatches(GUIDE_DIR.resolve("treeset.md"), TeachingTreeSet.class,
                 treeSetScenario().emitted());
+    }
+
+    private static Runner<TrieEvent> trieScenario() {
+        RadixTrie<Integer> trie = new RadixTrie<>();
+        Runner<TrieEvent> runner = new Runner<>(trie::addListener);
+        // "shore" diverges from "shell" partway along its edge, which is the only way to reach
+        // SplitEdge; the split leaves a non-key "sh" node with three children ('e' -> the old
+        // "shell" chain, 'o' -> "shore", 'y' -> "shy" once inserted).
+        runner.call("put/2", () -> trie.put("shell", 1));
+        runner.call("put/2", () -> trie.put("shore", 2));
+        runner.call("put/2", () -> trie.put("shy", 3));
+        runner.call("get/1", () -> trie.get("shell"));
+        runner.call("containsKey/1", () -> trie.containsKey("shore"));
+        // Removing "shy" first only prunes it — "sh" still has two children afterwards, so it
+        // cannot merge. Removing "shore" next prunes it too, but that's the child that drops "sh"
+        // to exactly one remaining child ("shell"'s chain), which is what triggers the merge back
+        // into a single edge. Both calls are tagged remove/1, so their events union together.
+        runner.call("remove/1", () -> trie.remove("shy"));
+        runner.call("remove/1", () -> trie.remove("shore"));
+        return runner;
+    }
+
+    @Test
+    void trieGuideMatchesWhatTheTrieEmits() throws IOException {
+        assertGuideMatches(GUIDE_DIR.resolve("trie.md"), RadixTrie.class, trieScenario().emitted());
     }
 }
