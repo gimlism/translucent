@@ -11,6 +11,8 @@ import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.substrate.events.RecordingListener;
 import com.gimlism.translucent.substrate.events.StructureEvent;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
+import com.gimlism.translucent.treeset.core.TeachingTreeSet;
+import com.gimlism.translucent.treeset.events.SetEvent;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -193,5 +195,27 @@ class GuideEventMapTest {
     void mapGuideMatchesWhatTheMapEmits() throws IOException {
         assertGuideMatches(GUIDE_DIR.resolve("map.md"), TeachingHashMap.class,
                 mapScenario().emitted());
+    }
+
+    private static Runner<SetEvent> treeSetScenario() {
+        TeachingTreeSet<Integer> set = new TeachingTreeSet<>();
+        Runner<SetEvent> runner = new Runner<>(set::addListener);
+        // An ascending run is the worst case for a red-black tree: every insert leans right, so
+        // rotations and recolours are forced rather than incidental.
+        for (int value : new int[] {10, 20, 30, 40, 50}) {
+            runner.call("add/1", () -> set.add(value));
+        }
+        runner.call("contains/1", () -> set.contains(20));
+        runner.call("floor/1", () -> set.floor(35));
+        // remove(30) turns out to be quiet on this tree (no fixup needed); remove(10) is the
+        // deletion that forces a rebalance, so it is the one that exercises Rotation/Recolor.
+        runner.call("remove/1", () -> set.remove(10));
+        return runner;
+    }
+
+    @Test
+    void treeSetGuideMatchesWhatTheSetEmits() throws IOException {
+        assertGuideMatches(GUIDE_DIR.resolve("treeset.md"), TeachingTreeSet.class,
+                treeSetScenario().emitted());
     }
 }
