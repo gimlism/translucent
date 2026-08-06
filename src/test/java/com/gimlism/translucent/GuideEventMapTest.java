@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.gimlism.translucent.arraylist.core.TeachingArrayList;
 import com.gimlism.translucent.arraylist.events.ListEvent;
+import com.gimlism.translucent.hashmap.core.TeachingHashMap;
+import com.gimlism.translucent.hashmap.events.MapEvent;
 import com.gimlism.translucent.substrate.events.RecordingListener;
 import com.gimlism.translucent.substrate.events.StructureEvent;
 import com.gimlism.translucent.substrate.events.StructureEventListener;
@@ -149,5 +151,47 @@ class GuideEventMapTest {
     void listGuideMatchesWhatTheListEmits() throws IOException {
         assertGuideMatches(GUIDE_DIR.resolve("list.md"), TeachingArrayList.class,
                 listScenario().emitted());
+    }
+
+    /** Every instance lands in one bucket, so a chain forms and then treeifies. */
+    private record CollidingKey(int id) {
+        @Override
+        public int hashCode() {
+            return 42;
+        }
+    }
+
+    private static Runner<MapEvent> mapScenario() {
+        // treeifyThreshold 8, untreeifyThreshold 2, minTreeifyCapacity 8: the 8th colliding put
+        // builds the tree; capacity 16 with 8 entries stays under 0.75 load, so nothing resizes.
+        TeachingHashMap<CollidingKey, String> colliding =
+                new TeachingHashMap<>(16, 0.75f, 8, 2, 8);
+        Runner<MapEvent> runner = new Runner<>(colliding::addListener);
+        for (int i = 0; i < 8; i++) {
+            int n = i;
+            runner.call("put/2", () -> colliding.put(new CollidingKey(n), "v" + n));
+        }
+        // Drain the tree back down past untreeifyThreshold to reach Untreeify.
+        for (int i = 7; i >= 1; i--) {
+            int n = i;
+            runner.call("remove/1", () -> colliding.remove(new CollidingKey(n)));
+        }
+        runner.call("get/1", () -> colliding.get(new CollidingKey(0)));
+
+        // A second, deliberately cramped map: distinct keys crossing the load factor force Resize,
+        // which the colliding map never does. Same event type, so it unions into the same tally.
+        TeachingHashMap<Integer, String> cramped = new TeachingHashMap<>(2, 0.75f, 8, 2, 8);
+        runner.also(cramped::addListener);
+        for (int i = 0; i < 6; i++) {
+            int n = i;
+            runner.call("put/2", () -> cramped.put(n, "v" + n));
+        }
+        return runner;
+    }
+
+    @Test
+    void mapGuideMatchesWhatTheMapEmits() throws IOException {
+        assertGuideMatches(GUIDE_DIR.resolve("map.md"), TeachingHashMap.class,
+                mapScenario().emitted());
     }
 }
