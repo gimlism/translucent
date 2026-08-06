@@ -114,6 +114,9 @@ class GuideEventMapTest {
         }
     }
 
+    // This assertion fires only when keySet equality passes in assertGuideMatches, so it catches
+    // the case where a scenario call() key literal names a method that does not exist. It guards
+    // against the scenario key drifting from the method it invokes after a src/main rename.
     private static void assertMethodExists(Class<?> type, String key, Path md) {
         String[] parts = key.split("/");
         int arity = Integer.parseInt(parts[1]);
