@@ -31,9 +31,9 @@ skips `Add`: the walk's `Compare`s still narrate the search, but once it runs of
 match `remove` returns `false` before any fixup or `Remove` fires.
 
 ★ **This tree narrates its failures.** `TeachingHashMap.remove` and `RadixTrie.remove` on an absent
-key emit nothing at all, so a failed removal there is invisible. This set is the odd one out: its
-absent-element `add` and `remove` both still fire their `Compare`s, so it's the only structure in the
-library where you can watch a write fail.
+key emit nothing at all, so a failed removal there is invisible. This set is the odd one out: a
+duplicate `add` and an absent-element `remove` both still fire their `Compare`s, so it's the only
+structure in the library where you can watch a write fail.
 
 There is no fixed order between `Rotation` and `Recolor` themselves. `RedBlackTree.insertFixup` and
 `.deleteFixup` each walk up the tree recolouring and rotating as they go, and which comes first (or
