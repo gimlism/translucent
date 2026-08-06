@@ -182,6 +182,9 @@ class GuideEventMapTest {
             int n = i;
             runner.call("remove/1", () -> colliding.remove(new CollidingKey(n)));
         }
+        // Absent key -> doRemove finds nothing and emits nothing; unions into the same tally as the
+        // removes above, so it can only shrink the documented set if it fires something new.
+        runner.call("remove/1", () -> colliding.remove(new CollidingKey(99)));
         runner.call("get/1", () -> colliding.get(new CollidingKey(0)));
 
         // A second, deliberately cramped map: distinct keys crossing the load factor force Resize,
@@ -242,6 +245,9 @@ class GuideEventMapTest {
         // into a single edge. Both calls are tagged remove/1, so their events union together.
         runner.call("remove/1", () -> trie.remove("shy"));
         runner.call("remove/1", () -> trie.remove("shore"));
+        // Absent key -> remove bails out before emitting anything; unions into the same tally as the
+        // removes above, so it can only shrink the documented set if it fires something new.
+        runner.call("remove/1", () -> trie.remove("nope"));
         return runner;
     }
 

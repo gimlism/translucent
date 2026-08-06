@@ -8,7 +8,7 @@ treeify threshold.
 | you call | you see, in order |
 | --- | --- |
 | `put(key, value)` | `Put` always fires; `Collision`?, `Treeify`?, `Rotation`?, `Recolor`?, `Resize`? also appear, in an order that depends on the bucket — see below |
-| `remove(key)` | `Untreeify`? or `Rotation`?/`Recolor`? → `Remove` |
+| `remove(key)` | `Untreeify`? or `Rotation`?/`Recolor`? → `Remove`? |
 | `get(key)` | nothing — reads are silent |
 
 Where the rest land depends on the bucket a new key falls into. Landing in a plain chain: `Put`
@@ -22,7 +22,9 @@ whole table doubles, rehashing every entry.
 
 For `remove`, a tree bin either shrinks back into a chain (`Untreeify`) or stays a tree and
 rebalances (`Rotation`/`Recolor`) — never both — and either way that happens before `Remove`. A
-plain chain bin only ever emits `Remove`.
+plain chain bin only ever emits `Remove`. Removing a key that isn't there fires none of this:
+`doRemove` walks the bin, finds no match, and returns before it ever reaches the code that emits
+`Remove` — a failed removal here is silent, tree bin or chain alike.
 
 `Rotation` and `Recolor` do not appear anywhere in `put`'s or `remove`'s source. They arrive from
 the red-black sink callbacks the map installs, which is why this table is built by running the code

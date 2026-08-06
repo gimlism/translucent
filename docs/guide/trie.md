@@ -8,7 +8,7 @@ chain with no branching is stored as one edge.
 | you call | you see, in order |
 | --- | --- |
 | `put(key, value)` | `Descend`×n → `SplitEdge`? → `CreateNode`? → `Put` |
-| `remove(key)` | `Descend`×n → `Remove` → `Prune`? → `MergeEdge`? |
+| `remove(key)` | `Descend`?×n → `Remove`? → `Prune`? → `MergeEdge`? |
 | `get(key)` | nothing — reads are silent |
 | `containsKey(key)` | nothing — reads are silent |
 
@@ -32,6 +32,12 @@ leave the parent non-key with exactly one child of its own, which is what then m
 `mergeWithChild` on itself (`MergeEdge`). So whenever `MergeEdge` follows a `Prune` in the same
 `remove`, it does so *because* that `Prune` just created the one-child shape it depends on — it is
 never independent of the `Prune` that preceded it.
+
+Removing a key that isn't there fires nothing at all: if the walk falls off the edges (a child is
+missing, or the next edge doesn't match) or lands on a node that exists but was never a key, `remove`
+returns before the buffered walk is ever narrated — no `Descend`, no `Remove`, and so no tidying
+either. The buffering is what makes this possible: a no-op remove leaves no trace, the same way an
+absent-key `TeachingHashMap.remove` does (see `docs/guide/map.md`).
 
 `get` and `containsKey` are overridden here rather than inherited, but neither emits — both delegate
 to the same silent `find`, which walks edges without narrating any of them. `TeachingTreeSet.contains`,
