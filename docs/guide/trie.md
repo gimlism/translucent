@@ -8,9 +8,11 @@ chain with no branching is stored as one edge.
 | you call | you see, in order |
 | --- | --- |
 | `put(key, value)` | `Descend`×n → `SplitEdge`? → `CreateNode`? → `Put` |
-| `remove(key)` | `Descend`?×n → `Remove`? → `Prune`? → `MergeEdge`? |
+| `remove(key)` | `Descend`×n → `Remove`? → `Prune`? → `MergeEdge`? |
 | `get(key)` | nothing — reads are silent |
 | `containsKey(key)` | nothing — reads are silent |
+
+In the table above, `×n` means the event fires once per step and may not occur at all, while `?` marks conditionally-firing operations.
 
 `RadixTrie.put` walks one edge at a time: a full match against an existing edge emits `Descend` and
 moves on to the next edge, so `Descend` fires once per edge fully consumed before anything else
