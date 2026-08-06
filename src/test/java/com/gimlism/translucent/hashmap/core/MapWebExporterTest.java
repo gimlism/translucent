@@ -3,8 +3,8 @@ package com.gimlism.translucent.hashmap.core;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Locale;
 import com.gimlism.translucent.hashmap.viz.MapWebExporter;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 
 class MapWebExporterTest {
