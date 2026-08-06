@@ -7,18 +7,26 @@ treeify threshold.
 
 | you call | you see, in order |
 | --- | --- |
-| `put(key, value)` | `Collision`? → `Put` → `Treeify`? → `Rotation`? → `Recolor`? → `Resize`? |
-| `remove(key)` | `Remove` → `Untreeify`? → `Rotation`? → `Recolor`? |
+| `put(key, value)` | `Put` always fires; `Collision`?, `Treeify`?, `Rotation`?, `Recolor`?, `Resize`? also appear, in an order that depends on the bucket — see below |
+| `remove(key)` | `Untreeify`? or `Rotation`?/`Recolor`? → `Remove` |
 | `get(key)` | nothing — reads are silent |
 
-`Collision` fires when the bucket already holds something — with a good hash it is rare, which is
-why the demo uses keys that collide on purpose. `Treeify` fires when one chain gets long enough to
-become a tree, and the `Rotation`/`Recolor` that follow are the red-black tree balancing itself.
-`Resize` fires when the whole table doubles, rehashing every entry.
+Where the rest land depends on the bucket a new key falls into. Landing in a plain chain: `Put`
+fires first (the entry now exists), then `Collision`? if the bucket wasn't empty, then `Treeify`? if
+the chain just crossed the threshold — and if it treeifies, `Rotation`/`Recolor` follow as the tree
+is built. Landing in a bucket that's *already* a tree is the other way round: the red-black insert's
+`Rotation`/`Recolor` fire first, rebalancing around the new node, and only then `Put` — there's no
+`Collision` or `Treeify` here, since the bucket was treeified on some earlier put. Replacing an
+existing key's value is quietest of all: only `Put` fires. `Resize` fires last of all, when the
+whole table doubles, rehashing every entry.
 
-`Rotation` and `Recolor` do not appear anywhere in `put`'s source. They arrive from the red-black
-sink callbacks the map installs, which is why this table is built by running the code rather than
-reading it.
+For `remove`, a tree bin either shrinks back into a chain (`Untreeify`) or stays a tree and
+rebalances (`Rotation`/`Recolor`) — never both — and either way that happens before `Remove`. A
+plain chain bin only ever emits `Remove`.
+
+`Rotation` and `Recolor` do not appear anywhere in `put`'s or `remove`'s source. They arrive from
+the red-black sink callbacks the map installs, which is why this table is built by running the code
+rather than reading it.
 
 ## Read alongside
 
