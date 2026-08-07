@@ -7,6 +7,24 @@ for teaching, each narrating what it does as it does it. The narration is emitte
 `put()`/`add()`/`remove()` paths, so what you watch is the algorithm running, not an animation of
 it.
 
+## Watch one without installing anything
+
+Download this repo (or clone it) and open any of these files in a browser. They need no JDK, no
+Maven, and no server — each one carries its own data and styling:
+
+| page | structure |
+| --- | --- |
+| `docs/viz/list.html` | ArrayList |
+| `docs/viz/map.html` | HashMap |
+| `docs/viz/treeset.html` | TreeSet |
+| `docs/viz/trie.html` | Trie |
+| `docs/viz/compression-compare.html` | a fat trie beside its compressed form |
+
+Each replays a real run: step through it, play it, scrub back. The events were recorded from the
+actual `put()`/`add()` path, not scripted for the page.
+
+Everything below needs a JDK.
+
 ## Quick start
 
 Requires **JDK 21** and **Maven**.
@@ -50,6 +68,8 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo
 | 5 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.arraylist.demo.ListLiveReplDemo` |
 | 6 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.arraylist.demo.ListLiveControlsDemo` |
 
+📖 [What each ArrayList method makes you see](docs/guide/list.md)
+
 ### HashMap — buckets, chains, and a red-black tree when a chain gets long
 
 | # | mode | |
@@ -60,6 +80,8 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo
 | 10 | live web | `-Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapLiveWebVizDemo` |
 | 11 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapLiveReplDemo` |
 | 12 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.hashmap.demo.MapLiveControlsDemo` |
+
+📖 [What each HashMap method makes you see](docs/guide/map.md)
 
 ### TreeSet — a red-black tree that rotates and recolours to stay balanced
 
@@ -72,6 +94,8 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo
 | 17 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.treeset.demo.TreeSetLiveReplDemo` |
 | 18 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.treeset.demo.TreeSetLiveControlsDemo` |
 
+📖 [What each TreeSet method makes you see](docs/guide/treeset.md)
+
 ### Trie — a radix trie whose edges split and merge as keys arrive and leave
 
 | # | mode | |
@@ -82,6 +106,8 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo
 | 22 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveWebVizDemo` |
 | 23 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveReplDemo` |
 | 24 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveControlsDemo` |
+
+📖 [What each Trie method makes you see](docs/guide/trie.md)
 
 ### Trie compression — how much a radix trie actually saves
 

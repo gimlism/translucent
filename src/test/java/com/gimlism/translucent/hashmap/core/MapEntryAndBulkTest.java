@@ -13,6 +13,7 @@ import com.gimlism.translucent.hashmap.events.Put;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -96,7 +97,7 @@ class MapEntryAndBulkTest {
         var rec = new MapRecordingListener();
         map.addListener(rec);
 
-        map.replaceAll((k, v) -> v.toUpperCase());
+        map.replaceAll((k, v) -> v.toUpperCase(Locale.ROOT));
 
         assertEquals("A", map.get(1));
         assertEquals("B", map.get(2));
