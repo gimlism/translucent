@@ -1,5 +1,6 @@
 package com.gimlism.translucent.substrate.viz;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,5 +55,31 @@ class WebVizTemplateTest {
         var e = assertThrows(IllegalStateException.class,
                 () -> WebVizTemplate.injectStatic("/web/webviztemplate-missing.html", "x"));
         assertTrue(e.getMessage().contains("/*__DATA__*/"), e.getMessage());
+    }
+
+    @Test
+    void injectTokenSubstitutesAnArbitraryToken() {
+        String out = WebVizTemplate.injectToken("/web/webviztemplate-static.html", "/*__DATA__*/", "9");
+        assertTrue(out.contains("DATA=9"), out);
+        assertFalse(out.contains("/*__"), "no token left behind");
+    }
+
+    @Test
+    void injectTokenMissingTokenThrowsNamingIt() {
+        var e = assertThrows(IllegalStateException.class,
+                () -> WebVizTemplate.injectToken("/web/webviztemplate-static.html", "<!--__PAGES__-->", "x"));
+        assertTrue(e.getMessage().contains("<!--__PAGES__-->"), e.getMessage());
+    }
+
+    /**
+     * The delegation is the point: one classpath reader, one missing-token message. If these two
+     * ever diverge, the generic helper has grown a second behaviour and the five baked viz goldens
+     * are no longer guaranteed byte-identical.
+     */
+    @Test
+    void injectStaticIsInjectTokenOnTheDataToken() {
+        String viaStatic = WebVizTemplate.injectStatic("/web/webviztemplate-static.html", "{\"x\":1}");
+        String viaToken = WebVizTemplate.injectToken("/web/webviztemplate-static.html", "/*__DATA__*/", "{\"x\":1}");
+        assertEquals(viaToken, viaStatic);
     }
 }
