@@ -198,14 +198,29 @@ The 25-row demo grid stays byte-unchanged, keeping this PR's diff clear of that 
 
 - **`DocsPagesGoldenTest`** — now covers six pages including `docs/index.html`, via D4's path keys.
   No new test needed for the index's bytes.
-- **`SiteIndexTest`** — every `docs/guide/*.md` present on disk appears on the generated index. This
-  is the guard D4's list cannot provide: the `Page` list knows the guides it was told about, so only
-  a filesystem check catches a fifth guide being added and never linked.
+- **`SiteIndexTest`** — two cases, one per direction, both comparing the filesystem against the
+  generated page:
+  - every `docs/guide/*.md` on disk is linked from the index
+  - every `docs/viz/*.html` on disk is linked from the index
+
+  ★ **What this closes that the golden cannot.** The golden compares committed bytes to generator
+  output, so it is red the moment a `Page` is added without regenerating — but it only ever asks
+  about files the `Page` list already names. An `.html` sitting in `docs/viz/` that no `Page`
+  claims is linked from nowhere and passes everything. Only a filesystem check sees an orphan,
+  and it is the same shape in both directions, which is why the guides and the viz pages get one
+  case each rather than one guard and one blind spot.
 - **`LicenseTest`** — `LICENSE` exists, is MIT (asserted on the permission grant text, not just the
-  title line), and the README's licence claim names the same licence.
-- **Non-vacuity by mutation**, per the arc's standing rule. Each new guard must be proven to fail:
-  drop a guide from the `Page` list with the file still on disk (expect red); rename `LICENSE`
-  (expect red); change the README's licence name (expect red). All reverted before commit.
+  title line), and the README's licence claim names the same licence. The README assertion must
+  target the licence line specifically, not `readme.contains("MIT")` — a bare substring check
+  passes on any README mentioning MIT anywhere, and the mutation below is what proves it does not.
+- **Non-vacuity by mutation**, per the arc's standing rule. Each new guard must be *run* red, not
+  merely listed: drop a guide from the `Page` list with the file still on disk; drop a viz page the
+  same way; rename `LICENSE`; change the licence named on the README's licence line while leaving
+  the string `MIT` elsewhere in the file — that last one is the mutation that catches a vacuous
+  `contains` assertion. All reverted before commit.
+- **README FQCN check before commit** — `grep -oE 'com\.gimlism\.translucent\.[A-Za-z0-9_.]+'
+  README.md` must yield nothing outside `Launcher.CATALOG`, per the constraint noted above. The
+  licence line and the `planning/` pointer are prose and must not quote a package path.
 - **`LauncherReadmeTest` stays green** — it parses the file this PR edits.
 - **Byte-identity check on the five viz pages** — `git diff` must show `docs/viz/` untouched after
   regeneration, proving D7's delegation and D4's re-keying changed no output.
