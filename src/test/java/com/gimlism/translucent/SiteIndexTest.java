@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -27,7 +28,7 @@ import org.junit.jupiter.api.Test;
 class SiteIndexTest {
 
     private static String index() throws IOException {
-        return Files.readString(RegenerateDocs.DIR.resolve("index.html"), StandardCharsets.UTF_8);
+        return Files.readString(RegenerateDocs.DIR.resolve(RegenerateDocs.INDEX_KEY), StandardCharsets.UTF_8);
     }
 
     private static List<Path> filesIn(String subdir, String suffix) throws IOException {
@@ -82,6 +83,31 @@ class SiteIndexTest {
                     "Page \"" + page.title() + "\" names guide \"" + page.guide()
                             + "\" but " + guidePath + " does not exist");
         }
+    }
+
+    /**
+     * The two agree by convention only: {@link RegenerateDocs#main} writes whatever key
+     * {@link RegenerateDocs#pages()} uses, and this class reads {@link RegenerateDocs#INDEX_KEY}
+     * regardless of what that key actually is. If the two drifted — say {@code pages()} started
+     * keying the landing page {@code "home.html"} — {@code main()} would write {@code docs/home.html}
+     * and leave the stale {@code docs/index.html} on disk; nothing deletes it. The golden test would
+     * still pass, because it only iterates whatever keys {@code pages()} currently has. This class's
+     * other three tests would still pass too, because they would silently keep reading the orphaned
+     * old file, which still contains every viz and guide link. Only this assertion — that
+     * {@code pages()} actually contains {@code INDEX_KEY} — would catch it. Unlike a {@code
+     * Page.path()} typo, which is self-healing because {@code pages()} writes whatever path a
+     * {@code Page} names, the index's filename cannot self-heal: it IS the contract with GitHub
+     * Pages, which serves {@code index.html} at a directory root and nothing else, so a renamed key
+     * is not a differently-named page — it is a 404.
+     */
+    @Test
+    void pagesContainsTheKeyThisClassReads() {
+        Map<String, String> pages = RegenerateDocs.pages();
+        assertTrue(pages.containsKey(RegenerateDocs.INDEX_KEY),
+                "RegenerateDocs.pages() has no \"" + RegenerateDocs.INDEX_KEY
+                        + "\" entry — SiteIndexTest reads that exact key, and GitHub Pages only "
+                        + "serves a directory root under that exact filename, so a drift here "
+                        + "silently orphans docs/" + RegenerateDocs.INDEX_KEY);
     }
 
     /**

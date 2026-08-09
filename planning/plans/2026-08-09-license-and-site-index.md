@@ -1110,8 +1110,8 @@ session if you want the output in the transcript.
 
 **(a) Flip visibility.** Irreversible in practice — forks and caches survive a re-privatise. The
 pre-flight audit is in the spec: history is clean (six deleted Java sources, nothing else), the
-author emails going public are `gimlism@storer-martin.com` and `paulstorermartin@mac.com`, and 71
-tracked files under `planning/` become readable by decision, not by accident.
+author emails going public in commit metadata are checked and are both the maintainer's own
+accounts, and 71 tracked files under `planning/` become readable by decision, not by accident.
 
 ```
 gh repo edit gimlism/translucent --visibility public --accept-visibility-change-consequences

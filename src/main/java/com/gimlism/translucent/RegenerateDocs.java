@@ -43,6 +43,16 @@ public final class RegenerateDocs {
     static final String REGENERATE_HINT =
             "regenerate with: mvn exec:java -Dexec.mainClass=com.gimlism.translucent.RegenerateDocs";
 
+    /**
+     * The landing page's key in {@link #pages()}, and the one path {@code SiteIndexTest} reads
+     * directly rather than discovering by scanning {@link #DIR}. Unlike {@code Page.path()}, a typo
+     * here cannot self-heal: {@code main()} would simply write the new filename alongside the old
+     * one, and GitHub Pages serves {@code index.html} at a directory root and nothing else, so the
+     * filename itself — not just its content — is the contract. One constant, shared by the writer
+     * and the reader, so the two cannot silently disagree.
+     */
+    static final String INDEX_KEY = "index.html";
+
     /** The canonical key set for the compression comparison, mirroring the exporter's own demo. */
     private static final List<String> COMPRESSION_KEYS = List.of("she", "shell", "shore", "shy");
 
@@ -98,7 +108,7 @@ public final class RegenerateDocs {
         for (Page page : vizPages()) {
             pages.put(page.path(), page.html().get());
         }
-        pages.put("index.html", SiteIndex.build(vizPages()));   // last: it links everything above
+        pages.put(INDEX_KEY, SiteIndex.build(vizPages()));   // last: it links everything above
         return pages;
     }
 

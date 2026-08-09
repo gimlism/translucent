@@ -51,7 +51,7 @@ GitHub's caches and archive crawlers survive a re-privatise. Findings:
 | surface | result |
 | --- | --- |
 | Deleted-file history (`--diff-filter=D` over `--all`) | Six Java sources from refactors. No credentials, no stray docs. |
-| Author emails in history | `gimlism@storer-martin.com`, `paulstorermartin@mac.com` — both the maintainer's own. |
+| Author emails in history | Two addresses appear in commit author metadata; both checked and confirmed to be the maintainer's own accounts. |
 | `planning/` (tracked) | 71 markdown files: 35 plans, 35 specs, 1 full-repo review. All technical. |
 | AI provenance | 285 `Co-Authored-By: Claude…` trailers. Deliberate, and not removable without a history rewrite. |
 
