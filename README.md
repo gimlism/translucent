@@ -9,8 +9,10 @@ it.
 
 ## Watch one without installing anything
 
-Download this repo (or clone it) and open any of these files in a browser. They need no JDK, no
-Maven, and no server — each one carries its own data and styling:
+Download this repo (or clone it) and open **`docs/index.html`** in a browser — it links everything
+below. No JDK, no Maven, no server: each page carries its own data and styling.
+
+Or open one directly:
 
 | page | structure |
 | --- | --- |
@@ -114,6 +116,13 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo
 | # | mode | |
 | --- | --- | --- |
 | 25 | standard vs radix, side by side | `-Dexec.mainClass=com.gimlism.translucent.trie.compare.CompressionCompareDemo` |
+
+## How each slice got decided
+
+`planning/` holds the spec and the implementation plan written before each slice was built, plus one
+full-repo review. They are a record of how decisions were reached — including approaches that were
+considered and rejected — and they are dated for that reason. Where a plan disagrees with the source,
+the source is right.
 
 ## Running the tests
 
