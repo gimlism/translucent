@@ -72,9 +72,18 @@ class WebVizTemplateTest {
     }
 
     /**
-     * The delegation is the point: one classpath reader, one missing-token message. If these two
-     * ever diverge, the generic helper has grown a second behaviour and the five baked viz goldens
-     * are no longer guaranteed byte-identical.
+     * Guards output agreement, not delegation itself: for the same template and data, {@link
+     * WebVizTemplate#injectStatic} and {@link WebVizTemplate#injectToken} on {@code DATA_TOKEN}
+     * must produce byte-identical strings. If {@code injectToken}'s substitution semantics ever
+     * change without {@code injectStatic} following, this goes red, because both calls are made
+     * against real input here — so the two paths necessarily observe the change.
+     *
+     * <p>This does NOT prove {@code injectStatic} still calls {@code injectToken} under the hood.
+     * A correct standalone reimplementation of {@code injectStatic} — one that duplicates the read
+     * and substitute logic instead of delegating — would produce the same bytes for this
+     * well-formed input and pass just as green; only {@link #injectStaticMissingDataTokenThrowsNamingIt}
+     * pins the error-path behaviour (rejecting a missing token) that delegation is actually meant to
+     * buy. A future reader must not treat this test as proof that delegation survives.
      */
     @Test
     void injectStaticIsInjectTokenOnTheDataToken() {
