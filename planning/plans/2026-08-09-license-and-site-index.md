@@ -199,7 +199,7 @@ a demo you can watch.
 - [ ] **Step 5: Run the tests and verify green**
 
 ```bash
-mvn -q test -Dtest='LicenseTest+LauncherReadmeTest'
+mvn -q test -Dtest='LicenseTest,LauncherReadmeTest'
 ```
 
 Expected: all pass. `LauncherReadmeTest` is included because this step edits the file it parses.
@@ -355,7 +355,7 @@ In `WebVizTemplate.java`, replace the existing `injectStatic` method with:
 - [ ] **Step 4: Run and verify green**
 
 ```bash
-mvn -q test -Dtest='WebVizTemplateTest+DocsPagesGoldenTest'
+mvn -q test -Dtest='WebVizTemplateTest,DocsPagesGoldenTest'
 ```
 
 Expected: all pass. `DocsPagesGoldenTest` is included because `CompressionCompareWebExporter` routes
@@ -860,7 +860,7 @@ git status --short docs/      # EXPECT: only ?? docs/index.html
 - [ ] **Step 7: Run the tests and verify green**
 
 ```bash
-mvn -q test -Dtest='SiteIndexTest+DocsPagesGoldenTest'
+mvn -q test -Dtest='SiteIndexTest,DocsPagesGoldenTest'
 ```
 
 Expected: `DocsPagesGoldenTest` now runs **6** cases including `docs/index.html`; `SiteIndexTest`
@@ -985,7 +985,7 @@ tool, not a demo. Regeneration is documented in that class's own Javadoc; it mus
 - [ ] **Step 4: Run the README guards**
 
 ```bash
-mvn -q test -Dtest='LauncherReadmeTest+LauncherCatalogTest+LicenseTest'
+mvn -q test -Dtest='LauncherReadmeTest,LauncherCatalogTest,LicenseTest'
 ```
 
 Expected: all pass. `LicenseTest` is included because its regex reads the file this task edits.
