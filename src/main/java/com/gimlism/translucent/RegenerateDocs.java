@@ -98,6 +98,7 @@ public final class RegenerateDocs {
         for (Page page : vizPages()) {
             pages.put(page.path(), page.html().get());
         }
+        pages.put("index.html", SiteIndex.build(vizPages()));   // last: it links everything above
         return pages;
     }
 
