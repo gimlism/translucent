@@ -974,13 +974,19 @@ the source is right.
 - [ ] **Step 3: Verify the FQCN constraint by hand before running anything**
 
 ```bash
-diff <(grep -oE 'com\.gimlism\.translucent\.[A-Za-z0-9_.]+' README.md | sort -u) \
-     <(grep -oE 'com\.gimlism\.translucent\.[A-Za-z0-9_.]+' src/main/java/com/gimlism/translucent/Launcher.java | sort -u)
+grep -oE 'com\.gimlism\.translucent\.[A-Za-z0-9_.]+' README.md | sort -u \
+  | grep -vE '\.demo\.[A-Za-z]+Demo$|\.trie\.compare\.CompressionCompareDemo$'
 ```
 
-Expected: no output. Any line prefixed `<` is a README FQCN absent from the catalog and will fail
+Expected: no output. Anything printed is a README FQCN that is not a catalogued demo and will fail
 `LauncherReadmeTest` — the likeliest cause is prose naming `RegenerateDocs`, which is a maintainer
-tool, not a demo. Regeneration is documented in that class's own Javadoc; it must not appear here.
+tool. Regeneration is documented in that class's own Javadoc; it must not appear here.
+
+Do NOT try to diff the README's FQCNs against `Launcher.java`'s: the catalog builds its entries from
+package-prefix constants (`ARRAYLIST + "ListDemo"`), so grepping that file yields
+`com.gimlism.translucent.arraylist.demo.` and never a whole class name. Every README row would
+report as missing. `LauncherReadmeTest` is the authoritative check because it reads the assembled
+`CATALOG`; the grep above is only a fast pre-check.
 
 - [ ] **Step 4: Run the README guards**
 
