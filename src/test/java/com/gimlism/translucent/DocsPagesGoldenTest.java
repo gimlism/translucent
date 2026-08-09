@@ -29,7 +29,7 @@ class DocsPagesGoldenTest {
         return RegenerateDocs.pages().keySet().stream();
     }
 
-    @ParameterizedTest(name = "docs/viz/{0}")
+    @ParameterizedTest(name = "docs/{0}")
     @MethodSource("pageNames")
     void committedPageMatchesItsGenerator(String name) throws IOException {
         Path committed = RegenerateDocs.DIR.resolve(name);
