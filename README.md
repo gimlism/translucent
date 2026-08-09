@@ -124,3 +124,11 @@ mvn test
 `LauncherCatalogTest` resolves every class named above, and `LauncherReadmeTest` checks this table
 lists them all — so a renamed or missing demo fails the build rather than silently sending you at a
 class that isn't there.
+
+## Licence
+
+Licensed under the MIT License — see [LICENSE](LICENSE).
+
+The data structures are reimplementations written from the published algorithms, not adaptations of
+any JDK source: the thresholds are deliberately scaled down so a treeify or a resize is reachable in
+a demo you can watch.
