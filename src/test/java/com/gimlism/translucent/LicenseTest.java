@@ -43,8 +43,12 @@ class LicenseTest {
         return Files.readString(Path.of("README.md"), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Resolved from {@code RegenerateDocs} rather than spelled out, so the front door has one path
+     * in the codebase and not a third copy — the same deduplication {@code SiteIndexTest} makes.
+     */
     private static String docsIndex() throws IOException {
-        return Files.readString(Path.of("docs/index.html"), StandardCharsets.UTF_8);
+        return Files.readString(RegenerateDocs.DIR.resolve(RegenerateDocs.INDEX_KEY), StandardCharsets.UTF_8);
     }
 
     @Test
