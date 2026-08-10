@@ -24,11 +24,11 @@ Or open one directly:
 | [trie](https://gimlism.github.io/translucent/viz/trie.html) | Trie |
 | [compression-compare](https://gimlism.github.io/translucent/viz/compression-compare.html) | a fat trie beside its compressed form |
 
-Already cloned the repo? The same five pages are committed under `docs/viz/`, and `docs/index.html`
-is the same landing page — they open straight from disk, offline.
-
 Each replays a real run: step through it, play it, scrub back. The events were recorded from the
 actual `put()`/`add()` path, not scripted for the page.
+
+Already cloned the repo? The same five pages are committed under `docs/viz/`, and `docs/index.html`
+is the same landing page — they open straight from disk, offline.
 
 Everything below needs a JDK.
 
