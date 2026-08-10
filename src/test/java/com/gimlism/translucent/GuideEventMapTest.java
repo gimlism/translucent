@@ -25,10 +25,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The guides under {@code docs/guide/} tell a student which events each method produces. That claim
@@ -139,6 +143,45 @@ class GuideEventMapTest {
                 + type.getSimpleName() + " has no such public method");
     }
 
+    /**
+     * One guide and the scenario that proves it.
+     *
+     * <p>The supplier is lazy on purpose. A scenario that throws must fail its own case only,
+     * leaving the directory guards free to report what is actually missing — eager evaluation would
+     * take them down alongside it and describe the wrong problem.
+     */
+    record GuideCase(String file, Class<?> type, Supplier<Map<String, Set<String>>> emitted) {
+        @Override
+        public String toString() {
+            // Not for Maven's console/XML output, which never shows this — it names invocations
+            // as guideMatchesWhatTheStructureEmits(GuideCase)[1..4], and assertGuideMatches already
+            // embeds the guide path in every assertion message. This override matters for IDE test
+            // runners, which do render {0}, and it replaces the record's default toString(), whose
+            // Supplier field would otherwise print a nondeterministic lambda identity.
+            return file;
+        }
+    }
+
+    /**
+     * Every guide and how it is proven. Deliberately the single source of truth: the parameterized
+     * case below runs exactly these, and the directory guards compare exactly these against disk, so
+     * a single guide's coverage cannot be dropped without the registry shrinking and the guards
+     * noticing that guide.
+     */
+    static Stream<GuideCase> cases() {
+        return Stream.of(
+                new GuideCase("list.md", TeachingArrayList.class, () -> listScenario().emitted()),
+                new GuideCase("map.md", TeachingHashMap.class, () -> mapScenario().emitted()),
+                new GuideCase("treeset.md", TeachingTreeSet.class, () -> treeSetScenario().emitted()),
+                new GuideCase("trie.md", RadixTrie.class, () -> trieScenario().emitted()));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("cases")
+    void guideMatchesWhatTheStructureEmits(GuideCase c) throws IOException {
+        assertGuideMatches(GUIDE_DIR.resolve(c.file()), c.type(), c.emitted().get());
+    }
+
     private static Runner<ListEvent> listScenario() {
         TeachingArrayList<Integer> list = new TeachingArrayList<>(2);
         Runner<ListEvent> runner = new Runner<>(list::addListener);
@@ -151,12 +194,6 @@ class GuideEventMapTest {
         runner.call("remove/1", () -> list.remove(0));
         runner.call("get/1", () -> list.get(0));
         return runner;
-    }
-
-    @Test
-    void listGuideMatchesWhatTheListEmits() throws IOException {
-        assertGuideMatches(GUIDE_DIR.resolve("list.md"), TeachingArrayList.class,
-                listScenario().emitted());
     }
 
     /** Every instance lands in one bucket, so a chain forms and then treeifies. */
@@ -198,12 +235,6 @@ class GuideEventMapTest {
         return runner;
     }
 
-    @Test
-    void mapGuideMatchesWhatTheMapEmits() throws IOException {
-        assertGuideMatches(GUIDE_DIR.resolve("map.md"), TeachingHashMap.class,
-                mapScenario().emitted());
-    }
-
     private static Runner<SetEvent> treeSetScenario() {
         TeachingTreeSet<Integer> set = new TeachingTreeSet<>();
         Runner<SetEvent> runner = new Runner<>(set::addListener);
@@ -220,12 +251,6 @@ class GuideEventMapTest {
         runner.call("remove/1", () -> set.remove(10));
         runner.call("remove/1", () -> set.remove(99)); // absent -> narrated Compares, no Remove
         return runner;
-    }
-
-    @Test
-    void treeSetGuideMatchesWhatTheSetEmits() throws IOException {
-        assertGuideMatches(GUIDE_DIR.resolve("treeset.md"), TeachingTreeSet.class,
-                treeSetScenario().emitted());
     }
 
     private static Runner<TrieEvent> trieScenario() {
@@ -251,25 +276,46 @@ class GuideEventMapTest {
         return runner;
     }
 
+    /**
+     * Direction one: every guide on disk is claimed by a case. A guide added without a scenario
+     * behind it would otherwise ship unverified — the direction PR #48 already covered, restated
+     * against the registry rather than against a hardcoded set that had to be edited by hand.
+     */
     @Test
-    void trieGuideMatchesWhatTheTrieEmits() throws IOException {
-        assertGuideMatches(GUIDE_DIR.resolve("trie.md"), RadixTrie.class, trieScenario().emitted());
+    void everyGuideFileHasACase() throws IOException {
+        Set<String> claimed = cases().map(GuideCase::file).collect(Collectors.toSet());
+        try (Stream<Path> files = Files.list(GUIDE_DIR)) {
+            files.filter(Files::isRegularFile)
+                    .map(p -> p.getFileName().toString())
+                    .filter(n -> n.endsWith(".md"))
+                    .forEach(n -> assertTrue(claimed.contains(n),
+                            GUIDE_DIR.resolve(n) + " has no GuideCase — add one, with a scenario, "
+                                    + "so the guide is checked against the code it describes"));
+        }
     }
 
-    // The four tests above each hard-code one filename under GUIDE_DIR. Nothing forces that list to
-    // stay exhaustive if a fifth guide is added later, so enumerate the directory here and pin its
-    // contents directly — a new guide with no scenario would otherwise ship untested.
+    /**
+     * Direction two, and the hole PR #48 left open: a case may only name a guide that is really
+     * there. Together with direction one this makes per-guide coverage drift unrepresentable: one
+     * guide cannot go unverified while the others stay checked, because dropping its coverage means
+     * dropping its case, and direction one then reports the orphaned file. (Deleting the single
+     * parameterized driver below still drops all four guides' coverage at once — proving otherwise
+     * would mean reflecting over {@code @Test} methods, which this design does not do.)
+     *
+     * <p>{@code isRegularFile}, never {@code exists}: a DIRECTORY named {@code trie.md} satisfies
+     * {@code exists} and produced a real false green in {@code SiteIndexTest} on #49.
+     *
+     * <p>The emptiness check is not ceremony. Both directions iterate, so both pass over an empty
+     * registry, agreeing perfectly about nothing.
+     */
     @Test
-    void guideDirHasExactlyOneFileForEachDocumentedStructure() throws IOException {
-        Set<String> names = new TreeSet<>();
-        try (Stream<Path> files = Files.list(GUIDE_DIR)) {
-            files.map(p -> p.getFileName().toString())
-                    .filter(n -> n.endsWith(".md"))
-                    .forEach(names::add);
-        }
-        assertEquals(Set.of("list.md", "map.md", "treeset.md", "trie.md"), names,
-                GUIDE_DIR + " contains a different set of guide files than this test expects — "
-                        + "add a *GuideMatchesWhatTheXEmits test (and scenario) for any new guide, "
-                        + "then update this test's expected set");
+    void everyCaseNamesARegularGuideFile() {
+        assertTrue(cases().findAny().isPresent(),
+                "the case registry is empty — every other check in this class would pass vacuously");
+        cases().forEach(c -> {
+            Path md = GUIDE_DIR.resolve(c.file());
+            assertTrue(Files.isRegularFile(md),
+                    md + " is named by a GuideCase but is not a regular file");
+        });
     }
 }
