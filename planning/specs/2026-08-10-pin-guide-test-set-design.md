@@ -123,8 +123,10 @@ about nothing.
 - All six mutations above proven RED, then reverted.
 - Full suite **572/572** on a clean build (571 + 1: one directory guard becomes two).
 - `git diff --stat src/main` empty.
-- The deleted-`@Test` defect from #48 is no longer expressible: coverage can only be removed by
-  removing a `cases()` entry, which the directory guard rejects.
+- The deleted-`@Test` defect from #48 is no longer expressible *per guide*: one guide cannot go
+  unverified while the others stay checked, because coverage lives in a `cases()` entry that the
+  directory guard cross-checks against disk. (Deleting the single parameterized driver still drops
+  all four at once; that residual is inherent to not reflecting over `@Test` methods, and out of scope.)
 
 ## Out of scope
 

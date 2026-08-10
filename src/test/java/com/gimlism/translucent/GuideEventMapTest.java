@@ -153,14 +153,20 @@ class GuideEventMapTest {
     record GuideCase(String file, Class<?> type, Supplier<Map<String, Set<String>>> emitted) {
         @Override
         public String toString() {
-            return file;   // the parameterized display name, so a failure names the guide
+            // Not for Maven's console/XML output, which never shows this — it names invocations
+            // as guideMatchesWhatTheStructureEmits(GuideCase)[1..4], and assertGuideMatches already
+            // embeds the guide path in every assertion message. This override matters for IDE test
+            // runners, which do render {0}, and it replaces the record's default toString(), whose
+            // Supplier field would otherwise print a nondeterministic lambda identity.
+            return file;
         }
     }
 
     /**
      * Every guide and how it is proven. Deliberately the single source of truth: the parameterized
      * case below runs exactly these, and the directory guards compare exactly these against disk, so
-     * coverage cannot be dropped without the registry shrinking and the guards noticing.
+     * a single guide's coverage cannot be dropped without the registry shrinking and the guards
+     * noticing that guide.
      */
     static Stream<GuideCase> cases() {
         return Stream.of(
@@ -290,8 +296,11 @@ class GuideEventMapTest {
 
     /**
      * Direction two, and the hole PR #48 left open: a case may only name a guide that is really
-     * there. Together with direction one this makes an unpinned guide unrepresentable — dropping
-     * coverage means dropping a case, and direction one then reports the orphaned file.
+     * there. Together with direction one this makes per-guide coverage drift unrepresentable: one
+     * guide cannot go unverified while the others stay checked, because dropping its coverage means
+     * dropping its case, and direction one then reports the orphaned file. (Deleting the single
+     * parameterized driver below still drops all four guides' coverage at once — proving otherwise
+     * would mean reflecting over {@code @Test} methods, which this design does not do.)
      *
      * <p>{@code isRegularFile}, never {@code exists}: a DIRECTORY named {@code trie.md} satisfies
      * {@code exists} and produced a real false green in {@code SiteIndexTest} on #49.

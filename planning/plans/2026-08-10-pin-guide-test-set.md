@@ -4,7 +4,7 @@
 
 **Goal:** Make it impossible for a guide under `docs/guide/` to exist without a test asserting it, closing the minor left open at the end of PR #48.
 
-**Architecture:** Replace four hand-written `@Test` wrappers with one `@ParameterizedTest` driven by a `cases()` registry, then pin that registry against the directory in both directions. The defect becomes unrepresentable rather than merely detected: removing coverage means removing a registry entry, and the directory guard rejects that.
+**Architecture:** Replace four hand-written `@Test` wrappers with one `@ParameterizedTest` driven by a `cases()` registry, then pin that registry against the directory in both directions. Per-guide drift becomes unrepresentable rather than merely detected: one guide cannot go unverified while the others stay checked, because removing its coverage means removing its registry entry, and the directory guard rejects that. (Removing the single parameterized driver still drops all four guides' coverage at once — that residual is inherent to not reflecting over `@Test` methods, and is out of scope here.)
 
 **Tech Stack:** Java 21, Maven, JUnit Jupiter 5.10.2 (the `junit-jupiter` aggregate already provides `-params`).
 
@@ -171,7 +171,7 @@ perl -pi -e 's/`floor\(/`flooor(/' docs/guide/treeset.md
 mvn clean test -Dtest=GuideEventMapTest 2>&1 | grep -E "Tests run:|treeset\.md"
 ```
 
-Expected: `Tests run: 5, Failures: 1`, the failing invocation displayed as `treeset.md`, and a message naming `docs/guide/treeset.md`. The other three invocations must still pass — that is the part being proven.
+Expected: `Tests run: 5, Failures: 1`, and a message naming `docs/guide/treeset.md` (the `grep` will match this, not the invocation label — Surefire's console/XML output shows `guideMatchesWhatTheStructureEmits(GuideCase)[3]`, not the guide filename; only IDE runners display the `{0}` name). The other three invocations must still pass — that is the part being proven.
 
 Revert and confirm:
 
