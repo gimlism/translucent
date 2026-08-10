@@ -1,6 +1,7 @@
 package com.gimlism.translucent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -310,12 +311,13 @@ class GuideEventMapTest {
      */
     @Test
     void everyCaseNamesARegularGuideFile() {
-        assertTrue(cases().findAny().isPresent(),
+        var all = cases().toList();
+        assertFalse(all.isEmpty(),
                 "the case registry is empty — every other check in this class would pass vacuously");
-        cases().forEach(c -> {
+        for (GuideCase c : all) {
             Path md = GUIDE_DIR.resolve(c.file());
             assertTrue(Files.isRegularFile(md),
                     md + " is named by a GuideCase but is not a regular file");
-        });
+        }
     }
 }
