@@ -25,10 +25,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The guides under {@code docs/guide/} tell a student which events each method produces. That claim
@@ -139,6 +142,39 @@ class GuideEventMapTest {
                 + type.getSimpleName() + " has no such public method");
     }
 
+    /**
+     * One guide and the scenario that proves it.
+     *
+     * <p>The supplier is lazy on purpose. A scenario that throws must fail its own case only,
+     * leaving the directory guards free to report what is actually missing — eager evaluation would
+     * take them down alongside it and describe the wrong problem.
+     */
+    record GuideCase(String file, Class<?> type, Supplier<Map<String, Set<String>>> emitted) {
+        @Override
+        public String toString() {
+            return file;   // the parameterized display name, so a failure names the guide
+        }
+    }
+
+    /**
+     * Every guide and how it is proven. Deliberately the single source of truth: the parameterized
+     * case below runs exactly these, and the directory guards compare exactly these against disk, so
+     * coverage cannot be dropped without the registry shrinking and the guards noticing.
+     */
+    static Stream<GuideCase> cases() {
+        return Stream.of(
+                new GuideCase("list.md", TeachingArrayList.class, () -> listScenario().emitted()),
+                new GuideCase("map.md", TeachingHashMap.class, () -> mapScenario().emitted()),
+                new GuideCase("treeset.md", TeachingTreeSet.class, () -> treeSetScenario().emitted()),
+                new GuideCase("trie.md", RadixTrie.class, () -> trieScenario().emitted()));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("cases")
+    void guideMatchesWhatTheStructureEmits(GuideCase c) throws IOException {
+        assertGuideMatches(GUIDE_DIR.resolve(c.file()), c.type(), c.emitted().get());
+    }
+
     private static Runner<ListEvent> listScenario() {
         TeachingArrayList<Integer> list = new TeachingArrayList<>(2);
         Runner<ListEvent> runner = new Runner<>(list::addListener);
@@ -151,12 +187,6 @@ class GuideEventMapTest {
         runner.call("remove/1", () -> list.remove(0));
         runner.call("get/1", () -> list.get(0));
         return runner;
-    }
-
-    @Test
-    void listGuideMatchesWhatTheListEmits() throws IOException {
-        assertGuideMatches(GUIDE_DIR.resolve("list.md"), TeachingArrayList.class,
-                listScenario().emitted());
     }
 
     /** Every instance lands in one bucket, so a chain forms and then treeifies. */
@@ -198,12 +228,6 @@ class GuideEventMapTest {
         return runner;
     }
 
-    @Test
-    void mapGuideMatchesWhatTheMapEmits() throws IOException {
-        assertGuideMatches(GUIDE_DIR.resolve("map.md"), TeachingHashMap.class,
-                mapScenario().emitted());
-    }
-
     private static Runner<SetEvent> treeSetScenario() {
         TeachingTreeSet<Integer> set = new TeachingTreeSet<>();
         Runner<SetEvent> runner = new Runner<>(set::addListener);
@@ -220,12 +244,6 @@ class GuideEventMapTest {
         runner.call("remove/1", () -> set.remove(10));
         runner.call("remove/1", () -> set.remove(99)); // absent -> narrated Compares, no Remove
         return runner;
-    }
-
-    @Test
-    void treeSetGuideMatchesWhatTheSetEmits() throws IOException {
-        assertGuideMatches(GUIDE_DIR.resolve("treeset.md"), TeachingTreeSet.class,
-                treeSetScenario().emitted());
     }
 
     private static Runner<TrieEvent> trieScenario() {
@@ -249,11 +267,6 @@ class GuideEventMapTest {
         // removes above, so it can only shrink the documented set if it fires something new.
         runner.call("remove/1", () -> trie.remove("nope"));
         return runner;
-    }
-
-    @Test
-    void trieGuideMatchesWhatTheTrieEmits() throws IOException {
-        assertGuideMatches(GUIDE_DIR.resolve("trie.md"), RadixTrie.class, trieScenario().emitted());
     }
 
     // The four tests above each hard-code one filename under GUIDE_DIR. Nothing forces that list to
