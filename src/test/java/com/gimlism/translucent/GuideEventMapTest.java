@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -269,20 +270,43 @@ class GuideEventMapTest {
         return runner;
     }
 
-    // The four tests above each hard-code one filename under GUIDE_DIR. Nothing forces that list to
-    // stay exhaustive if a fifth guide is added later, so enumerate the directory here and pin its
-    // contents directly — a new guide with no scenario would otherwise ship untested.
+    /**
+     * Direction one: every guide on disk is claimed by a case. A guide added without a scenario
+     * behind it would otherwise ship unverified — the direction PR #48 already covered, restated
+     * against the registry rather than against a hardcoded set that had to be edited by hand.
+     */
     @Test
-    void guideDirHasExactlyOneFileForEachDocumentedStructure() throws IOException {
-        Set<String> names = new TreeSet<>();
+    void everyGuideFileHasACase() throws IOException {
+        Set<String> claimed = cases().map(GuideCase::file).collect(Collectors.toSet());
         try (Stream<Path> files = Files.list(GUIDE_DIR)) {
-            files.map(p -> p.getFileName().toString())
+            files.filter(Files::isRegularFile)
+                    .map(p -> p.getFileName().toString())
                     .filter(n -> n.endsWith(".md"))
-                    .forEach(names::add);
+                    .forEach(n -> assertTrue(claimed.contains(n),
+                            GUIDE_DIR.resolve(n) + " has no GuideCase — add one, with a scenario, "
+                                    + "so the guide is checked against the code it describes"));
         }
-        assertEquals(Set.of("list.md", "map.md", "treeset.md", "trie.md"), names,
-                GUIDE_DIR + " contains a different set of guide files than this test expects — "
-                        + "add a *GuideMatchesWhatTheXEmits test (and scenario) for any new guide, "
-                        + "then update this test's expected set");
+    }
+
+    /**
+     * Direction two, and the hole PR #48 left open: a case may only name a guide that is really
+     * there. Together with direction one this makes an unpinned guide unrepresentable — dropping
+     * coverage means dropping a case, and direction one then reports the orphaned file.
+     *
+     * <p>{@code isRegularFile}, never {@code exists}: a DIRECTORY named {@code trie.md} satisfies
+     * {@code exists} and produced a real false green in {@code SiteIndexTest} on #49.
+     *
+     * <p>The emptiness check is not ceremony. Both directions iterate, so both pass over an empty
+     * registry, agreeing perfectly about nothing.
+     */
+    @Test
+    void everyCaseNamesARegularGuideFile() {
+        assertTrue(cases().findAny().isPresent(),
+                "the case registry is empty — every other check in this class would pass vacuously");
+        cases().forEach(c -> {
+            Path md = GUIDE_DIR.resolve(c.file());
+            assertTrue(Files.isRegularFile(md),
+                    md + " is named by a GuideCase but is not a regular file");
+        });
     }
 }
