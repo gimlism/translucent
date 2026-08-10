@@ -285,19 +285,20 @@ Put these two in its place:
 
 - [ ] **Step 2: Fix the imports**
 
-Add, after `import java.util.function.Supplier;`:
+**Keep `import java.util.TreeSet;`.** An earlier draft of this step said to remove it, on the belief that the deleted guard was its only user. That was wrong: `Runner.call` (`:74`) and `parseGuide` (`:103`) both construct `new TreeSet<>()`, and removing the import fails compilation with two `cannot find symbol` errors. Verify the import is still needed rather than assuming either way:
+
+```bash
+grep -nE '(^|[^g])\bTreeSet\b' src/test/java/com/gimlism/translucent/GuideEventMapTest.java \
+  | grep -viE 'teachingtreeset|treeSetScenario|treeset\.md'
+```
+
+Expected: the import line plus the two `new TreeSet<>()` constructions. If only the import appears, then it really has become unused and should go.
+
+Add, in alphabetically sorted position among the `java.util.stream.*` imports (this file's import block is strictly sorted, so `Collectors` goes *before* `Stream`, not after `Supplier`):
 
 ```java
 import java.util.stream.Collectors;
 ```
-
-Remove `import java.util.TreeSet;` (`:26` originally). The deleted guard was its only user; leaving it produces an unused-import warning. Verify with:
-
-```bash
-grep -n "TreeSet" src/test/java/com/gimlism/translucent/GuideEventMapTest.java
-```
-
-Expected: only matches for `TeachingTreeSet` and `treeSetScenario` — no bare `TreeSet` import or `new TreeSet<>()`.
 
 - [ ] **Step 3: Run the class and confirm six tests**
 
