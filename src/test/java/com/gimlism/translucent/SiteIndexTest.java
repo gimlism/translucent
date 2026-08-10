@@ -31,9 +31,17 @@ class SiteIndexTest {
         return Files.readString(RegenerateDocs.DIR.resolve(RegenerateDocs.INDEX_KEY), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Regular files only. A directory whose name ends in the suffix is not a page, and letting one
+     * through makes this over-fire rather than under-fire — the extra entry becomes a link the index
+     * is required to carry, so the scan reports a page missing that was never a page. Filtering
+     * costs nothing and keeps the failure message honest.
+     */
     private static List<Path> filesIn(String subdir, String suffix) throws IOException {
         try (Stream<Path> found = Files.list(RegenerateDocs.DIR.resolve(subdir))) {
-            return found.filter(p -> p.getFileName().toString().endsWith(suffix)).sorted().toList();
+            return found.filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(suffix))
+                    .sorted().toList();
         }
     }
 
@@ -79,9 +87,13 @@ class SiteIndexTest {
         assertFalse(withGuide.isEmpty(), "no page carries a guide — this check would be vacuous");
         for (RegenerateDocs.Page page : withGuide) {
             Path guidePath = RegenerateDocs.DIR.resolve(page.guide());
-            assertTrue(Files.exists(guidePath),
+            // isRegularFile, not exists: a directory satisfies exists() and would pass here while
+            // the published link resolved to something that is not the guide. Verified — with
+            // docs/guide/trie.md replaced by a directory of that name, this class went 5 run,
+            // 0 failed. The contract is "names a readable file", so assert exactly that.
+            assertTrue(Files.isRegularFile(guidePath),
                     "Page \"" + page.title() + "\" names guide \"" + page.guide()
-                            + "\" but " + guidePath + " does not exist");
+                            + "\" but " + guidePath + " is not a readable file");
         }
     }
 
