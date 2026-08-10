@@ -9,8 +9,10 @@ it.
 
 ## Watch one without installing anything
 
-Download this repo (or clone it) and open any of these files in a browser. They need no JDK, no
-Maven, and no server — each one carries its own data and styling:
+Download this repo (or clone it) and open **`docs/index.html`** in a browser — it links everything
+below. No JDK, no Maven, no server: each page carries its own data and styling.
+
+Or open one directly:
 
 | page | structure |
 | --- | --- |
@@ -115,6 +117,13 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo
 | --- | --- | --- |
 | 25 | standard vs radix, side by side | `-Dexec.mainClass=com.gimlism.translucent.trie.compare.CompressionCompareDemo` |
 
+## How each slice got decided
+
+`planning/` holds the spec and the implementation plan written before each slice was built, plus one
+full-repo review. They are a record of how decisions were reached — including approaches that were
+considered and rejected — and they are dated for that reason. Where a plan disagrees with the source,
+the source is right.
+
 ## Running the tests
 
 ```
@@ -124,3 +133,11 @@ mvn test
 `LauncherCatalogTest` resolves every class named above, and `LauncherReadmeTest` checks this table
 lists them all — so a renamed or missing demo fails the build rather than silently sending you at a
 class that isn't there.
+
+## Licence
+
+Licensed under the MIT License — see [LICENSE](LICENSE).
+
+The data structures are reimplementations written from the published algorithms, not adaptations of
+any JDK source: the thresholds are deliberately scaled down so a treeify or a resize is reachable in
+a demo you can watch.

@@ -48,9 +48,23 @@ public final class WebVizTemplate {
      * {@link #inject} stays the right tool for live (FRAMES/LIVE/CONTROLS) pages.
      */
     public static String injectStatic(String resource, String data) {
+        return injectToken(resource, DATA_TOKEN, data);
+    }
+
+    /**
+     * Read {@code resource}, require {@code token}, and substitute it. The single-token workhorse
+     * behind {@link #injectStatic}, exposed for pages that are not visualisations: the site index
+     * substitutes an HTML comment token because its replacement lands in markup rather than inside
+     * a {@code <script>}.
+     *
+     * <p>Deliberately single-token. {@link #inject} stays separate because ORDER is its invariant —
+     * user data substituted last so a frame containing a token literal cannot be rewritten — and a
+     * general n-token helper could not enforce that.
+     */
+    public static String injectToken(String resource, String token, String replacement) {
         String template = read(resource);
-        require(template, resource, DATA_TOKEN);
-        return template.replace(DATA_TOKEN, data);
+        require(template, resource, token);
+        return template.replace(token, replacement);
     }
 
     private static void require(String template, String resource, String token) {

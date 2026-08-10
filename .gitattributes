@@ -1,5 +1,5 @@
-# The pages under docs/viz/ are committed build output, pinned byte-for-byte by
-# DocsPagesGoldenTest against the generator that produced them. Git's autocrlf would hand a
+# The pages under docs/viz/, plus docs/index.html, are committed build output, pinned byte-for-byte
+# by DocsPagesGoldenTest against the generator that produced them. Git's autocrlf would hand a
 # Windows checkout CRLF line endings, and every one of those goldens would fail on a student's
 # first `mvn test` — a broken build on first contact, in a repo whose whole point is being
 # approachable. Normalising to LF in the working tree keeps the bytes the generator emitted.
