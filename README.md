@@ -9,18 +9,23 @@ it.
 
 ## Watch one without installing anything
 
-Download this repo (or clone it) and open **`docs/index.html`** in a browser — it links everything
-below. No JDK, no Maven, no server: each page carries its own data and styling.
+**→ [gimlism.github.io/translucent](https://gimlism.github.io/translucent/)**
+
+That landing page links everything below. No JDK, no Maven, no server, nothing to download: each
+page carries its own data and styling.
 
 Or open one directly:
 
 | page | structure |
 | --- | --- |
-| `docs/viz/list.html` | ArrayList |
-| `docs/viz/map.html` | HashMap |
-| `docs/viz/treeset.html` | TreeSet |
-| `docs/viz/trie.html` | Trie |
-| `docs/viz/compression-compare.html` | a fat trie beside its compressed form |
+| [list](https://gimlism.github.io/translucent/viz/list.html) | ArrayList |
+| [map](https://gimlism.github.io/translucent/viz/map.html) | HashMap |
+| [treeset](https://gimlism.github.io/translucent/viz/treeset.html) | TreeSet |
+| [trie](https://gimlism.github.io/translucent/viz/trie.html) | Trie |
+| [compression-compare](https://gimlism.github.io/translucent/viz/compression-compare.html) | a fat trie beside its compressed form |
+
+Already cloned the repo? The same five pages are committed under `docs/viz/`, and `docs/index.html`
+is the same landing page — they open straight from disk, offline.
 
 Each replays a real run: step through it, play it, scrub back. The events were recorded from the
 actual `put()`/`add()` path, not scripted for the page.
