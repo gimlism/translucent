@@ -51,15 +51,22 @@ class GuideReadmeAnchorTest {
     }
 
     /**
-     * Both the heading set and each guide's anchor scan iterate, so an empty README or an empty
-     * guide directory would pass this vacuously — the same failure mode {@link GuideEventMapTest}
-     * guards against for its own registry.
+     * Two places this could pass vacuously, and both are guarded: an empty README heading set
+     * (checked before the scan starts) and an empty anchor scan across every guide — a link-format
+     * change, a narrowed {@link #README_ANCHOR} pattern, or a renamed bullet section could all make
+     * {@code README_ANCHOR} match nothing without {@code docs/guide/} itself being empty, so the
+     * count of anchors actually found is checked explicitly after the loop rather than assumed from
+     * the loop merely completing. This mirrors
+     * {@link ReadmeSiteLinksTest#everyPublishedPageIsLinkedExactlyOncePlusTheLandingPage()}, which
+     * exists for the identical reason: an assertion that only iterates a regex match set passes
+     * vacuously the moment that set is empty, so the count has to be pinned on purpose.
      */
     @Test
     void everyGuideReadmeAnchorResolvesToARealHeading() throws IOException {
         Set<String> slugs = readmeHeadingSlugs();
         assertFalse(slugs.isEmpty(), README + " has no \"### \" headings — this guard would pass vacuously");
 
+        int anchorsFound = 0;
         try (Stream<Path> files = Files.list(GUIDE_DIR)) {
             for (Path md : files.filter(Files::isRegularFile)
                     .filter(p -> p.getFileName().toString().endsWith(".md"))
@@ -67,11 +74,14 @@ class GuideReadmeAnchorTest {
                 String text = Files.readString(md, StandardCharsets.UTF_8);
                 Matcher m = README_ANCHOR.matcher(text);
                 while (m.find()) {
+                    anchorsFound++;
                     String anchor = m.group(1);
                     assertTrue(slugs.contains(anchor),
                             md + " links README.md#" + anchor + ", which matches no heading in " + README);
                 }
             }
         }
+        assertTrue(anchorsFound > 0, "no file under " + GUIDE_DIR
+                + " names a README.md# anchor — this guard would pass having checked nothing");
     }
 }
