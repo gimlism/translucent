@@ -63,6 +63,8 @@ and all six `DocsPagesGoldenTest` cases must stay green **without regeneration**
   `structure` labels (Task 2).
 - `src/main/java/com/gimlism/translucent/RegenerateDocs.java` — import + `TrieWebVizDemo::buildHtml`.
 - `src/test/java/com/gimlism/translucent/LauncherMenuTest.java` — the structure-name list (Task 2).
+- `src/test/java/com/gimlism/translucent/LauncherCatalogTest.java` — two exact-match label lists
+  (Task 2). Discovered during execution; the plan originally missed this file.
 - `README.md` — the quick-start example (line 64), the six table rows (110–115), the section
   heading (106, Task 2).
 
@@ -264,16 +266,26 @@ In `Launcher.java`, replace the six radix entries (currently at lines 64–69):
 
 Leave the `"Trie (compression)"` entry below them untouched.
 
-- [ ] **Step 2: Run the suite to confirm nothing yet pins the label**
+- [ ] **Step 2: Run the label guards**
 
 ```bash
-mvn test -Dtest='LauncherMenuTest,LauncherReadmeTest,LauncherCatalogTest' 2>&1 | tail -5
+mvn test -Dtest='LauncherMenuTest,LauncherReadmeTest,LauncherCatalogTest' 2>&1 | tail -12
 ```
 
-Expected: PASS. `LauncherReadmeTest` compares FQCNs only, and `LauncherMenuTest:48` asserts
-`out.contains("Trie")`, which `"Trie (radix)"` still satisfies as a substring.
+⚠️ **CORRECTED 2026-08-11 — this step's original premise was wrong.** The plan claimed the label was
+pinned by nothing and that this command would PASS. It does **not**: `LauncherCatalogTest:44` and
+`:53` pin the structure label by exact match (`List.of("ArrayList", "HashMap", "TreeSet", "Trie")`
+and an ordered `assertEquals` of the distinct labels), so changing the six entries in Step 1 turns
+that file RED with 2 failures.
 
-This is the point: the label is currently **unpinned**. Step 3 pins it.
+Expected: **2 failures in `LauncherCatalogTest`.** Update both lists there to `"Trie (radix)"`.
+
+The original claim came from reading `LauncherMenuTest:48` (`out.contains("Trie")`, which
+`"Trie (radix)"` satisfies as a substring) and generalising from one guard. `LauncherMenuTest` is
+indeed weak here; `LauncherCatalogTest` was already strong. Step 3 still strengthens the menu guard,
+but it is closing a *second* hole, not the only one.
+
+**`LauncherCatalogTest.java` is therefore a fourth file this task modifies.**
 
 - [ ] **Step 3: Pin the label in `LauncherMenuTest`**
 
@@ -285,25 +297,35 @@ In `LauncherMenuTest.java`, change the list on line 48:
 
 - [ ] **Step 4: Prove the new pin actually fails when it should**
 
-Temporarily revert one catalog label to `"Trie"`:
+⚠️ **CORRECTED 2026-08-11 — reverting a SINGLE entry does not go RED in `LauncherMenuTest`.**
+`printMenu` (`Launcher.java:143`) emits a heading whenever `entry.structure()` *changes* from the
+previous row. So with one entry reverted, row 19 prints the heading `Trie` and row 20 prints
+`Trie (radix)` — the string the test looks for is still present, and `LauncherMenuTest` stays green
+while `LauncherCatalogTest` fails instead. The mutation must revert **all six** entries to isolate
+the menu guard.
+
+Temporarily revert all six radix labels:
 
 ```bash
-perl -pi -e 's/new Entry\("Trie \(radix\)", "text log"/new Entry("Trie", "text log"/' \
+perl -pi -e 's/new Entry\("Trie \(radix\)"/new Entry("Trie"/g' \
   src/main/java/com/gimlism/translucent/Launcher.java
 mvn test -Dtest='LauncherMenuTest' 2>&1 | tail -12
 ```
 
-Expected: **FAIL** — `missing structure heading Trie (radix)`.
+Expected: **FAIL** — literally
+`LauncherMenuTest.menuNamesEachStructureOnce:49 missing structure heading Trie (radix) ==> expected: <true> but was: <false>`
 
-Restore it:
+Restore:
 
 ```bash
-perl -pi -e 's/new Entry\("Trie", "text log"/new Entry("Trie (radix)", "text log"/' \
+perl -pi -e 's/new Entry\("Trie", /new Entry("Trie (radix)", /g' \
   src/main/java/com/gimlism/translucent/Launcher.java
-mvn test -Dtest='LauncherMenuTest' 2>&1 | tail -5
+mvn test -Dtest='LauncherMenuTest,LauncherCatalogTest' 2>&1 | tail -5
 ```
 
-Expected: PASS.
+Expected: PASS. Then confirm `git diff src/main/java/com/gimlism/translucent/Launcher.java` shows
+only the six intended label changes — the restore regex must not have altered
+`"Trie (compression)"`.
 
 - [ ] **Step 5: Update the README section heading**
 
