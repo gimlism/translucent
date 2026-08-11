@@ -112,15 +112,20 @@ that no golden moves.
 
 #45's trap does **not** apply unchanged and should not be copied across. There, the names nested
 (`Demo` ⊂ `VizDemo` ⊂ `WebVizDemo` ⊂ `LiveWebVizDemo`), so longest-first still corrupted. These six
-do not nest — no `Trie*Demo` name contains another. Two different hazards replace it:
+do not nest — no `Trie*Demo` name contains another — so replacement order is irrelevant.
 
-1. `TrieDemo\b` will **not** match inside `TrieDemoTest` — the `\b` fails against the following `T`.
-   So the test classes need their own explicit renames; they do not fall out of the same pass.
-2. Once PR 2 introduces `StandardTrieDemo`, a later naive re-run of a `TrieDemo` pass would corrupt
-   it into `StandardRadixTrieDemo`.
+Dropping the trailing `\b` is deliberate, not an oversight: the pattern is `(?<!\w)TrieDemo`, with
+**no** `\b` at the end. That lets `TrieDemo` also match as the *prefix* of `TrieDemoTest`, which is
+how four of the five test classes get renamed for free by the same pass. Adding a trailing `\b`
+would fail against the following `T` and silently skip them — leaving a branch that does not
+compile. `TrieLiveControlsEndToEndTest` is the one test class that is not a prefix-extension of any
+demo name, so it needs its own explicit rule.
 
-Negative lookbehind `(?<!\w)TrieDemo\b` handles (2) and makes the pass idempotent — the same fix as
-#45, earning its place for a different reason.
+The leading negative lookbehind `(?<!\w)` alone is what makes the pass idempotent and future-proof:
+every replacement prefixes `Radix`, so a rewritten token's `Trie…` is preceded by `x` — a word
+character — and `(?<!\w)` blocks a second match. It also protects PR 2's `StandardTrieDemo`: once
+that class exists, `(?<!\w)TrieDemo` will not match inside it (`d` is a word character), so a stray
+re-run cannot corrupt it into `StandardRadixTrieDemo`.
 
 Use `find … -exec` rather than an unquoted `$files` variable: zsh does not word-split, so a
 `perl -pi $files` pass silently treats the whole list as one filename (recorded gotcha).

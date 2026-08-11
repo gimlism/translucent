@@ -491,9 +491,11 @@ preserved).
 
 - [ ] **Step 6: After merge — the Pages check**
 
-Required even though this PR touches no file under `docs/`: Pages rebuilds on **every** push to
-`main`, and #51 confirmed a merge touching no `docs/` file still triggers a rebuild. A failed build
-takes the live site down.
+Required regardless of what this PR touched: Pages rebuilds on **every** push to `main`, and #51
+confirmed a merge touching no `docs/` file still triggers a rebuild. (This PR's only `docs/` change
+is `docs/guide/trie.md` — hand-written prose, outside `RegenerateDocs.pages()` and not part of the
+published visualisation set, so it could not itself alter a generated page — but the check runs
+anyway.) A failed build takes the live site down.
 
 ```bash
 gh api repos/gimlism/translucent/pages/builds/latest \
