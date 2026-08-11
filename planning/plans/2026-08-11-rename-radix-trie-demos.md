@@ -406,7 +406,8 @@ Expected: **empty.**
 mvn clean test 2>&1 | tail -5
 ```
 
-Expected: BUILD SUCCESS, exactly 572 tests, 0 failures.
+Expected: BUILD SUCCESS, exactly **573** tests, 0 failures. (572 for the rename, +1 for the
+anchor guard added during Task 2 — see the ledger.)
 
 - [ ] **Step 4: Push and open the PR** — ⚠️ **on user go-ahead only.** Pushing a branch and opening
       a PR are outward-facing on a public repo; confirm before running this step.
@@ -494,7 +495,7 @@ Expected: all six `http=200 IDENTICAL`.
 
 - 11 files renamed with `git mv`; `git log --follow` intact.
 - Zero occurrences of the old six names (plus `TrieLiveControlsEndToEndTest`) in `src` or `README.md`.
-- Suite at **exactly 572/572**, 0 failures.
+- Suite at **exactly 573/573**, 0 failures (572 renamed + 1 new anchor guard).
 - `git diff main -- docs/` **empty**; all six golden cases green without regeneration.
 - `Launcher` labels read `Trie (radix)`, and `LauncherMenuTest` pins it (mutation-proven).
 - `planning/` untouched by the rename pass.
