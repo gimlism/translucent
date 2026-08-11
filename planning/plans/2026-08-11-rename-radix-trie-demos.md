@@ -7,9 +7,11 @@
 
 **Architecture:** Pure rename. `git mv` for the eleven files, then one idempotent `perl` pass over
 `src/` and `README.md` rewriting all **38 identifier occurrences across 14 files** — a count verified
-against the working tree, with **no file under `docs/` or `planning/` matching**. No new files, no
-new tests, no behaviour change. The existing suite is the guard: it must stay at **exactly 572/572**,
-and all six `DocsPagesGoldenTest` cases must stay green **without regeneration**.
+against the working tree, with **no file under `docs/` or `planning/` matching**. Task 1 itself adds
+no files and no tests: the existing suite is its guard, staying at **exactly 572/572**, with all six
+`DocsPagesGoldenTest` cases green **without regeneration**. Task 2's fix round then
+deliberately added one guard test (`GuideReadmeAnchorTest`, to repair a README anchor the relabel
+orphaned), taking the branch total to **573/573** — see Task 2 and the Definition of Done.
 
 **Tech Stack:** Java 21, Maven, JUnit 5 (Surefire 3.2.5), zsh on macOS.
 
@@ -29,8 +31,12 @@ and all six `DocsPagesGoldenTest` cases must stay green **without regeneration**
   whole list as one filename. Use `find … -exec` as written below.
 - **Do not touch anything under `planning/`.** The spec describes this rename in prose and naming
   the old classes there is correct; rewriting it would corrupt the record.
-- **Do not touch anything under `docs/`.** Nothing there names a demo class (verified), and PR 1
-  regenerating a page would destroy its own central proof.
+- **Only the *generated* files under `docs/` are protected.** `docs/viz/*.html` and `docs/index.html`
+  are what `DocsPagesGoldenTest` pins byte-for-byte; regenerating one would destroy PR 1's central
+  proof. `docs/guide/*.md` is hand-written prose, absent from `RegenerateDocs.pages()`, and not
+  golden-pinned — it is editable, and Task 2's fix round in fact edited `docs/guide/trie.md` to repair
+  a stale anchor. This distinction matters beyond this branch: PR 2 adds a new guide under
+  `docs/guide/`.
 - Merge convention: `gh pr merge N --merge` (NOT squash), branch **preserved**, on user go-ahead.
 
 ---
@@ -67,6 +73,11 @@ and all six `DocsPagesGoldenTest` cases must stay green **without regeneration**
   (Task 2). Discovered during execution; the plan originally missed this file.
 - `README.md` — the quick-start example (line 64), the six table rows (110–115), the section
   heading (106, Task 2).
+- `docs/guide/trie.md` — the README anchor repair. Discovered during execution: Task 2's heading
+  relabel changed the GitHub-generated slug, orphaning this guide's hand-typed link to the top of the
+  README instead of its section.
+- `src/test/java/com/gimlism/translucent/GuideReadmeAnchorTest.java` — new test, added during Task 2's
+  fix round to guard the anchor going forward. Discovered during execution; not in the original plan.
 
 **Explicitly NOT renamed** — `trie/viz/`, `trie/events/`, `trie/repl/`, `trie/compare/` and their
 tests (`TrieJsonSerializerTest`, `TrieWebExporterTest`, `TrieEventFormatterTest`,
@@ -392,13 +403,17 @@ git diff main -- src/main/java/com/gimlism/translucent/trie/core/ \
 Expected: the second command produces **no output** — this PR touches no trie logic, only the demo
 layer, the launcher and the README.
 
-- [ ] **Step 2: Confirm no file under `docs/` differs from `main`**
+- [ ] **Step 2: Confirm the generated docs surfaces did not move**
 
 ```bash
-git diff main --stat -- docs/
+git diff main --stat -- docs/viz/ docs/index.html
 ```
 
-Expected: **empty.**
+Expected: **empty** — this is the central proof that all six `DocsPagesGoldenTest` cases pass without
+regeneration. (The broader `git diff main --stat -- docs/` legitimately shows one file,
+`docs/guide/trie.md`, one line changed — the anchor repair from Task 2's fix round. That file is
+hand-written, outside `RegenerateDocs.pages()`, and not golden-pinned, so its change does not weaken
+this proof.)
 
 - [ ] **Step 3: Final clean build**
 
@@ -425,17 +440,29 @@ rename.
 
 **Scope:** 6 main classes + 5 test classes renamed via `git mv`; 38 identifier occurrences
 rewritten; `Launcher` labels `Trie` → `Trie (radix)`; README quick-start, table rows and section
-heading updated.
+heading updated. Review turned up a second defect along the way: the heading relabel changed the
+GitHub-generated slug for that section, orphaning `docs/guide/trie.md`'s hand-typed anchor back to
+the README — it pointed at the top of the file instead of its section. That's fixed here, along with
+a new guard, `GuideReadmeAnchorTest`, so it can't happen silently again.
 
 **Not touched:** `trie/viz`, `trie/events`, `trie/repl`, `trie/compare` — those are
 implementation-agnostic and PR 2 makes them serve both tries, so `Trie*` is correct for them.
-Nothing under `docs/`.
 
 **Evidence:**
-- Suite **572/572**, unchanged — a different total would mean something was added or lost.
-- All six `DocsPagesGoldenTest` cases green **without regeneration**, and `git diff main -- docs/`
-  is empty. Class names do not appear in recorded output bytes, so this is what proves the rename
-  touched only names.
+- Suite **573/573**: 572 of those are the pre-existing suite, unchanged by the rename itself; the
+  remaining 1 is the new `GuideReadmeAnchorTest`.
+- The central proof: `git diff main --stat -- docs/viz/ docs/index.html` is empty, so all six
+  `DocsPagesGoldenTest` cases pass **without regeneration** — class names do not appear in recorded
+  output bytes, so this is what proves the rename touched only names. The one file that *does* differ
+  from `main` under `docs/` is `docs/guide/trie.md` (one line — the anchor repair above); it's
+  hand-written prose, outside `RegenerateDocs.pages()`, and not golden-pinned, so it does not weaken
+  the proof.
+- The anchor defect: `docs/guide/trie.md` links back to its README section by a slug hand-typed at
+  guide-authoring time, not one recomputed from the heading, so nothing kept it in sync when the
+  heading text changed. `GuideReadmeAnchorTest` slugifies every README `### ` heading and checks each
+  guide's anchor resolves to one of them. Mutation-proven — reverting the anchor to its pre-rename
+  slug fails the guard — and the repaired anchor was independently checked against GitHub's own
+  Markdown renderer.
 - `LauncherMenuTest` now pins the structure label, which it did not before: `contains("Trie")`
   passed for `"Trie (radix)"` as a substring. Mutation-proven.
 
@@ -496,7 +523,9 @@ Expected: all six `http=200 IDENTICAL`.
 - 11 files renamed with `git mv`; `git log --follow` intact.
 - Zero occurrences of the old six names (plus `TrieLiveControlsEndToEndTest`) in `src` or `README.md`.
 - Suite at **exactly 573/573**, 0 failures (572 renamed + 1 new anchor guard).
-- `git diff main -- docs/` **empty**; all six golden cases green without regeneration.
+- `git diff main --stat -- docs/viz/ docs/index.html` **empty**; all six golden cases green without
+  regeneration. (`git diff main -- docs/` shows one line in `docs/guide/trie.md`, the anchor repair —
+  hand-written, ungenerated, not golden-pinned, so it does not weaken the proof.)
 - `Launcher` labels read `Trie (radix)`, and `LauncherMenuTest` pins it (mutation-proven).
 - `planning/` untouched by the rename pass.
 - PR open, Copilot triaged, post-merge Pages check green.

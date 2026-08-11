@@ -27,6 +27,15 @@ import org.junit.jupiter.api.Test;
  * headings in {@code README.md} exercise (an em dash and, as of the radix/standard split, a
  * parenthesized qualifier). It is not a general Markdown slug library, and should not grow rules
  * no current heading needs.
+ *
+ * <p><b>Limits of this guard, by design:</b> the oracle above is this class's own minimal
+ * slugifier, not GitHub's real one (e.g. {@code github-slugger}). A heading using a character the
+ * two treat differently would pass this suite while the live GitHub anchor still breaks — the
+ * anchors this guard currently checks were separately verified against GitHub's actual renderer,
+ * but that verification does not repeat automatically as headings change. Also, {@link
+ * #SECTION_HEADING} only scans {@code ### } headings, so a guide anchoring a heading at a different
+ * level (e.g. {@code ## }) would fail this guard spuriously rather than being checked correctly.
+ * Both are accepted as YAGNI for the headings that exist today, not fixed here.
  */
 class GuideReadmeAnchorTest {
 

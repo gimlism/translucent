@@ -63,8 +63,11 @@ nothing downstream ever asked for one.
 
 ## PR 1 — the rename
 
-Rename only. No new files, no behaviour change, no new tests. It is separate because PR 2's Launcher
-rows, README rows and guide all name classes PR 1 defines, and because git renders "renamed +
+Rename only, with one fix found and closed during execution: a new guard test,
+`GuideReadmeAnchorTest`, added after the heading relabel orphaned a hand-typed README anchor in
+`docs/guide/trie.md` (see Verification below). No other new files, no behaviour change. It is
+separate because PR 2's Launcher rows, README rows and guide all name classes PR 1 defines, and
+because git renders "renamed +
 modified" as delete+add once content changes land alongside — a reviewer then cannot separate *did
 the rename break something* from *is this new code correct*. This mirrors #45's recorded sequencing
 logic ("A FIRST because B and D both hardcode class names").
@@ -124,18 +127,29 @@ Use `find … -exec` rather than an unquoted `$files` variable: zsh does not wor
 
 ### Verification
 
-1. Suite stays at **exactly 572/572**. Any change in count means something was added or lost.
+1. Suite stays at **exactly 572/572** for the rename itself (Task 1's gate); the branch total after
+   the fix round that adds `GuideReadmeAnchorTest` is **573/573**. Any other count means something
+   was added or lost beyond that one deliberate guard.
 2. All six `DocsPagesGoldenTest` cases (five pages plus `index.html`) stay green **without
    regeneration** — class names do not appear in recorded output bytes (established empirically in
-   #45). A golden that moves proves the rename reached further than intended.
+   #45). A golden that moves proves the rename reached further than intended. This is checked as
+   `git diff main --stat -- docs/viz/ docs/index.html` being empty — the narrower, generated-only
+   scope, since `docs/guide/trie.md` (hand-written, not golden-pinned) legitimately changes by one
+   line to repair the anchor described below.
 3. `LauncherCatalogTest` (`Class.forName` per FQCN) and `LauncherReadmeTest` (README ↔ CATALOG, both
    directions) cover the Launcher and README edits: a missed rename fails on class load, a missed
    README row fails on the reverse check.
 4. `mvn clean` after the branch switch — the recorded stale-bytecode variant. The JDT/Eclipse
    language server throws phantom project-wide errors after bulk renames; **mvn is the source of
    truth.**
-5. Post-merge Pages check, even though PR 1 touches no file under `docs/` — #51 confirmed Pages
-   rebuilds on every push to `main` regardless.
+5. `GuideReadmeAnchorTest` guards the anchor defect the relabel itself caused: `docs/guide/trie.md`
+   links back to its README section by a hand-typed slug, and the label change (`"Trie"` →
+   `"Trie (radix)"`) changed the GitHub-generated slug out from under it. The guard slugifies every
+   README `### ` heading and checks each guide's anchor against that set; mutation-proven by reverting
+   the anchor to its pre-rename slug.
+6. Post-merge Pages check — PR 1 does touch one file under `docs/` (`docs/guide/trie.md`, the anchor
+   repair), but even a PR that touched none would still need this: #51 confirmed Pages rebuilds on
+   every push to `main` regardless.
 
 ## PR 2 — the structure
 
@@ -365,7 +379,8 @@ does not. Only the hand-written side can go stale.
 
 ## What could go wrong
 
-- **Rename overreach** (PR 1) — caught by the 572/572 count and by goldens that must not move.
+- **Rename overreach** (PR 1) — caught by the 572/572 (573/573 after the fix round) count and by
+  the generated goldens (`docs/viz/*.html`, `docs/index.html`) that must not move.
 - **Copy-paste across six mirrored demos** — caught by the title assertion plus review of the
   rewritten prose.
 - **Ordering regression in `WebVizTemplate`** — avoided structurally by putting the substitution
