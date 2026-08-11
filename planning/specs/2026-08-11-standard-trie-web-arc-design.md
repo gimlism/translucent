@@ -96,8 +96,14 @@ Use `git mv` so `git log --follow` survives.
 
 - `Launcher` — the `TRIE` package constant, six FQCNs, label `"Trie"` → `"Trie (radix)"`.
 - `RegenerateDocs` — the `TrieWebVizDemo::buildHtml` reference.
-- `README.md` — line 5 (prose), line 64 (the quick-start example names `TrieVizDemo`), line 106
-  (section heading), lines 110–115 (the six table rows).
+- `README.md` — line 64 (the quick-start example names `TrieVizDemo`; `LauncherReadmeTest`'s reverse
+  check scans *every* `com.gimlism.translucent.*` string in the file, so this one is mandatory, not
+  cosmetic), line 106 (section heading), lines 110–115 (the six table rows).
+
+⚠️ **Prose line 5** ("Four data structures … a radix **Trie**") stays in PR **2**, not here: it is
+still accurate until a fifth structure exists. Likewise the `Page` display title `"Trie"` →
+`"Radix trie"` — changing it would move the `index.html` golden and destroy PR 1's central proof
+that no golden moves.
 
 ### The substring hazard, restated
 
