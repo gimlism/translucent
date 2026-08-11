@@ -61,7 +61,7 @@ Each structure offers the same six modes.
 Prefix each with `mvn exec:java `. For example:
 
 ```
-mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo
+mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDemo
 ```
 
 ### ArrayList — a growable array
@@ -107,12 +107,12 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo
 
 | # | mode | |
 | --- | --- | --- |
-| 19 | text log | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieDemo` |
-| 20 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieVizDemo` |
-| 21 | web replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieWebVizDemo` |
-| 22 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveWebVizDemo` |
-| 23 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveReplDemo` |
-| 24 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveControlsDemo` |
+| 19 | text log | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieDemo` |
+| 20 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDemo` |
+| 21 | web replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieWebVizDemo` |
+| 22 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveWebVizDemo` |
+| 23 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveReplDemo` |
+| 24 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveControlsDemo` |
 
 📖 [What each Trie method makes you see](docs/guide/trie.md)
 

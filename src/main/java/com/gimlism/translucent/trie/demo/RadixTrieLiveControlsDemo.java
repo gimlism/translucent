@@ -13,11 +13,11 @@ import java.util.function.Function;
 /**
  * Browser-driven live demo: type commands into the page (a box wired to {@code POST /command}) and
  * watch each mutation render live. The trie lives server-side; the browser is the REPL over HTTP,
- * running the SAME {@link TrieCommandInterpreter} as {@link TrieLiveReplDemo}. No stdin. Run with:
- * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveControlsDemo}
+ * running the SAME {@link TrieCommandInterpreter} as {@link RadixTrieLiveReplDemo}. No stdin. Run with:
+ * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveControlsDemo}
  * The trie starts empty; the server keeps running until Ctrl-C.
  */
-public class TrieLiveControlsDemo {
+public class RadixTrieLiveControlsDemo {
 
     private static final int DEFAULT_PORT = 7070;
 

@@ -5,11 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-class TrieWebVizDemoTest {
+class RadixTrieWebVizDemoTest {
 
     @Test
     void buildHtmlIsSelfContainedAndExercisesInsertThenRemove() {
-        String html = TrieWebVizDemo.buildHtml();
+        String html = RadixTrieWebVizDemo.buildHtml();
 
         // self-contained baked document, no unsubstituted tokens
         assertTrue(html.contains("<!doctype html>"), "expected a full document");

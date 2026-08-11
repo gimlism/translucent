@@ -5,10 +5,10 @@ import com.gimlism.translucent.trie.viz.AsciiTrieVisualizer;
 import java.io.PrintStream;
 
 /**
- * Same scripted story as {@link TrieDemo}, rendered as live ASCII trees instead of a text log:
+ * Same scripted story as {@link RadixTrieDemo}, rendered as live ASCII trees instead of a text log:
  * every event prints the indented N-ary trie with the affected node (by path) highlighted.
  */
-public class TrieVizDemo {
+public class RadixTrieVizDemo {
     public static void main(String[] args) {
         run(System.out);
     }

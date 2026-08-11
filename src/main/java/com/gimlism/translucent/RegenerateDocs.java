@@ -6,7 +6,7 @@ import com.gimlism.translucent.treeset.demo.TreeSetWebVizDemo;
 import com.gimlism.translucent.trie.compare.CompressionCompareDemo;
 import com.gimlism.translucent.trie.compare.CompressionCompareJsonSerializer;
 import com.gimlism.translucent.trie.compare.CompressionCompareWebExporter;
-import com.gimlism.translucent.trie.demo.TrieWebVizDemo;
+import com.gimlism.translucent.trie.demo.RadixTrieWebVizDemo;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -86,7 +86,7 @@ public final class RegenerateDocs {
                         "guide/treeset.md", TreeSetWebVizDemo::buildHtml),
                 new Page("viz/trie.html", "Trie",
                         "A radix trie whose edges split and merge as keys arrive and leave.",
-                        "guide/trie.md", TrieWebVizDemo::buildHtml),
+                        "guide/trie.md", RadixTrieWebVizDemo::buildHtml),
                 new Page("viz/compression-compare.html", "Trie compression",
                         "A fat trie beside its compressed form, and what the compression saves.",
                         null, RegenerateDocs::compressionCompareHtml));

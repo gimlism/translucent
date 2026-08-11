@@ -12,11 +12,11 @@ import java.nio.file.Path;
  * Records a small story that exercises the trie's structural events — inserting keys with a shared
  * prefix (edges split and branch), then removing keys (leaves prune and edges merge) — and writes it
  * out as a self-contained HTML web replay. Run with:
- * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieWebVizDemo}
+ * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieWebVizDemo}
  * (optionally {@code -Dexec.args="path/to/out.html"}). The whole-document build is factored into
  * {@link #buildHtml()} so it can be unit-tested without touching the filesystem.
  */
-public class TrieWebVizDemo {
+public class RadixTrieWebVizDemo {
 
     public static void main(String[] args) throws IOException {
         Path out = Path.of(args.length > 0 ? args[0] : "target/trie-web-viz.html");

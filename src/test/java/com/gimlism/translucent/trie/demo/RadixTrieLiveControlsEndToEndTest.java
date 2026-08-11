@@ -23,12 +23,12 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 /** Proves Slice D: a browser POST /command mutates the trie and surfaces as a live SSE frame. */
-class TrieLiveControlsEndToEndTest {
+class RadixTrieLiveControlsEndToEndTest {
 
     @Test
     void aPostedCommandMutatesTheTrieAndSurfacesAsALiveFrame() throws IOException {
         var trie = new RadixTrie<Integer>();
-        Function<String, String> handler = TrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
+        Function<String, String> handler = RadixTrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
         LiveServer server = new LiveServer(TrieWebExporter.controlsHtml(), "127.0.0.1", 0, handler);
         server.start();
         HttpClient client = HttpClient.newHttpClient();
@@ -76,7 +76,7 @@ class TrieLiveControlsEndToEndTest {
     @Test
     void quitReturnsItsMessageWithoutStoppingOrMutating() {
         var trie = new RadixTrie<Integer>();
-        Function<String, String> handler = TrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
+        Function<String, String> handler = RadixTrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
         handler.apply("put a 1"); // trie now has one key
         assertEquals("bye", handler.apply("quit"));
         assertEquals("bye", handler.apply("exit"));

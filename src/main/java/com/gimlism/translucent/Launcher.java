@@ -61,12 +61,12 @@ public final class Launcher {
             new Entry("TreeSet", "terminal REPL", TREESET + "TreeSetLiveReplDemo"),
             new Entry("TreeSet", "browser REPL", TREESET + "TreeSetLiveControlsDemo"),
 
-            new Entry("Trie", "text log", TRIE + "TrieDemo"),
-            new Entry("Trie", "ASCII replay", TRIE + "TrieVizDemo"),
-            new Entry("Trie", "web replay (writes .html)", TRIE + "TrieWebVizDemo"),
-            new Entry("Trie", "live web", TRIE + "TrieLiveWebVizDemo"),
-            new Entry("Trie", "terminal REPL", TRIE + "TrieLiveReplDemo"),
-            new Entry("Trie", "browser REPL", TRIE + "TrieLiveControlsDemo"),
+            new Entry("Trie", "text log", TRIE + "RadixTrieDemo"),
+            new Entry("Trie", "ASCII replay", TRIE + "RadixTrieVizDemo"),
+            new Entry("Trie", "web replay (writes .html)", TRIE + "RadixTrieWebVizDemo"),
+            new Entry("Trie", "live web", TRIE + "RadixTrieLiveWebVizDemo"),
+            new Entry("Trie", "terminal REPL", TRIE + "RadixTrieLiveReplDemo"),
+            new Entry("Trie", "browser REPL", TRIE + "RadixTrieLiveControlsDemo"),
 
             new Entry("Trie (compression)", "standard vs radix, side by side",
                     "com.gimlism.translucent.trie.compare.CompressionCompareDemo"));

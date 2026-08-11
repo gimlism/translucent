@@ -5,7 +5,7 @@ import com.gimlism.translucent.trie.core.RadixTrie;
 import java.io.PrintStream;
 
 /** Scripted demonstration of the teaching radix-trie event stream. */
-public class TrieDemo {
+public class RadixTrieDemo {
     public static void main(String[] args) {
         run(System.out);
     }

@@ -13,11 +13,11 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-class TrieLiveReplDemoTest {
+class RadixTrieLiveReplDemoTest {
 
     private String runOn(String input, RadixTrie<Integer> trie) throws IOException {
         var out = new ByteArrayOutputStream();
-        TrieLiveReplDemo.runRepl(new BufferedReader(new StringReader(input)),
+        RadixTrieLiveReplDemo.runRepl(new BufferedReader(new StringReader(input)),
                 new PrintStream(out, true, StandardCharsets.UTF_8),
                 trie, new TrieCommandInterpreter());
         return out.toString(StandardCharsets.UTF_8);

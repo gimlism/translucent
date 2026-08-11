@@ -7,11 +7,11 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-class TrieDemoTest {
+class RadixTrieDemoTest {
     @Test
     void runShowsDescendCreateSplitPutRemoveMergePrune() {
         var buffer = new ByteArrayOutputStream();
-        TrieDemo.run(new PrintStream(buffer, true, StandardCharsets.UTF_8));
+        RadixTrieDemo.run(new PrintStream(buffer, true, StandardCharsets.UTF_8));
         String out = buffer.toString(StandardCharsets.UTF_8);
         assertTrue(out.contains("CREATE"), out);
         assertTrue(out.contains("DESCEND"), out);
