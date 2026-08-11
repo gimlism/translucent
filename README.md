@@ -103,7 +103,7 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDem
 
 📖 [What each TreeSet method makes you see](docs/guide/treeset.md)
 
-### Trie — a radix trie whose edges split and merge as keys arrive and leave
+### Trie (radix) — edges split and merge as keys arrive and leave
 
 | # | mode | |
 | --- | --- | --- |
