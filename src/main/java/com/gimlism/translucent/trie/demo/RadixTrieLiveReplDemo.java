@@ -17,10 +17,10 @@ import java.nio.charset.StandardCharsets;
  * Interactive terminal REPL for a live {@link RadixTrie}: type commands (see {@code help}) and
  * watch each mutation render live in the browser — no recompile per change. Reuses Slice B's
  * {@link LiveServer} for the SSE stream. Run with:
- * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.TrieLiveReplDemo}
+ * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveReplDemo}
  * The trie starts empty; the server stops when you type {@code quit} or send EOF (Ctrl-D).
  */
-public class TrieLiveReplDemo {
+public class RadixTrieLiveReplDemo {
 
     private static final int DEFAULT_PORT = 7070;
 

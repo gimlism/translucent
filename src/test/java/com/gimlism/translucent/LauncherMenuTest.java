@@ -45,7 +45,7 @@ class LauncherMenuTest {
     @Test
     void menuNamesEachStructureOnce() throws IOException {
         String out = drive("q\n").out();
-        for (String s : List.of("ArrayList", "HashMap", "TreeSet", "Trie")) {
+        for (String s : List.of("ArrayList", "HashMap", "TreeSet", "Trie (radix)")) {
             assertTrue(out.contains(s), "missing structure heading " + s);
         }
     }
