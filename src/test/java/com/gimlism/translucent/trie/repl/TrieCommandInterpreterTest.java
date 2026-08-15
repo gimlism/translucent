@@ -6,8 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gimlism.translucent.substrate.repl.CommandResult;
 import com.gimlism.translucent.trie.consumer.TrieRecordingListener;
+import com.gimlism.translucent.trie.core.PrefixMap;
 import com.gimlism.translucent.trie.core.RadixTrie;
+import com.gimlism.translucent.trie.core.StandardTrie;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class TrieCommandInterpreterTest {
 
@@ -167,5 +173,25 @@ class TrieCommandInterpreterTest {
         interp.execute("keysWithPrefix sh", trie);
         interp.execute("size", trie);
         assertTrue(rec.events().isEmpty(), "reads emit no event");
+    }
+
+    /**
+     * The help line's structure name is derived from the trie it was handed, not hardcoded. Nothing
+     * pinned that before: helpListsEveryCommandWord asserts only that each command WORD appears, so
+     * a help text naming the wrong trie would ship green. Parameterised over both implementations
+     * because a derivation that is wrong for one and right for the other is the failure shape.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("bothTries")
+    void helpNamesTheTrieItWasHanded(String expectedName, PrefixMap<Integer> trie) {
+        String help = interp.execute("help", trie).message();
+        assertTrue(help.startsWith(expectedName + " live REPL"),
+                "help must name the structure it was handed; got: " + help.lines().findFirst().orElse(""));
+    }
+
+    static Stream<Arguments> bothTries() {
+        return Stream.of(
+                Arguments.of("RadixTrie", new RadixTrie<Integer>()),
+                Arguments.of("StandardTrie", new StandardTrie<Integer>()));
     }
 }

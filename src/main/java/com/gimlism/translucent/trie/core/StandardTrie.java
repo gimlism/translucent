@@ -35,7 +35,7 @@ import java.util.Set;
  * snapshots, so {@link java.util.Map.Entry#setValue(Object)} throws
  * {@link UnsupportedOperationException}; update via {@link #put(String, Object)} instead.
  */
-public class StandardTrie<V> extends AbstractMap<String, V> {
+public class StandardTrie<V> extends AbstractMap<String, V> implements PrefixMap<V> {
 
     private final StandardTrieNode<V> root = new StandardTrieNode<>();
     private int size;
