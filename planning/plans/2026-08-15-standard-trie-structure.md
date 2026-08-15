@@ -512,7 +512,7 @@ demos construct their `LiveServer` before their trie, deriving it would force a 
 gain, and Task 3's event-stream guard — not this string — is what catches a demo whose page label and
 actual structure disagree.
 
-Tests (12 occurrences across 5 files) — pass `"RadixTrie"` at each, except
+Tests (11 occurrences across 5 files) — pass `"RadixTrie"` at each, except
 `TrieWebExporterTest:38–39` where `writeHtml` gains the argument in the middle position:
 
 ```java
@@ -526,8 +526,9 @@ Find them all with:
 grep -rn "TrieWebExporter\." src/main src/test | grep -v Compression
 ```
 
-Expected: 16 lines, all updated. (`CompressionCompareWebExporter` is untouched — it uses
-`injectStatic` and has its own template.)
+Expected: **15** lines, all updated — 4 in `src/main` and 11 in `src/test`, matching the two tables
+above. (`CompressionCompareWebExporter` is untouched — it uses `injectStatic` and has its own
+template.)
 
 - [ ] **Step 8: Run the whole suite and check the golden did not move**
 
