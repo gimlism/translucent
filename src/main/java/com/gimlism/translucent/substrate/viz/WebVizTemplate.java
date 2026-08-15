@@ -21,6 +21,7 @@ public final class WebVizTemplate {
     private static final String LIVE_TOKEN = "/*__LIVE__*/";
     private static final String CONTROLS_TOKEN = "/*__CONTROLS__*/";
     private static final String DATA_TOKEN = "/*__DATA__*/";
+    private static final String STRUCTURE_TOKEN = "/*__STRUCTURE__*/";
 
     private WebVizTemplate() {}
 
@@ -37,6 +38,34 @@ public final class WebVizTemplate {
         require(template, resource, LIVE_TOKEN);
         require(template, resource, CONTROLS_TOKEN);
         return template
+                .replace(LIVE_TOKEN, liveReplacement)
+                .replace(CONTROLS_TOKEN, controlsReplacement)
+                .replace(FRAMES_TOKEN, framesReplacement); // user data LAST
+    }
+
+    /**
+     * As {@link #inject}, plus a {@code STRUCTURE} token naming the structure the page depicts, for a
+     * template shared by more than one implementation. Substitutes STRUCTURE, LIVE and CONTROLS —
+     * all fixed, caller-chosen strings — and the user-controlled {@code FRAMES} blob LAST, preserving
+     * the ordering invariant this class exists to centralise.
+     *
+     * <p>Deliberately a distinct name rather than a five-argument overload of {@link #inject}: two
+     * same-typed positional overloads differing only in arity is a call-site trap.
+     *
+     * <p><b>Only {@code /web/trie-viz.html} carries the STRUCTURE token.</b> The map, list, treeset
+     * and compression-compare templates do not, because each depicts exactly one implementation. A
+     * later "unification" of {@link #inject} and this method would therefore make {@code require()}
+     * throw for those four pages.
+     */
+    public static String injectNamed(String resource, String framesReplacement,
+            String liveReplacement, String controlsReplacement, String structureReplacement) {
+        String template = read(resource);
+        require(template, resource, FRAMES_TOKEN);
+        require(template, resource, LIVE_TOKEN);
+        require(template, resource, CONTROLS_TOKEN);
+        require(template, resource, STRUCTURE_TOKEN);
+        return template
+                .replace(STRUCTURE_TOKEN, structureReplacement)
                 .replace(LIVE_TOKEN, liveReplacement)
                 .replace(CONTROLS_TOKEN, controlsReplacement)
                 .replace(FRAMES_TOKEN, framesReplacement); // user data LAST

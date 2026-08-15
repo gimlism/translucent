@@ -46,6 +46,6 @@ public class RadixTrieWebVizDemo {
             trie.remove(key);
         }
 
-        return TrieWebExporter.toHtml(TrieJsonSerializer.toJson(rec.events()));
+        return TrieWebExporter.toHtml(TrieJsonSerializer.toJson(rec.events()), "RadixTrie");
     }
 }

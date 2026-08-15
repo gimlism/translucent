@@ -29,7 +29,7 @@ class RadixTrieLiveControlsEndToEndTest {
     void aPostedCommandMutatesTheTrieAndSurfacesAsALiveFrame() throws IOException {
         var trie = new RadixTrie<Integer>();
         Function<String, String> handler = RadixTrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
-        LiveServer server = new LiveServer(TrieWebExporter.controlsHtml(), "127.0.0.1", 0, handler);
+        LiveServer server = new LiveServer(TrieWebExporter.controlsHtml("RadixTrie"), "127.0.0.1", 0, handler);
         server.start();
         HttpClient client = HttpClient.newHttpClient();
         try {

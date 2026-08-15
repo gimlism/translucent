@@ -10,7 +10,7 @@ class TrieWebExporterLiveTest {
 
     @Test
     void liveHtmlHasNoBakedFramesAndOpensAnEventSource() {
-        String html = TrieWebExporter.liveHtml();
+        String html = TrieWebExporter.liveHtml("RadixTrie");
         assertTrue(html.toLowerCase(Locale.ROOT).contains("<!doctype html"), "full document");
         assertFalse(html.contains("/*__FRAMES__*/"), "frames token replaced");
         assertFalse(html.contains("/*__LIVE__*/"), "live token replaced");
@@ -22,7 +22,7 @@ class TrieWebExporterLiveTest {
 
     @Test
     void bakedHtmlStillInjectsFramesAndTurnsLiveOff() {
-        String html = TrieWebExporter.toHtml("{\"frames\":[]}");
+        String html = TrieWebExporter.toHtml("{\"frames\":[]}", "RadixTrie");
         assertTrue(html.contains("const DATA = {\"frames\":[]};"), "baked frames injected");
         assertTrue(html.contains("const LIVE = false;"), "live mode off for the baked file");
     }

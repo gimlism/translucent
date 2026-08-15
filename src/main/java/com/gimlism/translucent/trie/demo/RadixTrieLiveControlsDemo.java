@@ -25,7 +25,7 @@ public class RadixTrieLiveControlsDemo {
         var trie = new RadixTrie<Integer>();
         Function<String, String> handler = commandHandler(trie, new TrieCommandInterpreter());
 
-        LiveServer server = new LiveServer(TrieWebExporter.controlsHtml(), "127.0.0.1", DEFAULT_PORT, handler);
+        LiveServer server = new LiveServer(TrieWebExporter.controlsHtml("RadixTrie"), "127.0.0.1", DEFAULT_PORT, handler);
         server.start();
         trie.addListener(new TrieLiveVisualizer(server::broadcast));
 

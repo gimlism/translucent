@@ -91,4 +91,27 @@ class WebVizTemplateTest {
         String viaToken = WebVizTemplate.injectToken("/web/webviztemplate-static.html", "/*__DATA__*/", "{\"x\":1}");
         assertEquals(viaToken, viaStatic);
     }
+
+    @Test
+    void injectNamedSubstitutesTheStructureNameAndTheThreeStandardTokens() {
+        String html = WebVizTemplate.injectNamed("/web/trie-viz.html", "{\"frames\":[]}",
+                "false", "false", "StandardTrie");
+
+        assertTrue(html.contains("<title>StandardTrie — replay</title>"), "the page title names the trie");
+        assertTrue(html.contains("<h1>StandardTrie — web replay</h1>"), "the heading names the trie");
+        assertFalse(html.contains("/*__"), "no template token may survive");
+    }
+
+    /**
+     * The other direction. Only trie-viz.html carries a STRUCTURE token, so injectNamed must reject a
+     * template that lacks one rather than returning a page silently missing its name — the same
+     * contract inject() already enforces for FRAMES/LIVE/CONTROLS.
+     */
+    @Test
+    void injectNamedRejectsATemplateWithNoStructureToken() {
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+                () -> WebVizTemplate.injectNamed("/web/map-viz.html", "{\"frames\":[]}",
+                        "false", "false", "TeachingHashMap"));
+        assertTrue(e.getMessage().contains("__STRUCTURE__"), e.getMessage());
+    }
 }

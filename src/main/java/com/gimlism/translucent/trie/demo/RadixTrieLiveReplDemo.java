@@ -25,7 +25,7 @@ public class RadixTrieLiveReplDemo {
     private static final int DEFAULT_PORT = 7070;
 
     public static void main(String[] args) throws IOException {
-        LiveServer server = new LiveServer(TrieWebExporter.liveHtml(), "127.0.0.1", DEFAULT_PORT);
+        LiveServer server = new LiveServer(TrieWebExporter.liveHtml("RadixTrie"), "127.0.0.1", DEFAULT_PORT);
         server.start();
         String url = "http://localhost:" + server.port();
 
