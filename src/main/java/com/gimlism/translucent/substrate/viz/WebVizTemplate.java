@@ -21,6 +21,9 @@ public final class WebVizTemplate {
     private static final String LIVE_TOKEN = "/*__LIVE__*/";
     private static final String CONTROLS_TOKEN = "/*__CONTROLS__*/";
     private static final String DATA_TOKEN = "/*__DATA__*/";
+    // JS-comment-shaped despite landing in markup (<title>/<h1>), not <script>: <title> is an
+    // RCDATA element, where an HTML comment is not parsed as one and would render literally in
+    // the browser tab. See injectNamed's Javadoc.
     private static final String STRUCTURE_TOKEN = "/*__STRUCTURE__*/";
 
     private WebVizTemplate() {}
@@ -51,6 +54,14 @@ public final class WebVizTemplate {
      *
      * <p>Deliberately a distinct name rather than a five-argument overload of {@link #inject}: two
      * same-typed positional overloads differing only in arity is a call-site trap.
+     *
+     * <p>The STRUCTURE token is JS-comment-shaped ({@code /*__STRUCTURE__*}{@code /}) like FRAMES,
+     * LIVE and CONTROLS, even though it substitutes into markup ({@code <title>}/{@code <h1>}) rather
+     * than a {@code <script>} block, unlike the HTML-comment token convention used elsewhere for
+     * markup (e.g. {@code SiteIndex.PAGES_TOKEN}). This is deliberate, not an inconsistency to
+     * "fix": {@code <title>} is an RCDATA element, so an HTML comment placed inside it is not parsed
+     * as a comment and would render literally in the browser tab. Changing this token to
+     * {@code <!--__STRUCTURE__-->} would silently break the page title.
      *
      * <p><b>Only {@code /web/trie-viz.html} carries the STRUCTURE token.</b> The map, list, treeset
      * and compression-compare templates do not, because each depicts exactly one implementation. A
