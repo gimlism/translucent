@@ -22,13 +22,14 @@ Or open one directly:
 | [list](https://gimlism.github.io/translucent/viz/list.html) | ArrayList |
 | [map](https://gimlism.github.io/translucent/viz/map.html) | HashMap |
 | [treeset](https://gimlism.github.io/translucent/viz/treeset.html) | TreeSet |
-| [trie](https://gimlism.github.io/translucent/viz/trie.html) | Trie |
+| [standard-trie](https://gimlism.github.io/translucent/viz/standard-trie.html) | Trie (standard) |
+| [trie](https://gimlism.github.io/translucent/viz/trie.html) | Trie (radix) |
 | [compression-compare](https://gimlism.github.io/translucent/viz/compression-compare.html) | a fat trie beside its compressed form |
 
 Each replays a real run: step through it, play it, scrub back. The events were recorded from the
 actual `put()`/`add()` path, not scripted for the page.
 
-Already cloned the repo? The same five pages are committed under `docs/viz/`, and `docs/index.html`
+Already cloned the repo? The same six pages are committed under `docs/viz/`, and `docs/index.html`
 is the same landing page — they open straight from disk, offline.
 
 Everything below needs a JDK.
