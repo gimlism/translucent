@@ -588,8 +588,9 @@ which structure produced them. **The discriminating assertion is on the event st
 present, `SplitEdge` and `MergeEdge` absent. That is exactly the property distinguishing the two
 tries, it is already baked into the JSON as each frame's `"type"`, and no golden can see it.
 
-**Expected test-count delta: +9** (1 + 1 + 1 + 3 + 2 = the mirrors of the radix five; record the
-actual, which is driven by how many `@Test` methods the mirrors end up with).
+**Expected test-count delta: +8** — the `@Test` counts of the radix five this task mirrors:
+`RadixTrieDemoTest` 1, `RadixTrieVizDemoTest` 1, `RadixTrieWebVizDemoTest` 1,
+`RadixTrieLiveReplDemoTest` 3, `RadixTrieLiveControlsEndToEndTest` 2.
 
 - [ ] **Step 1: Write the failing test for the text-log demo**
 
@@ -1068,7 +1069,7 @@ until the `Put` frame arrives — do not assert on the first frame.
 - [ ] **Step 12: Run the whole suite**
 
 Run: `mvn clean test`
-Expected: **586/586** (577 + 9). Record the actual, and check `git diff --stat -- docs/` is still
+Expected: **585/585** (577 + 8). Record the actual, and check `git diff --stat -- docs/` is still
 **empty** — nothing in this task touches the generated site.
 
 - [ ] **Step 13: Commit**
@@ -1085,7 +1086,8 @@ git commit -m "feat(trie): six StandardTrie demos mirroring the radix scenario"
 
 **Files:**
 - Modify: `src/main/java/com/gimlism/translucent/Launcher.java:35–72`
-- Modify: `README.md:5,30,106–123`
+- Modify: `README.md:5,106–123`
+- Modify: `docs/guide/trie.md:59` — **the edit nothing in the suite would catch** (Step 6)
 - Test: `src/test/java/com/gimlism/translucent/LauncherCatalogTest.java:43,44,53`
 - Test: `src/test/java/com/gimlism/translucent/LauncherMenuTest.java:48`
 
@@ -1178,7 +1180,25 @@ Step 5 to match.
 Then renumber the existing radix rows **19–24 → 25–30** and the compression row **25 → 31**. Only the
 leading `| N |` cell changes on each; the FQCNs are untouched.
 
-- [ ] **Step 6: Update README prose line 5 and line 30**
+- [ ] **Step 6: Repair `docs/guide/trie.md:59` — the renumbering's silent casualty**
+
+That line currently reads:
+
+```markdown
+- demos 19–24 in the [README](../../README.md#trie-radix--edges-split-and-merge-as-keys-arrive-and-leave)
+```
+
+Step 5 just moved the radix demos to 25–30, so it now points a student at the *standard* trie's six
+rows. Change `19–24` to **`25–30`**; leave the anchor exactly as it is (the `### Trie (radix) …`
+heading text is unchanged, so the link still resolves).
+
+⚠️ **Nothing in the suite catches this.** `GuideReadmeAnchorTest` checks only that the anchor resolves
+to a heading, and it does. `GuideEventMapTest` parses only the events table. `SiteIndexTest` checks
+only that the file exists and is linked. This is exactly the hand-written-surface-points-at-nothing
+shape that PR 1 shipped and then had to fix — a number in prose, pinned by nothing. Do not skip it
+because the build stays green; the build staying green *is* the problem.
+
+- [ ] **Step 7: Update README prose line 5**
 
 Line 5 currently reads *"Four data structures — **ArrayList**, **HashMap**, **TreeSet** and a radix
 **Trie** — implemented for teaching…"*. Replace the first sentence with:
@@ -1191,15 +1211,15 @@ it does it. The narration is emitted by the real
 
 Leave the rest of that paragraph (from `` `put()`/`add()`/`remove()` paths, … ``) unchanged.
 
-Line 30 (*"The same five pages are committed under `docs/viz/`"*) becomes **six** — the sixth page
-lands in Task 5a, but this sentence and the hosted table it follows are one thought; if you prefer to
-keep this task's diff strictly to the demo tables, move this single edit into Task 5a Step 4 instead.
-Do one or the other, not neither.
+**Do not touch README line 30** (*"The same five pages are committed under `docs/viz/`"*) here. It
+becomes "six" in Task 5a Step 4, in the same commit that actually writes the sixth file — this task
+would ship a README claiming six committed pages while `docs/viz/` holds five, and no test reads
+prose.
 
-- [ ] **Step 7: Run the whole suite**
+- [ ] **Step 8: Run the whole suite**
 
 Run: `mvn clean test`
-Expected: **586/586** — unchanged from Task 3. `LauncherReadmeTest` passes in both directions:
+Expected: **585/585** — unchanged from Task 3. `LauncherReadmeTest` passes in both directions:
 forward (every `CATALOG` FQCN appears in the README) and reverse (every
 `com.gimlism.translucent.*` string in the README resolves to a `CATALOG` entry — which is why the
 quick-start example at line 64 matters, though it names `RadixTrieVizDemo` and stays valid).
@@ -1207,10 +1227,10 @@ quick-start example at line 64 matters, though it names `RadixTrieVizDemo` and s
 `GuideReadmeAnchorTest` also stays green: the new `### ` heading adds a slug to the reference set, and
 `docs/guide/trie.md`'s existing anchor targets the unchanged `### Trie (radix) …` heading.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/main/java/com/gimlism/translucent/Launcher.java README.md \
+git add src/main/java/com/gimlism/translucent/Launcher.java README.md docs/guide/trie.md \
         src/test/java/com/gimlism/translucent/LauncherCatalogTest.java \
         src/test/java/com/gimlism/translucent/LauncherMenuTest.java
 git commit -m "feat(launcher): list the standard trie's six demos before the radix trie's"
@@ -1298,8 +1318,8 @@ In the table at README lines 19–25, insert before the `trie` row and relabel t
 | [trie](https://gimlism.github.io/translucent/viz/trie.html) | Trie (radix) |
 ```
 
-If Task 4 Step 6 did not already do it, change *"The same five pages are committed under
-`docs/viz/`"* to **six** here.
+Then change README line 30, *"The same five pages are committed under `docs/viz/`"*, to **six**. This
+is the commit that writes the sixth file, so it is the only commit in which that sentence is true.
 
 - [ ] **Step 5: Verify determinism, then run the whole suite**
 
@@ -1312,7 +1332,7 @@ Expected: the second run leaves the tree exactly as the first did — no further
 method: two consecutive generator runs must be byte-identical.)
 
 Run: `mvn clean test`
-Expected: **587/587** (586 + 1). Record the actual.
+Expected: **586/586** (585 + 1). Record the actual.
 
 - [ ] **Step 6: Commit**
 
@@ -1539,7 +1559,7 @@ Expected: only `docs/index.html` modified (the standard-trie card gains its guid
 `docs/viz/standard-trie.html` also changed, something in Task 3's generator moved — investigate.
 
 Run: `mvn clean test`
-Expected: **588/588** (587 + 1). Record the actual.
+Expected: **587/587** (586 + 1). Record the actual.
 
 - [ ] **Step 8: Verify every conditional marker row-by-row against source**
 
@@ -1584,8 +1604,8 @@ git commit -m "docs(guide): add the standard-trie guide and pin it to what the t
 ```bash
 mvn clean test
 ```
-Expected: **588/588** (or whatever the recorded actuals sum to — the number must be *explained* by
-the per-task deltas above, not merely large).
+Expected: **587/587** — 573 at base, then +2 (T1) +2 (T2) +8 (T3) +0 (T4) +1 (T5a) +1 (T5b). If the
+actual differs, the gap must be *explained* against that chain before the PR opens, not rounded off.
 
 - [ ] **Step 2: Regeneration is a no-op**
 
@@ -1600,10 +1620,15 @@ Expected: **clean tree**. The committed site is provably generator output.
 ```bash
 git diff 57470fd --stat -- docs/
 ```
-Expected: exactly three paths — `docs/viz/standard-trie.html` (new), `docs/index.html` (modified),
-`docs/guide/standard-trie.md` (new). **`docs/viz/{list,map,treeset,trie,compression-compare}.html`
-and `docs/guide/{list,map,treeset,trie}.md` must be absent from that list.** The four untouched
-replays are Task 2's byte-identity proof, restated at branch scope.
+Expected: exactly **four** paths — `docs/viz/standard-trie.html` (new), `docs/index.html` (modified),
+`docs/guide/standard-trie.md` (new), and `docs/guide/trie.md` (modified, **one line**: the demo
+renumbering from Task 4 Step 6).
+
+**`docs/viz/{list,map,treeset,trie,compression-compare}.html` and
+`docs/guide/{list,map,treeset}.md` must be absent from that list.** The four untouched replays are
+Task 2's byte-identity proof, restated at branch scope. Confirm the `trie.md` change really is one
+line with `git diff 57470fd -- docs/guide/trie.md` — anything more means the guide was edited beyond
+the renumbering.
 
 - [ ] **Step 4: Mutation-prove the two new guards**
 
@@ -1675,9 +1700,25 @@ the three the spec lists (`writeHtml` at `TrieWebExporter:38` delegates to `toHt
 rather than assumed, because the token lands in markup where the repo's `injectToken` convention would
 otherwise point the other way.
 
-**One thing this plan adds that the spec did not call for:** T5b Step 5's live `gh api /markdown`
-check on the new heading. PR 1's only real defect was an orphaned README anchor, and the guard written
-to catch it explicitly documents that its slugifier is not GitHub's.
+**Two things this plan adds that the spec did not call for**, both of the same shape — a hand-written
+surface the build cannot see:
+
+1. T5b Step 5's live `gh api /markdown` check on the new heading. PR 1's only real defect was an
+   orphaned README anchor, and the guard written to catch it explicitly documents that its slugifier
+   is not GitHub's.
+2. T4 Step 6's repair of `docs/guide/trie.md:59`. Renumbering the radix demos to 25–30 strands that
+   line's "demos 19–24" pointing at the *standard* trie's rows. Every guard stays green through it:
+   the anchor still resolves (heading text unchanged), `GuideEventMapTest` parses only the events
+   table, `SiteIndexTest` checks only existence and linkage. It is a number in prose, pinned by
+   nothing — the identical defect class PR 1 created, found here by asking what T4 breaks that no test
+   asserts, rather than by a test.
+
+**One assertion in this plan is inferred, not measured.** `StandardTrieWebVizDemoTest`'s
+`assertFalse(html.contains("\"label\":\"sh\""))` reasons from the radix test that `"label"` is a real
+JSON field and that a standard trie's labels are single characters. The field name is measured
+(`RadixTrieWebVizDemoTest:21`); the absence claim is not. Keep the assertion — it is the right
+property — but on the first green run confirm it is *discriminating* rather than trivially true, e.g.
+by checking the generated page does contain single-character labels like `"label":"s"`.
 
 **Placeholder scan.** No step says "add appropriate error handling", "similar to Task N" without the
 code, or "write tests for the above". The two places that say "mirror X exactly" (T3 Steps 10–11)
