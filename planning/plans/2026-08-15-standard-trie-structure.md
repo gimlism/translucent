@@ -543,7 +543,7 @@ Expected: **empty**. `DocsPagesGoldenTest`'s six cases passed **without regenera
 `docs/viz/trie.html` is byte-identical after the extraction. If it is not empty, the extraction
 changed output — stop and find out why rather than regenerating.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add src/main/resources/web/trie-viz.html \
@@ -1532,7 +1532,36 @@ Expected: `id="user-content-trie-standard--one-node-per-character-and-a-prune-ca
 If it differs, **use GitHub's slug in the guide link** and note the divergence — the guard's slugifier
 is a convenience, the live renderer is the contract.
 
-- [ ] **Step 6: Add the README guide link and set the `Page`'s guide**
+- [ ] **Step 6: Repair the landing page's stale lede — the second surface nothing pins**
+
+`src/main/resources/web/site-index.html:38` reads:
+
+```html
+  <p class="lede">Four data structures, each narrating what it does as it does it.</p>
+```
+
+The site now cards **five** structures across six pages, so the public front door
+(`gimlism.github.io/translucent`) states something false. Change it to match README line 5's
+rewrite — five structures, two of them tries:
+
+```html
+  <p class="lede">Five data structures — including two tries, one compressed — each narrating what it does as it does it.</p>
+```
+
+⚠️ **This is the PR #49 failure shape, and it is worth recognising because it looks like the
+opposite of a hole.** `DocsPagesGoldenTest` *does* pin `docs/index.html` — but it pins it to
+**generator output**, and the generator reads this template. So the generator faithfully reproduces
+the false claim, the golden follows it, and the suite is green with the front door stating the wrong
+thing. The recorded precedent is identical: the landing page's footer once claimed "MIT licensed"
+with nothing pinning it, so relicensing would have gone red on the README and left the public page
+lying at full green.
+
+★ This step was **not in the original plan** — it was found by the Task 5a implementer while
+regenerating, and is the third instance on this branch of the same rule: *generated surfaces
+self-heal, hand-written ones point at nothing.* The template is hand-written; only its bytes are
+generated.
+
+- [ ] **Step 7: Add the README guide link and set the `Page`'s guide**
 
 In `README.md`, under the Trie (standard) demo table (after row 24), add the line the other four
 sections carry:
@@ -1549,7 +1578,7 @@ In `RegenerateDocs.vizPages()`, set the new page's guide:
                         "guide/standard-trie.md", StandardTrieWebVizDemo::buildHtml),
 ```
 
-- [ ] **Step 7: Regenerate and run the whole suite**
+- [ ] **Step 8: Regenerate and run the whole suite**
 
 ```bash
 mvn exec:java -Dexec.mainClass=com.gimlism.translucent.RegenerateDocs
@@ -1562,7 +1591,7 @@ Expected: only `docs/index.html` modified (the standard-trie card gains its guid
 Run: `mvn clean test`
 Expected: **587/587** (586 + 1). Record the actual.
 
-- [ ] **Step 8: Verify every conditional marker row-by-row against source**
+- [ ] **Step 9: Verify every conditional marker row-by-row against source**
 
 This is a review step with no test behind it, and it is here because #48's structural lesson is that
 the suite compares event **names** only — every ordering claim and every `?`/`×n` marker in the table
@@ -1585,10 +1614,11 @@ above is prose the build cannot check. Read `StandardTrie.put` (`:76–116`) and
 
 Fix the guide's prose for anything that comes back ✘.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add docs/guide/standard-trie.md docs/index.html README.md \
+        src/main/resources/web/site-index.html \
         src/main/java/com/gimlism/translucent/RegenerateDocs.java \
         src/test/java/com/gimlism/translucent/GuideEventMapTest.java
 git commit -m "docs(guide): add the standard-trie guide and pin it to what the trie emits"
