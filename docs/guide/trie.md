@@ -56,4 +56,4 @@ by contrast, narrates every comparison it makes; see `docs/guide/treeset.md`.
 
 - `docs/viz/trie.html` — open in a browser, no JDK needed
 - `docs/viz/compression-compare.html` — the same keys, fat trie beside compressed
-- demos 19–24 in the [README](../../README.md#trie-radix--edges-split-and-merge-as-keys-arrive-and-leave)
+- demos 25–30 in the [README](../../README.md#trie-radix--edges-split-and-merge-as-keys-arrive-and-leave)

@@ -2,8 +2,9 @@
 
 Simple runtime monitoring of internal object state to facilitate teaching sessions.
 
-Four data structures — **ArrayList**, **HashMap**, **TreeSet** and a radix **Trie** — implemented
-for teaching, each narrating what it does as it does it. The narration is emitted by the real
+Five data structures — **ArrayList**, **HashMap**, **TreeSet**, and two tries: a **standard trie**
+and the **radix trie** that compresses it — implemented for teaching, each narrating what it does as
+it does it. The narration is emitted by the real
 `put()`/`add()`/`remove()` paths, so what you watch is the algorithm running, not an animation of
 it.
 
@@ -103,16 +104,27 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDem
 
 📖 [What each TreeSet method makes you see](docs/guide/treeset.md)
 
+### Trie (standard) — one node per character, and a prune cascade when keys leave
+
+| # | mode | |
+| --- | --- | --- |
+| 19 | text log | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieDemo` |
+| 20 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieVizDemo` |
+| 21 | web replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieWebVizDemo` |
+| 22 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieLiveWebVizDemo` |
+| 23 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieLiveReplDemo` |
+| 24 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieLiveControlsDemo` |
+
 ### Trie (radix) — edges split and merge as keys arrive and leave
 
 | # | mode | |
 | --- | --- | --- |
-| 19 | text log | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieDemo` |
-| 20 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDemo` |
-| 21 | web replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieWebVizDemo` |
-| 22 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveWebVizDemo` |
-| 23 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveReplDemo` |
-| 24 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveControlsDemo` |
+| 25 | text log | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieDemo` |
+| 26 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDemo` |
+| 27 | web replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieWebVizDemo` |
+| 28 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveWebVizDemo` |
+| 29 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveReplDemo` |
+| 30 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveControlsDemo` |
 
 📖 [What each Trie method makes you see](docs/guide/trie.md)
 
@@ -120,7 +132,7 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDem
 
 | # | mode | |
 | --- | --- | --- |
-| 25 | standard vs radix, side by side | `-Dexec.mainClass=com.gimlism.translucent.trie.compare.CompressionCompareDemo` |
+| 31 | standard vs radix, side by side | `-Dexec.mainClass=com.gimlism.translucent.trie.compare.CompressionCompareDemo` |
 
 ## How each slice got decided
 

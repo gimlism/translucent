@@ -36,8 +36,9 @@ public final class Launcher {
 
     /**
      * Every demo, ordered by teaching difficulty — a growable array is the gentlest first contact
-     * with "the data structure has an inside", and the trie's compression comparison is the payoff
-     * that only makes sense once tries do.
+     * with "the data structure has an inside", the standard trie comes before the radix trie because
+     * it is the naive form the radix trie optimises, and the trie's compression comparison is the
+     * payoff that only makes sense once both tries do: naive, then optimised, then measured.
      */
     public static final List<Entry> CATALOG = List.of(
             new Entry("ArrayList", "text log", ARRAYLIST + "ListDemo"),
@@ -60,6 +61,13 @@ public final class Launcher {
             new Entry("TreeSet", "live web", TREESET + "TreeSetLiveWebVizDemo"),
             new Entry("TreeSet", "terminal REPL", TREESET + "TreeSetLiveReplDemo"),
             new Entry("TreeSet", "browser REPL", TREESET + "TreeSetLiveControlsDemo"),
+
+            new Entry("Trie (standard)", "text log", TRIE + "StandardTrieDemo"),
+            new Entry("Trie (standard)", "ASCII replay", TRIE + "StandardTrieVizDemo"),
+            new Entry("Trie (standard)", "web replay (writes .html)", TRIE + "StandardTrieWebVizDemo"),
+            new Entry("Trie (standard)", "live web", TRIE + "StandardTrieLiveWebVizDemo"),
+            new Entry("Trie (standard)", "terminal REPL", TRIE + "StandardTrieLiveReplDemo"),
+            new Entry("Trie (standard)", "browser REPL", TRIE + "StandardTrieLiveControlsDemo"),
 
             new Entry("Trie (radix)", "text log", TRIE + "RadixTrieDemo"),
             new Entry("Trie (radix)", "ASCII replay", TRIE + "RadixTrieVizDemo"),
