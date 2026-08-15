@@ -15,6 +15,7 @@ import com.gimlism.translucent.substrate.events.StructureEventListener;
 import com.gimlism.translucent.treeset.core.TeachingTreeSet;
 import com.gimlism.translucent.treeset.events.SetEvent;
 import com.gimlism.translucent.trie.core.RadixTrie;
+import com.gimlism.translucent.trie.core.StandardTrie;
 import com.gimlism.translucent.trie.events.TrieEvent;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -174,7 +175,9 @@ class GuideEventMapTest {
                 new GuideCase("list.md", TeachingArrayList.class, () -> listScenario().emitted()),
                 new GuideCase("map.md", TeachingHashMap.class, () -> mapScenario().emitted()),
                 new GuideCase("treeset.md", TeachingTreeSet.class, () -> treeSetScenario().emitted()),
-                new GuideCase("trie.md", RadixTrie.class, () -> trieScenario().emitted()));
+                new GuideCase("trie.md", RadixTrie.class, () -> trieScenario().emitted()),
+                new GuideCase("standard-trie.md", StandardTrie.class,
+                        () -> standardTrieScenario().emitted()));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -273,6 +276,33 @@ class GuideEventMapTest {
         runner.call("remove/1", () -> trie.remove("shore"));
         // Absent key -> remove bails out before emitting anything; unions into the same tally as the
         // removes above, so it can only shrink the documented set if it fires something new.
+        runner.call("remove/1", () -> trie.remove("nope"));
+        return runner;
+    }
+
+    /**
+     * Deliberately the same keys as {@link #trieScenario()}: the two guides then differ only where
+     * the structures do. An uncompressed trie reaches its whole vocabulary on this story — the first
+     * put creates a chain from an empty root, later puts descend the shared "sh" prefix before
+     * creating, and the removes prune back up it — while SplitEdge and MergeEdge remain unreachable,
+     * which is the lesson standard-trie.md is written to teach.
+     */
+    private static Runner<TrieEvent> standardTrieScenario() {
+        StandardTrie<Integer> trie = new StandardTrie<>();
+        Runner<TrieEvent> runner = new Runner<>(trie::addListener);
+        // Empty root: every character of "shell" is a fresh node, so this call is all CreateNode.
+        runner.call("put/2", () -> trie.put("shell", 1));
+        // "sh" already exists: Descend twice, then create the rest of the chain.
+        runner.call("put/2", () -> trie.put("shore", 2));
+        runner.call("put/2", () -> trie.put("shy", 3));
+        runner.call("get/1", () -> trie.get("shell"));
+        runner.call("containsKey/1", () -> trie.containsKey("shore"));
+        // "shy"'s 'y' is a childless non-key leaf once unset, so exactly one Prune fires; "sh" keeps
+        // two children, so the cascade stops there. Removing "shore" then prunes 'e','r','o' in turn.
+        runner.call("remove/1", () -> trie.remove("shy"));
+        runner.call("remove/1", () -> trie.remove("shore"));
+        // Absent key -> remove bails out before narrating the buffered walk; unions into the same
+        // tally as the removes above, so it can only shrink the documented set if it fires something.
         runner.call("remove/1", () -> trie.remove("nope"));
         return runner;
     }

@@ -87,7 +87,7 @@ public final class RegenerateDocs {
                         "guide/treeset.md", TreeSetWebVizDemo::buildHtml),
                 new Page("viz/standard-trie.html", "Standard trie",
                         "One node per character — the chain a radix trie compresses away.",
-                        null, StandardTrieWebVizDemo::buildHtml),
+                        "guide/standard-trie.md", StandardTrieWebVizDemo::buildHtml),
                 new Page("viz/trie.html", "Radix trie",
                         "A radix trie whose edges split and merge as keys arrive and leave.",
                         "guide/trie.md", RadixTrieWebVizDemo::buildHtml),

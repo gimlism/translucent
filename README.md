@@ -116,6 +116,8 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDem
 | 23 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieLiveReplDemo` |
 | 24 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieLiveControlsDemo` |
 
+📖 [What each standard-trie method makes you see](docs/guide/standard-trie.md)
+
 ### Trie (radix) — edges split and merge as keys arrive and leave
 
 | # | mode | |
