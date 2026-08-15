@@ -1523,10 +1523,14 @@ that its oracle is *not* GitHub's and that the live verification "does not repea
 headings change" — this is the exact class of defect PR 1 created:
 
 ```bash
-gh api -X POST /markdown -f mode=gfm \
+gh api -X POST /markdown \
   -f text='### Trie (standard) — one node per character, and a prune cascade when keys leave' \
   | grep -o 'id="user-content-[^"]*"'
 ```
+
+⚠️ **Do not add `-f mode=gfm`** — measured during execution, it makes the API return the heading
+*without* any anchor `id`, so the check silently produces no output and looks like a failed match.
+The default mode is the one that renders anchors.
 
 Expected: `id="user-content-trie-standard--one-node-per-character-and-a-prune-cascade-when-keys-leave"`.
 If it differs, **use GitHub's slug in the guide link** and note the divergence — the guard's slugifier
