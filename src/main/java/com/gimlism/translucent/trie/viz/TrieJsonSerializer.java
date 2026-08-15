@@ -9,13 +9,14 @@ import com.gimlism.translucent.trie.events.TrieSnapshot;
 import java.util.List;
 
 /**
- * The per-structure half of the RadixTrie web-viz seam: maps a recorded {@code TrieEvent} stream to
- * the JSON the browser replay consumes. The web analogue of {@link AsciiTrieRenderer} — it holds the
- * recursive node serialization so the front-end stays a dumb renderer. Each frame carries the event's
- * own {@code after()} snapshot. Captions come from {@link TrieEventFormatter} and the per-frame
- * highlight target from {@link AsciiTrieRenderer#affectedPath} (same package) — so the ASCII and web
- * renderers name and highlight the identical node for every event, including the {@code Prune} case
- * where the highlighted node is the surviving parent, not the deleted leaf.
+ * The per-structure half of the trie web-viz seam, shared by both trie implementations: maps a
+ * recorded {@code TrieEvent} stream to the JSON the browser replay consumes. The web analogue of
+ * {@link AsciiTrieRenderer} — it holds the recursive node serialization so the front-end stays a
+ * dumb renderer. Each frame carries the event's own {@code after()} snapshot. Captions come from
+ * {@link TrieEventFormatter} and the per-frame highlight target from
+ * {@link AsciiTrieRenderer#affectedPath} (same package) — so the ASCII and web renderers name and
+ * highlight the identical node for every event, including the {@code Prune} case where the
+ * highlighted node is the surviving parent, not the deleted leaf.
  */
 public final class TrieJsonSerializer {
 

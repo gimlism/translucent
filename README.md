@@ -129,7 +129,7 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDem
 | 29 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveReplDemo` |
 | 30 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveControlsDemo` |
 
-📖 [What each Trie method makes you see](docs/guide/trie.md)
+📖 [What each radix-trie method makes you see](docs/guide/trie.md)
 
 ### Trie compression — how much a radix trie actually saves
 

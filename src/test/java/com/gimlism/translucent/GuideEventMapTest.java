@@ -330,7 +330,7 @@ class GuideEventMapTest {
      * there. Together with direction one this makes per-guide coverage drift unrepresentable: one
      * guide cannot go unverified while the others stay checked, because dropping its coverage means
      * dropping its case, and direction one then reports the orphaned file. (Deleting the single
-     * parameterized driver below still drops all four guides' coverage at once — proving otherwise
+     * parameterized driver below still drops all five guides' coverage at once — proving otherwise
      * would mean reflecting over {@code @Test} methods, which this design does not do.)
      *
      * <p>{@code isRegularFile}, never {@code exists}: a DIRECTORY named {@code trie.md} satisfies

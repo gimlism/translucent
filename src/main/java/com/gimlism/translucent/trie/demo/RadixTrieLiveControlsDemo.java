@@ -16,6 +16,9 @@ import java.util.function.Function;
  * running the SAME {@link TrieCommandInterpreter} as {@link RadixTrieLiveReplDemo}. No stdin. Run with:
  * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveControlsDemo}
  * The trie starts empty; the server keeps running until Ctrl-C.
+ *
+ * <p><b>Known limitation:</b> binds {@value #DEFAULT_PORT} and ignores {@code args}, as every live
+ * demo here does, so it cannot run alongside another live demo.
  */
 public class RadixTrieLiveControlsDemo {
 

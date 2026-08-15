@@ -19,6 +19,9 @@ import java.nio.charset.StandardCharsets;
  * {@link LiveServer} for the SSE stream. Run with:
  * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveReplDemo}
  * The trie starts empty; the server stops when you type {@code quit} or send EOF (Ctrl-D).
+ *
+ * <p><b>Known limitation:</b> binds {@value #DEFAULT_PORT} and ignores {@code args}, as every live
+ * demo here does, so it cannot run alongside another live demo.
  */
 public class RadixTrieLiveReplDemo {
 
