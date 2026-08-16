@@ -67,6 +67,18 @@ public final class WebVizTemplate {
      * and compression-compare templates do not, because each depicts exactly one implementation. A
      * later "unification" of {@link #inject} and this method would therefore make {@code require()}
      * throw for those four pages.
+     *
+     * <p><b>Contract: {@code structureReplacement} must be a caller-controlled constant</b> — like
+     * {@code liveReplacement} and {@code controlsReplacement} — never user input or anything derived
+     * from it. The only user-controlled channel here is {@code framesReplacement}, substituted LAST
+     * for exactly that reason, and its contents are escaped by {@link JsonWriter}. A non-constant
+     * structure name could itself carry a template token (e.g. literally {@code /*__FRAMES__*}
+     * {@code /}) and have a later substitution injected into it, landing inside {@code <title>} —
+     * something no amount of HTML-escaping of {@code structureReplacement} would prevent, since
+     * escaping {@code &<>} does not touch a token made of {@code /}, {@code *}, and word characters.
+     * Escaping this parameter would therefore make the API look safe for untrusted input while
+     * leaving that opening in place; all production call sites already pass compile-time string
+     * literals, which is what this contract requires.
      */
     public static String injectNamed(String resource, String framesReplacement,
             String liveReplacement, String controlsReplacement, String structureReplacement) {

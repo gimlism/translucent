@@ -194,4 +194,18 @@ class TrieCommandInterpreterTest {
                 Arguments.of("RadixTrie", new RadixTrie<Integer>()),
                 Arguments.of("StandardTrie", new StandardTrie<Integer>()));
     }
+
+    /**
+     * An anonymous subclass (e.g. a student instrumenting a trie with {@code new StandardTrie<>() {}})
+     * has an empty {@code getClass().getSimpleName()}. The help line must still name the real
+     * structure — {@code StandardTrie}, the nearest named superclass — not start with a blank name.
+     */
+    @Test
+    void helpFallsBackToTheNearestNamedSuperclassForAnAnonymousSubclass() {
+        PrefixMap<Integer> anon = new StandardTrie<Integer>() {};
+        String help = interp.execute("help", anon).message();
+        assertTrue(help.startsWith("StandardTrie live REPL"),
+                "help must fall back to the nearest named superclass; got: "
+                        + help.lines().findFirst().orElse(""));
+    }
 }
