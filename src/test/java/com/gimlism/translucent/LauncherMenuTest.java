@@ -45,7 +45,7 @@ class LauncherMenuTest {
     @Test
     void menuNamesEachStructureOnce() throws IOException {
         String out = drive("q\n").out();
-        for (String s : List.of("ArrayList", "HashMap", "TreeSet", "Trie (radix)")) {
+        for (String s : List.of("ArrayList", "HashMap", "TreeSet", "Trie (standard)", "Trie (radix)")) {
             assertTrue(out.contains(s), "missing structure heading " + s);
         }
     }
@@ -67,7 +67,7 @@ class LauncherMenuTest {
 
     @Test
     void rejectsOutOfRangeAndGarbageThenReprompts() throws IOException {
-        Session s = drive("0\n26\nbanana\n1\n");
+        Session s = drive("0\n32\nbanana\n1\n");
         assertEquals(List.of(Launcher.CATALOG.get(0)), s.launched(), "only the valid choice runs");
         assertTrue(s.out().contains("banana"), "should echo what was rejected");
     }

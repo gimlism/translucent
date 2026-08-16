@@ -1,4 +1,4 @@
-# Trie
+# Radix trie
 
 A radix trie: a prefix tree whose edges carry whole strings rather than single characters, so a
 chain with no branching is stored as one edge.
@@ -55,5 +55,6 @@ by contrast, narrates every comparison it makes; see `docs/guide/treeset.md`.
 ## Watch it
 
 - `docs/viz/trie.html` — open in a browser, no JDK needed
+- `docs/viz/standard-trie.html` — the same keys, stored one character per node
 - `docs/viz/compression-compare.html` — the same keys, fat trie beside compressed
-- demos 19–24 in the [README](../../README.md#trie-radix--edges-split-and-merge-as-keys-arrive-and-leave)
+- demos 25–30 in the [README](../../README.md#trie-radix--edges-split-and-merge-as-keys-arrive-and-leave)

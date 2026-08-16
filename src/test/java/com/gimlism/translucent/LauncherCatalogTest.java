@@ -39,9 +39,10 @@ class LauncherCatalogTest {
     }
 
     @Test
-    void catalogCoversTheFourBySixGridPlusCompressionCompare() {
-        assertEquals(25, Launcher.CATALOG.size(), "4 structures x 6 modes + compression-compare");
-        for (String structure : List.of("ArrayList", "HashMap", "TreeSet", "Trie (radix)")) {
+    void catalogCoversTheFiveBySixGridPlusCompressionCompare() {
+        assertEquals(31, Launcher.CATALOG.size(), "5 structures x 6 modes + compression-compare");
+        for (String structure : List.of("ArrayList", "HashMap", "TreeSet",
+                "Trie (standard)", "Trie (radix)")) {
             long modes = Launcher.CATALOG.stream().filter(e -> e.structure().equals(structure)).count();
             assertEquals(6, modes, structure + " should offer all six modes");
         }
@@ -50,7 +51,8 @@ class LauncherCatalogTest {
     @Test
     void catalogIsOrderedByTeachingDifficulty() {
         List<String> order = Launcher.CATALOG.stream().map(Launcher.Entry::structure).distinct().toList();
-        assertEquals(List.of("ArrayList", "HashMap", "TreeSet", "Trie (radix)", "Trie (compression)"), order);
+        assertEquals(List.of("ArrayList", "HashMap", "TreeSet", "Trie (standard)", "Trie (radix)",
+                "Trie (compression)"), order);
     }
 
     @Test

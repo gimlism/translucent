@@ -1,16 +1,16 @@
 package com.gimlism.translucent.trie.repl;
 
 import com.gimlism.translucent.substrate.repl.CommandResult;
-import com.gimlism.translucent.trie.core.RadixTrie;
+import com.gimlism.translucent.trie.core.PrefixMap;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Parses one command line and applies it to a {@link RadixTrie}, returning a {@link CommandResult}.
- * Pure: it performs no I/O and holds no reference to the live server — mutations it makes fire
- * {@code TrieEvent}s that any attached listener (e.g. {@code TrieLiveVisualizer}) broadcasts, so
- * live rendering is a side-effect of the listener, not of this class. {@link #execute} never
- * throws: every malformed input becomes an error message.
+ * Parses one command line and applies it to a {@link PrefixMap} — either trie implementation —
+ * returning a {@link CommandResult}. Pure: it performs no I/O and holds no reference to the live
+ * server — mutations it makes fire {@code TrieEvent}s that any attached listener (e.g.
+ * {@code TrieLiveVisualizer}) broadcasts, so live rendering is a side-effect of the listener, not
+ * of this class. {@link #execute} never throws: every malformed input becomes an error message.
  *
  * <p>Keys are {@code String} — a single token (no spaces), values are {@code Integer}. This inverts
  * the HashMap REPL (Integer key, String value): here only {@code put}'s value is parsed. The read
@@ -22,7 +22,7 @@ import java.util.Locale;
 public final class TrieCommandInterpreter {
 
     /** Parse {@code line}, apply it to {@code trie}, and return the result to show the user. */
-    public CommandResult execute(String line, RadixTrie<Integer> trie) {
+    public CommandResult execute(String line, PrefixMap<Integer> trie) {
         if (line == null) {
             return CommandResult.of(""); // null (e.g. an empty POST body) — treat as a blank no-op
         }
@@ -85,7 +85,7 @@ public final class TrieCommandInterpreter {
             case "size":
                 return CommandResult.of("size = " + trie.size());
             case "help":
-                return CommandResult.of(helpText());
+                return CommandResult.of(helpText(trie));
             case "quit":
             case "exit":
                 return CommandResult.quitting("bye");
@@ -116,10 +116,45 @@ public final class TrieCommandInterpreter {
         }
     }
 
-    /** One-line overview plus the grammar, one line per command. */
-    public String helpText() {
+    /**
+     * The name {@link #helpText} should show for {@code trie}'s structure. Ordinarily this is just
+     * {@code trie.getClass().getSimpleName()} — {@code "RadixTrie"}, {@code "StandardTrie"} — but an
+     * anonymous class (e.g. {@code new StandardTrie<>() {}}, plausible in a teaching library where a
+     * student subclasses a trie anonymously to instrument it) reports {@code ""} for that. Rather
+     * than falling back to the fully-qualified name (noise like
+     * {@code com.gimlism.translucent.trie.core.StandardTrie$1}), walk up to the nearest named
+     * superclass — for {@code new StandardTrie<>() {}} that is exactly {@code StandardTrie}, the true
+     * structure name the help line is trying to say.
+     *
+     * <p>If the walk reaches {@link Object} — an anonymous class implementing {@link PrefixMap}
+     * directly, with no named trie superclass to report — {@code "Object"} would be non-empty but
+     * actively misleading (it names the wrong type), so this returns {@code "PrefixMap"} instead:
+     * the interface the anonymous class actually implements.
+     */
+    private static String structureName(PrefixMap<?> trie) {
+        Class<?> type = trie.getClass();
+        while (!type.equals(Object.class) && type.getSimpleName().isEmpty()) {
+            type = type.getSuperclass();
+        }
+        return type.equals(Object.class) ? "PrefixMap" : type.getSimpleName();
+    }
+
+    /**
+     * One-line overview plus the grammar, one line per command. The structure name is derived from
+     * {@code trie} rather than hardcoded, so it follows a class rename and cannot name the wrong trie
+     * once two implementations share this interpreter — the alternative, a hand-written name per
+     * demo, is a copy of a string that can drift from the class it describes. Takes the trie rather
+     * than being no-arg (unlike the three sibling interpreters) because {@code case "help"} is its
+     * only caller and already holds one.
+     *
+     * <p>The name comes from {@link #structureName}, which falls back for an anonymous class (e.g. a
+     * student instrumenting a trie with {@code new StandardTrie<>() {}}), whose
+     * {@code getClass().getSimpleName()} is {@code ""}. See that method for the fallback.
+     */
+    public String helpText(PrefixMap<?> trie) {
         return String.join("\n",
-                "RadixTrie live REPL — type commands; mutations render live in the browser.",
+                structureName(trie)
+                        + " live REPL — type commands; mutations render live in the browser.",
                 "  put <key> <int-value>    insert or update a key (String key, integer value)",
                 "  remove <key>             remove a key",
                 "  get <key>                look up a key (prints the value; no viz change)",

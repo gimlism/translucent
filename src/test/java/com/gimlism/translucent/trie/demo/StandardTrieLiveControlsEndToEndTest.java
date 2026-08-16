@@ -3,7 +3,7 @@ package com.gimlism.translucent.trie.demo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
-import com.gimlism.translucent.trie.core.RadixTrie;
+import com.gimlism.translucent.trie.core.StandardTrie;
 import com.gimlism.translucent.trie.repl.TrieCommandInterpreter;
 import com.gimlism.translucent.trie.viz.TrieLiveVisualizer;
 import com.gimlism.translucent.trie.viz.TrieWebExporter;
@@ -23,13 +23,13 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 /** Proves Slice D: a browser POST /command mutates the trie and surfaces as a live SSE frame. */
-class RadixTrieLiveControlsEndToEndTest {
+class StandardTrieLiveControlsEndToEndTest {
 
     @Test
     void aPostedCommandMutatesTheTrieAndSurfacesAsALiveFrame() throws IOException {
-        var trie = new RadixTrie<Integer>();
-        Function<String, String> handler = RadixTrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
-        LiveServer server = new LiveServer(TrieWebExporter.controlsHtml("RadixTrie"), "127.0.0.1", 0, handler);
+        var trie = new StandardTrie<Integer>();
+        Function<String, String> handler = StandardTrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
+        LiveServer server = new LiveServer(TrieWebExporter.controlsHtml("StandardTrie"), "127.0.0.1", 0, handler);
         server.start();
         HttpClient client = HttpClient.newHttpClient();
         try {
@@ -51,10 +51,11 @@ class RadixTrieLiveControlsEndToEndTest {
                             BodyHandlers.ofString());
                     assertEquals("put cat = 1", resp.body());
 
-                    // the mutation surfaces on the SSE stream. The first put into an EMPTY trie emits
-                    // a leading CreateNode frame before the Put (the trie's grow-then-append analog),
-                    // and the reader connected BEFORE the POST so it sees frames incrementally — so
-                    // read PAST any leading frame until the Put frame itself shows up.
+                    // the mutation surfaces on the SSE stream. The first put into an EMPTY standard
+                    // trie emits THREE leading CreateNode frames for "cat" (one node per character)
+                    // before the Put, and the reader connected BEFORE the POST so it sees frames
+                    // incrementally — so read PAST any leading frames until the Put frame itself
+                    // shows up.
                     String line;
                     while ((line = r.readLine()) != null) {
                         if (line.startsWith("data: ")) {
@@ -75,8 +76,8 @@ class RadixTrieLiveControlsEndToEndTest {
 
     @Test
     void quitReturnsItsMessageWithoutStoppingOrMutating() {
-        var trie = new RadixTrie<Integer>();
-        Function<String, String> handler = RadixTrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
+        var trie = new StandardTrie<Integer>();
+        Function<String, String> handler = StandardTrieLiveControlsDemo.commandHandler(trie, new TrieCommandInterpreter());
         handler.apply("put a 1"); // trie now has one key
         assertEquals("bye", handler.apply("quit"));
         assertEquals("bye", handler.apply("exit"));

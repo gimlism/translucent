@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
  * guide's anchor against that set.
  *
  * <p>The slugifier is deliberately minimal — lowercase, drop everything but word characters,
- * spaces and hyphens, turn spaces into hyphens — because that is exactly what the four real
+ * spaces and hyphens, turn spaces into hyphens — because that is exactly what the six real
  * headings in {@code README.md} exercise (an em dash and, as of the radix/standard split, a
  * parenthesized qualifier). It is not a general Markdown slug library, and should not grow rules
  * no current heading needs.

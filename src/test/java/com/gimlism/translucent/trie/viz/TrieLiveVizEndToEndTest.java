@@ -22,7 +22,7 @@ class TrieLiveVizEndToEndTest {
 
     @Test
     void aMutationSurfacesAsALiveFrameOverHttp() throws IOException {
-        LiveServer server = new LiveServer(TrieWebExporter.liveHtml(), "127.0.0.1", 0);
+        LiveServer server = new LiveServer(TrieWebExporter.liveHtml("RadixTrie"), "127.0.0.1", 0);
         server.start();
         HttpClient client = HttpClient.newHttpClient();
         try {

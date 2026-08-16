@@ -14,13 +14,19 @@ import java.io.IOException;
  * {@code mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveWebVizDemo}
  * and watch the trie change as your code runs. The server keeps running after your code finishes so
  * the final state stays live and scrubbable — stop it with Ctrl-C.
+ *
+ * <p><b>Known limitation:</b> every live demo in this repo binds {@value #DEFAULT_PORT} and none of
+ * them parses {@code args}, so this demo and {@link StandardTrieLiveWebVizDemo} cannot run at the
+ * same time — the second to start fails to bind. Run them one after the other, or compare the two
+ * static replay pages ({@code docs/viz/trie.html} and {@code docs/viz/standard-trie.html}), which
+ * are plain files and open side by side.
  */
 public class RadixTrieLiveWebVizDemo {
 
     private static final int DEFAULT_PORT = 7070;
 
     public static void main(String[] args) throws IOException {
-        LiveServer server = new LiveServer(TrieWebExporter.liveHtml(), "127.0.0.1", DEFAULT_PORT);
+        LiveServer server = new LiveServer(TrieWebExporter.liveHtml("RadixTrie"), "127.0.0.1", DEFAULT_PORT);
         server.start();
         String url = "http://localhost:" + server.port();
 

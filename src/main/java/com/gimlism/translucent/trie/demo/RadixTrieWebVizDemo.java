@@ -27,7 +27,7 @@ public class RadixTrieWebVizDemo {
     }
 
     /**
-     * The self-contained HTML replay for the standard story, built without touching the filesystem.
+     * The self-contained HTML replay for the scripted story, built without touching the filesystem.
      * Public because {@code RegenerateDocs} bakes it into {@code docs/viz/} and {@code DocsPagesGoldenTest}
      * pins the committed bytes to it — the seam has a production consumer now, not just a test.
      */
@@ -46,6 +46,6 @@ public class RadixTrieWebVizDemo {
             trie.remove(key);
         }
 
-        return TrieWebExporter.toHtml(TrieJsonSerializer.toJson(rec.events()));
+        return TrieWebExporter.toHtml(TrieJsonSerializer.toJson(rec.events()), "RadixTrie");
     }
 }

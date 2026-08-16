@@ -2,8 +2,9 @@
 
 Simple runtime monitoring of internal object state to facilitate teaching sessions.
 
-Four data structures — **ArrayList**, **HashMap**, **TreeSet** and a radix **Trie** — implemented
-for teaching, each narrating what it does as it does it. The narration is emitted by the real
+Five data structures — **ArrayList**, **HashMap**, **TreeSet**, and two tries: a **standard trie**
+and the **radix trie** that compresses it — implemented for teaching, each narrating what it does as
+it does it. The narration is emitted by the real
 `put()`/`add()`/`remove()` paths, so what you watch is the algorithm running, not an animation of
 it.
 
@@ -21,13 +22,14 @@ Or open one directly:
 | [list](https://gimlism.github.io/translucent/viz/list.html) | ArrayList |
 | [map](https://gimlism.github.io/translucent/viz/map.html) | HashMap |
 | [treeset](https://gimlism.github.io/translucent/viz/treeset.html) | TreeSet |
-| [trie](https://gimlism.github.io/translucent/viz/trie.html) | Trie |
+| [standard-trie](https://gimlism.github.io/translucent/viz/standard-trie.html) | Trie (standard) |
+| [trie](https://gimlism.github.io/translucent/viz/trie.html) | Trie (radix) |
 | [compression-compare](https://gimlism.github.io/translucent/viz/compression-compare.html) | a fat trie beside its compressed form |
 
 Each replays a real run: step through it, play it, scrub back. The events were recorded from the
 actual `put()`/`add()` path, not scripted for the page.
 
-Already cloned the repo? The same five pages are committed under `docs/viz/`, and `docs/index.html`
+Already cloned the repo? The same six pages are committed under `docs/viz/`, and `docs/index.html`
 is the same landing page — they open straight from disk, offline.
 
 Everything below needs a JDK.
@@ -103,24 +105,37 @@ mvn exec:java -Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDem
 
 📖 [What each TreeSet method makes you see](docs/guide/treeset.md)
 
+### Trie (standard) — one node per character, and a prune cascade when keys leave
+
+| # | mode | |
+| --- | --- | --- |
+| 19 | text log | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieDemo` |
+| 20 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieVizDemo` |
+| 21 | web replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieWebVizDemo` |
+| 22 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieLiveWebVizDemo` |
+| 23 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieLiveReplDemo` |
+| 24 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.StandardTrieLiveControlsDemo` |
+
+📖 [What each standard-trie method makes you see](docs/guide/standard-trie.md)
+
 ### Trie (radix) — edges split and merge as keys arrive and leave
 
 | # | mode | |
 | --- | --- | --- |
-| 19 | text log | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieDemo` |
-| 20 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDemo` |
-| 21 | web replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieWebVizDemo` |
-| 22 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveWebVizDemo` |
-| 23 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveReplDemo` |
-| 24 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveControlsDemo` |
+| 25 | text log | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieDemo` |
+| 26 | ASCII replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieVizDemo` |
+| 27 | web replay | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieWebVizDemo` |
+| 28 | live web | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveWebVizDemo` |
+| 29 | terminal REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveReplDemo` |
+| 30 | browser REPL | `-Dexec.mainClass=com.gimlism.translucent.trie.demo.RadixTrieLiveControlsDemo` |
 
-📖 [What each Trie method makes you see](docs/guide/trie.md)
+📖 [What each radix-trie method makes you see](docs/guide/trie.md)
 
 ### Trie compression — how much a radix trie actually saves
 
 | # | mode | |
 | --- | --- | --- |
-| 25 | standard vs radix, side by side | `-Dexec.mainClass=com.gimlism.translucent.trie.compare.CompressionCompareDemo` |
+| 31 | standard vs radix, side by side | `-Dexec.mainClass=com.gimlism.translucent.trie.compare.CompressionCompareDemo` |
 
 ## How each slice got decided
 

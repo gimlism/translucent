@@ -15,7 +15,7 @@ class TrieWebExporterTest {
     @Test
     void toHtmlInjectsFramesAndBakesFlagsFalse() {
         String frames = "{\"frames\":[]}";
-        String html = TrieWebExporter.toHtml(frames);
+        String html = TrieWebExporter.toHtml(frames, "RadixTrie");
 
         // full self-contained document
         assertTrue(html.contains("<!doctype html>"), "expected a full document");
@@ -35,7 +35,7 @@ class TrieWebExporterTest {
     void writeHtmlWritesTheSameDocumentToDisk(@TempDir Path dir) throws IOException {
         String frames = "{\"frames\":[]}";
         Path out = dir.resolve("trie.html");
-        TrieWebExporter.writeHtml(frames, out);
-        assertEquals(TrieWebExporter.toHtml(frames), Files.readString(out));
+        TrieWebExporter.writeHtml(frames, "RadixTrie", out);
+        assertEquals(TrieWebExporter.toHtml(frames, "RadixTrie"), Files.readString(out));
     }
 }

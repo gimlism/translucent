@@ -21,6 +21,10 @@ public final class WebVizTemplate {
     private static final String LIVE_TOKEN = "/*__LIVE__*/";
     private static final String CONTROLS_TOKEN = "/*__CONTROLS__*/";
     private static final String DATA_TOKEN = "/*__DATA__*/";
+    // JS-comment-shaped despite landing in markup (<title>/<h1>), not <script>: <title> is an
+    // RCDATA element, where an HTML comment is not parsed as one and would render literally in
+    // the browser tab. See injectNamed's Javadoc.
+    private static final String STRUCTURE_TOKEN = "/*__STRUCTURE__*/";
 
     private WebVizTemplate() {}
 
@@ -37,6 +41,54 @@ public final class WebVizTemplate {
         require(template, resource, LIVE_TOKEN);
         require(template, resource, CONTROLS_TOKEN);
         return template
+                .replace(LIVE_TOKEN, liveReplacement)
+                .replace(CONTROLS_TOKEN, controlsReplacement)
+                .replace(FRAMES_TOKEN, framesReplacement); // user data LAST
+    }
+
+    /**
+     * As {@link #inject}, plus a {@code STRUCTURE} token naming the structure the page depicts, for a
+     * template shared by more than one implementation. Substitutes STRUCTURE, LIVE and CONTROLS —
+     * all fixed, caller-chosen strings — and the user-controlled {@code FRAMES} blob LAST, preserving
+     * the ordering invariant this class exists to centralise.
+     *
+     * <p>Deliberately a distinct name rather than a five-argument overload of {@link #inject}: two
+     * same-typed positional overloads differing only in arity is a call-site trap.
+     *
+     * <p>The STRUCTURE token is JS-comment-shaped ({@code /*__STRUCTURE__*}{@code /}) like FRAMES,
+     * LIVE and CONTROLS, even though it substitutes into markup ({@code <title>}/{@code <h1>}) rather
+     * than a {@code <script>} block, unlike the HTML-comment token convention used elsewhere for
+     * markup (e.g. {@code SiteIndex.PAGES_TOKEN}). This is deliberate, not an inconsistency to
+     * "fix": {@code <title>} is an RCDATA element, so an HTML comment placed inside it is not parsed
+     * as a comment and would render literally in the browser tab. Changing this token to
+     * {@code <!--__STRUCTURE__-->} would silently break the page title.
+     *
+     * <p><b>Only {@code /web/trie-viz.html} carries the STRUCTURE token.</b> The map, list, treeset
+     * and compression-compare templates do not, because each depicts exactly one implementation. A
+     * later "unification" of {@link #inject} and this method would therefore make {@code require()}
+     * throw for those four pages.
+     *
+     * <p><b>Contract: {@code structureReplacement} must be a caller-controlled constant</b> — like
+     * {@code liveReplacement} and {@code controlsReplacement} — never user input or anything derived
+     * from it. The only user-controlled channel here is {@code framesReplacement}, substituted LAST
+     * for exactly that reason, and its contents are escaped by {@link JsonWriter}. A non-constant
+     * structure name could itself carry a template token (e.g. literally {@code /*__FRAMES__*}
+     * {@code /}) and have a later substitution injected into it, landing inside {@code <title>} —
+     * something no amount of HTML-escaping of {@code structureReplacement} would prevent, since
+     * escaping {@code &<>} does not touch a token made of {@code /}, {@code *}, and word characters.
+     * Escaping this parameter would therefore make the API look safe for untrusted input while
+     * leaving that opening in place; all production call sites already pass compile-time string
+     * literals, which is what this contract requires.
+     */
+    public static String injectNamed(String resource, String framesReplacement,
+            String liveReplacement, String controlsReplacement, String structureReplacement) {
+        String template = read(resource);
+        require(template, resource, FRAMES_TOKEN);
+        require(template, resource, LIVE_TOKEN);
+        require(template, resource, CONTROLS_TOKEN);
+        require(template, resource, STRUCTURE_TOKEN);
+        return template
+                .replace(STRUCTURE_TOKEN, structureReplacement)
                 .replace(LIVE_TOKEN, liveReplacement)
                 .replace(CONTROLS_TOKEN, controlsReplacement)
                 .replace(FRAMES_TOKEN, framesReplacement); // user data LAST

@@ -36,7 +36,7 @@ import java.util.Set;
  * {@link #put(String, Object)} instead. (This fails fast rather than silently losing a
  * write; a later slice may route entry updates through the mutators to emit events.)
  */
-public class RadixTrie<V> extends AbstractMap<String, V> {
+public class RadixTrie<V> extends AbstractMap<String, V> implements PrefixMap<V> {
 
     private final TrieNode<V> root = new TrieNode<>("");
     private int size;
