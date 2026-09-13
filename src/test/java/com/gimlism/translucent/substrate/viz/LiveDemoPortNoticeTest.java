@@ -67,20 +67,27 @@ class LiveDemoPortNoticeTest {
         }
     }
 
+    /**
+     * Only one direction of this is worth pinning. A {@code *Live*Demo} without a port is harmless;
+     * a class that binds a port while falling outside the naming convention is the failure that
+     * matters, because the guards above enumerate by filename and would never see it.
+     */
     @Test
-    void theSetOfLiveDemosIsExactlyTheSetThatBindsAPort() throws IOException {
+    void nothingBindsAPortFromOutsideTheLiveDemoNamingConvention() throws IOException {
+        List<Path> demos = liveDemos();
         try (Stream<Path> walk = Files.walk(Path.of("src/main/java"))) {
-            List<Path> binders = walk.filter(p -> p.toString().endsWith(".java"))
+            List<Path> strays = walk.filter(p -> p.toString().endsWith(".java"))
                     .filter(p -> {
                         try {
                             return Files.readString(p).contains("DEFAULT_PORT");
                         } catch (IOException e) {
                             throw new java.io.UncheckedIOException(e);
                         }
-                    }).sorted().toList();
-            assertEquals(liveDemos(), binders,
-                    "the *Live*Demo naming convention no longer identifies exactly the port-binding classes, "
-                            + "so this guard would silently stop covering one");
+                    })
+                    .filter(p -> !demos.contains(p))
+                    .sorted().toList();
+            assertEquals(List.of(), strays,
+                    "these bind a port but are not named *Live*Demo, so the guards above never check them");
         }
     }
 }
