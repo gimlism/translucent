@@ -2,6 +2,7 @@ package com.gimlism.translucent.trie.demo;
 
 import com.gimlism.translucent.substrate.repl.CommandResult;
 import com.gimlism.translucent.substrate.viz.BrowserLauncher;
+import com.gimlism.translucent.substrate.viz.DemoLifecycle;
 import com.gimlism.translucent.substrate.viz.LiveServer;
 import com.gimlism.translucent.trie.core.StandardTrie;
 import com.gimlism.translucent.trie.repl.TrieCommandInterpreter;
@@ -32,6 +33,7 @@ public class StandardTrieLiveReplDemo {
         LiveServer server = new LiveServer(TrieWebExporter.liveHtml("StandardTrie"), "127.0.0.1", DEFAULT_PORT);
         server.start();
         String url = "http://localhost:" + server.port();
+        DemoLifecycle.announcePortFallback(server);
 
         var trie = new StandardTrie<Integer>();
         trie.addListener(new TrieLiveVisualizer(server::broadcast));

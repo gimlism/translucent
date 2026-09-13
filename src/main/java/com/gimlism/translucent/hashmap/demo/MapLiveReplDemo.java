@@ -6,6 +6,7 @@ import com.gimlism.translucent.hashmap.viz.MapLiveVisualizer;
 import com.gimlism.translucent.hashmap.viz.MapWebExporter;
 import com.gimlism.translucent.substrate.repl.CommandResult;
 import com.gimlism.translucent.substrate.viz.BrowserLauncher;
+import com.gimlism.translucent.substrate.viz.DemoLifecycle;
 import com.gimlism.translucent.substrate.viz.LiveServer;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,6 +29,7 @@ public class MapLiveReplDemo {
         LiveServer server = new LiveServer(MapWebExporter.liveHtml(), "127.0.0.1", DEFAULT_PORT);
         server.start();
         String url = "http://localhost:" + server.port();
+        DemoLifecycle.announcePortFallback(server);
 
         var map = new TeachingHashMap<Integer, String>();
         map.addListener(new MapLiveVisualizer(server::broadcast));

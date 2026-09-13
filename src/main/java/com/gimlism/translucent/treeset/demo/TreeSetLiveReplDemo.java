@@ -2,6 +2,7 @@ package com.gimlism.translucent.treeset.demo;
 
 import com.gimlism.translucent.substrate.repl.CommandResult;
 import com.gimlism.translucent.substrate.viz.BrowserLauncher;
+import com.gimlism.translucent.substrate.viz.DemoLifecycle;
 import com.gimlism.translucent.substrate.viz.LiveServer;
 import com.gimlism.translucent.treeset.core.TeachingTreeSet;
 import com.gimlism.translucent.treeset.repl.TreeSetCommandInterpreter;
@@ -29,6 +30,7 @@ public class TreeSetLiveReplDemo {
         LiveServer server = new LiveServer(TreeSetWebExporter.liveHtml(), "127.0.0.1", DEFAULT_PORT);
         server.start();
         String url = "http://localhost:" + server.port();
+        DemoLifecycle.announcePortFallback(server);
 
         var set = new TeachingTreeSet<Integer>();
         set.addListener(new TreeSetLiveVisualizer(server::broadcast));

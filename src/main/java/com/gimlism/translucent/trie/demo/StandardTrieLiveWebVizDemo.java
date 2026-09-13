@@ -15,11 +15,16 @@ import java.io.IOException;
  * and watch the chain grow a node per character as your code runs. The server keeps running after
  * your code finishes so the final state stays live and scrubbable — stop it with Ctrl-C.
  *
- * <p><b>Known limitation:</b> every live demo in this repo binds {@value #DEFAULT_PORT} and none of
- * them parses {@code args}, so this demo and {@link RadixTrieLiveWebVizDemo} cannot run at the same
- * time — the second to start fails to bind. Run them one after the other, or compare the two static
- * replay pages ({@code docs/viz/standard-trie.html} and {@code docs/viz/trie.html}), which are plain
- * files and open side by side.
+ * <p><b>Running it beside the radix trie:</b> start this demo and {@link RadixTrieLiveWebVizDemo}
+ * together and watch one key build a node-per-character chain here and a compressed edge there.
+ * Every live demo asks for {@value #DEFAULT_PORT}, so the second one to start finds it taken and
+ * {@link LiveServer} moves it to a free port, printing which. Follow the URL each demo prints rather
+ * than assuming {@value #DEFAULT_PORT}.
+ *
+ * <p>What you cannot yet do is <em>choose</em> the fallback port: no live demo parses {@code args},
+ * so the second port is whatever the OS hands out. Bookmarking it is not worth the trouble; the
+ * static replay pages ({@code docs/viz/standard-trie.html} and {@code docs/viz/trie.html}) are plain
+ * files if you want a stable side-by-side.
  */
 public class StandardTrieLiveWebVizDemo {
 
@@ -29,6 +34,7 @@ public class StandardTrieLiveWebVizDemo {
         LiveServer server = new LiveServer(TrieWebExporter.liveHtml("StandardTrie"), "127.0.0.1", DEFAULT_PORT);
         server.start();
         String url = "http://localhost:" + server.port();
+        DemoLifecycle.announcePortFallback(server);
 
         var trie = new StandardTrie<Integer>();
         trie.addListener(new TrieLiveVisualizer(server::broadcast));
