@@ -1,6 +1,7 @@
 package com.gimlism.translucent.substrate.viz;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -162,5 +163,49 @@ class LiveServerTest {
         HttpResponse<String> resp = post("/command", "anything");
         assertEquals(200, resp.statusCode());
         assertEquals("", resp.body());
+    }
+
+    // ---------------------------------------------------------------------
+    // Port binding. Every other test here requests port 0 (ephemeral), so the
+    // "requested port is taken" branch of bind() went uncovered for two months
+    // — long enough for two demo Javadocs to claim, falsely, that a second live
+    // demo "fails to bind". These pin the behaviour those docs got wrong.
+    // ---------------------------------------------------------------------
+
+    @Test
+    void aSecondServerRequestingATakenPortFallsBackToAnEphemeralOneAndBothServe() throws Exception {
+        startWithPage("<html>FIRST</html>");
+        int taken = server.port(); // a port genuinely in use right now — no assumption about 7070
+
+        LiveServer second = new LiveServer("<html>SECOND</html>", "127.0.0.1", taken);
+        second.start();
+        try {
+            assertNotEquals(taken, second.port(), "second server should have fallen back off the taken port");
+
+            // Both answer HTTP concurrently — the claim "cannot run at the same time" is false.
+            assertTrue(get("http://127.0.0.1:" + taken + "/").contains("FIRST"));
+            assertTrue(get("http://127.0.0.1:" + second.port() + "/").contains("SECOND"));
+        } finally {
+            second.stop();
+        }
+    }
+
+    @Test
+    void aServerReportsThePortItWasAskedForEvenAfterFallingBack() throws Exception {
+        startWithPage("<html>FIRST</html>");
+        int taken = server.port();
+
+        LiveServer second = new LiveServer("<html>SECOND</html>", "127.0.0.1", taken);
+        second.start();
+        try {
+            assertEquals(taken, second.requestedPort(), "requestedPort() should report what was asked for");
+            assertNotEquals(second.requestedPort(), second.port(), "and port() what was actually bound");
+        } finally {
+            second.stop();
+        }
+    }
+
+    private String get(String url) throws Exception {
+        return client.send(HttpRequest.newBuilder(URI.create(url)).build(), BodyHandlers.ofString()).body();
     }
 }

@@ -24,6 +24,7 @@ public class TreeSetLiveWebVizDemo {
         LiveServer server = new LiveServer(TreeSetWebExporter.liveHtml(), "127.0.0.1", DEFAULT_PORT);
         server.start();
         String url = "http://localhost:" + server.port();
+        DemoLifecycle.announcePortFallback(server);
 
         var set = new TeachingTreeSet<Integer>();
         set.addListener(new TreeSetLiveVisualizer(server::broadcast));

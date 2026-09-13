@@ -33,6 +33,7 @@ public class RadixTrieLiveControlsDemo {
         trie.addListener(new TrieLiveVisualizer(server::broadcast));
 
         String url = "http://localhost:" + server.port();
+        DemoLifecycle.announcePortFallback(server);
         BrowserLauncher.open(url);
         System.out.println("Live controls — serving at " + url + " — type commands in the browser; Ctrl-C to stop.");
 

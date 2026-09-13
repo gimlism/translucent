@@ -23,6 +23,7 @@ public class MapLiveWebVizDemo {
         LiveServer server = new LiveServer(MapWebExporter.liveHtml(), "127.0.0.1", DEFAULT_PORT);
         server.start();
         String url = "http://localhost:" + server.port();
+        DemoLifecycle.announcePortFallback(server);
 
         var map = new TeachingHashMap<Integer, String>();
         map.addListener(new MapLiveVisualizer(server::broadcast));

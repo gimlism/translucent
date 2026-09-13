@@ -88,6 +88,15 @@ public final class LiveServer {
         return port;
     }
 
+    /**
+     * The port {@link #start()} was asked for. Differs from {@link #port()} exactly when that port
+     * was taken and {@code bind()} fell back to an ephemeral one — the comparison callers use to
+     * tell a student their port moved, and why.
+     */
+    public int requestedPort() {
+        return requestedPort;
+    }
+
     /** Live SSE connection count — a test/observability hook. */
     public int openConnections() {
         return conns.size();

@@ -6,6 +6,7 @@ import com.gimlism.translucent.arraylist.viz.ListLiveVisualizer;
 import com.gimlism.translucent.arraylist.viz.ListWebExporter;
 import com.gimlism.translucent.substrate.repl.CommandResult;
 import com.gimlism.translucent.substrate.viz.BrowserLauncher;
+import com.gimlism.translucent.substrate.viz.DemoLifecycle;
 import com.gimlism.translucent.substrate.viz.LiveServer;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,6 +29,7 @@ public class ListLiveReplDemo {
         LiveServer server = new LiveServer(ListWebExporter.liveHtml(), "127.0.0.1", DEFAULT_PORT);
         server.start();
         String url = "http://localhost:" + server.port();
+        DemoLifecycle.announcePortFallback(server);
 
         var list = new TeachingArrayList<String>();
         list.addListener(new ListLiveVisualizer(server::broadcast));
