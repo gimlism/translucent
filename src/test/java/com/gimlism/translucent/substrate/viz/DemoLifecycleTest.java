@@ -29,13 +29,28 @@ class DemoLifecycleTest {
         return s;
     }
 
+    /**
+     * Start on a port we asked for <em>and were granted</em>. Probing for a free port means binding
+     * one and releasing it, which leaves a window for another process to take it before we ask
+     * again — and losing that race would fire a real fallback and fail the caller's assertion while
+     * the implementation was correct. Retrying closes the window instead of assuming it away.
+     */
+    private static LiveServer startOnAGrantedPort() throws IOException {
+        for (int attempt = 0; attempt < 10; attempt++) {
+            LiveServer probe = started(0);
+            int candidate = probe.port();
+            probe.stop();
+
+            LiveServer server = started(candidate);
+            if (server.port() == candidate) return server;
+            server.stop(); // lost the race for that port — probe for another
+        }
+        throw new IllegalStateException("could not be granted a specific port in 10 attempts");
+    }
+
     @Test
     void saysNothingWhenTheRequestedPortWasFree() throws Exception {
-        LiveServer first = started(0);
-        int free = first.port();
-        first.stop(); // release it, then ask for that exact port and get it
-
-        LiveServer server = started(free);
+        LiveServer server = startOnAGrantedPort();
         try {
             DemoLifecycle.announcePortFallback(server, out);
             assertEquals("", printed(), "no fallback happened, so there is nothing to explain");

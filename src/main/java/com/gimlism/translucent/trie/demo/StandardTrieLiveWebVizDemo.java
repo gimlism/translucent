@@ -18,8 +18,8 @@ import java.io.IOException;
  * <p><b>Running it beside the radix trie:</b> start this demo and {@link RadixTrieLiveWebVizDemo}
  * together and watch one key build a node-per-character chain here and a compressed edge there.
  * Every live demo asks for {@value #DEFAULT_PORT}, so the second one to start finds it taken and
- * {@link LiveServer} moves it to a free port, printing which. Follow the URL each demo prints rather
- * than assuming {@value #DEFAULT_PORT}.
+ * {@link LiveServer} moves it to a free port, which the demo prints on startup. Follow the URL
+ * each demo prints rather than assuming {@value #DEFAULT_PORT}.
  *
  * <p>What you cannot yet do is <em>choose</em> the fallback port: no live demo parses {@code args},
  * so the second port is whatever the OS hands out. Bookmarking it is not worth the trouble; the
